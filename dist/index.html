@@ -5,9 +5,15 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="Trợ lý soạn kế hoạch bài dạy theo CT GDPT 2018, tích hợp năng lực số và năng lực AI.">
   <title>Trợ lý Soạn Giáo Án 2026–2027</title>
+  <meta name="theme-color" content="#123252">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23123252'/%3E%3Ctext x='32' y='45' font-family='Georgia,serif' font-size='34' font-weight='700' fill='%23ffffff' text-anchor='middle'%3EK%3C/text%3E%3C/svg%3E">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Trợ lý Soạn Giáo Án 2026–2027">
+  <meta property="og:description" content="Soạn kế hoạch bài dạy theo CT GDPT 2018 miễn phí, tích hợp năng lực số (NLS) và năng lực AI (NLAI), xuất file Word chỉ trong vài phút.">
+  <meta name="twitter:card" content="summary">
   <link rel="stylesheet" href="styles.css">
   <script>window.MathJax={tex:{inlineMath:[['$','$'],['\\(','\\)']],displayMath:[['$$','$$'],['\\[','\\]']],processEscapes:true},svg:{fontCache:'global'},options:{skipHtmlTags:['script','noscript','style','textarea','pre','code']}};</script>
-  <script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-svg.js" integrity="sha384-KKWa9jJ1MZvssLeOoXG6FiOAZfAgmzsIIfw8BXwI9+kYm0lPCbC6yTQPBC00F1/L" crossorigin="anonymous"></script>
 </head>
 <body>
   <header class="topbar">
@@ -23,13 +29,16 @@
     <section class="panel form-panel" aria-labelledby="inputTitle">
       <div class="panel-head">
         <div><span class="step">01</span><h1 id="inputTitle">Thông tin bài dạy</h1></div>
-        <button id="sampleBtn" class="text-btn">Điền dữ liệu mẫu</button>
+        <div class="head-actions">
+          <button id="clearDraftBtn" class="text-btn muted" type="button" hidden>Xoá bản nháp</button>
+          <button id="sampleBtn" class="text-btn" type="button">Điền dữ liệu mẫu</button>
+        </div>
       </div>
 
       <form id="lessonForm">
         <div class="grid two">
           <label>Môn học <input id="subject" required placeholder="Ví dụ: Toán"></label>
-          <label>Lớp <input id="grade" required inputmode="numeric" placeholder="Ví dụ: 12"></label>
+          <label>Lớp <input id="grade" required type="number" min="10" max="12" step="1" placeholder="Ví dụ: 12"></label>
         </div>
         <label>Tên bài học <input id="lesson" required placeholder="Ví dụ: Giá trị lớn nhất và giá trị nhỏ nhất của hàm số"></label>
         <div class="grid two">
@@ -42,11 +51,11 @@
               <option>Khác</option>
             </select>
           </label>
-          <label>Số tiết <input id="periods" inputmode="numeric" placeholder="Để trống nếu chưa biết"></label>
+          <label>Số tiết <input id="periods" type="number" min="1" max="20" step="1" placeholder="Để trống nếu chưa biết"></label>
         </div>
         <div class="grid two">
           <label>Đặc điểm học sinh <input id="students" required placeholder="Ví dụ: Trung bình–khá"></label>
-          <label>Sĩ số <input id="classSize" required inputmode="numeric" placeholder="Ví dụ: 45"></label>
+          <label>Sĩ số <input id="classSize" required type="number" min="1" max="60" step="1" placeholder="Ví dụ: 45"></label>
         </div>
         <label>Thiết bị dạy học <input id="equipment" required placeholder="Ví dụ: TV 32 inch, bảng phụ, điện thoại theo nhóm"></label>
 
@@ -67,23 +76,28 @@
           </label>
         </div>
 
-        <details class="ai-settings">
-          <summary>Cấu hình AI miễn phí <span>cần để đọc sâu tài liệu</span></summary>
+        <details class="ai-settings" open>
+          <summary>Kích hoạt AI miễn phí <span>để AI đọc sâu tài liệu và soạn bài tự động</span></summary>
           <div class="settings-body">
-            <label>Gemini API key
-              <div class="password-row"><input id="apiKey" type="password" autocomplete="off" placeholder="Dán khóa API của giáo viên"><button type="button" id="showKey" class="mini-btn">Hiện</button></div>
+            <ol class="key-steps">
+              <li>Bấm <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener">lấy mã miễn phí tại đây ↗</a>, đăng nhập bằng tài khoản Google.</li>
+              <li>Bấm nút <strong>“Create API key”</strong> trên trang đó, rồi bấm biểu tượng sao chép.</li>
+              <li>Dán mã vừa sao chép vào ô bên dưới.</li>
+            </ol>
+            <label>Mã kích hoạt AI (dán vào đây)
+              <div class="password-row"><input id="apiKey" type="password" autocomplete="off" placeholder="Dán mã đã sao chép từ Google"><button type="button" id="showKey" class="mini-btn">Hiện</button></div>
             </label>
-            <div class="grid two">
-              <label>Mô hình
+            <label>Phong cách bài soạn
+              <select id="style"><option value="day-du">Đầy đủ, chi tiết</option><option value="gon">Gọn, dễ triển khai</option><option value="sang-tao">Tích cực, sáng tạo</option></select>
+            </label>
+            <p class="privacy">Mã chỉ tồn tại trong phiên trình duyệt và được gửi trực tiếp đến Google để tạo nội dung. Website không lưu mã này lại (kể cả trong bản nháp tự động lưu).</p>
+            <details class="advanced-settings">
+              <summary>Tuỳ chọn nâng cao <span>không bắt buộc</span></summary>
+              <label>Mô hình AI
                 <div class="model-row"><select id="model"><option value="auto">Tự động dò mô hình phù hợp (Khuyên dùng)</option></select><button type="button" id="scanModels" class="mini-btn">Dò lại</button></div>
-                <small id="modelStatus" class="model-status" aria-live="polite">Nhập API key để hệ thống tự dò mô hình đang hoạt động.</small>
+                <small id="modelStatus" class="model-status" aria-live="polite">Nhập mã kích hoạt để hệ thống tự dò mô hình đang hoạt động.</small>
               </label>
-              <label>Phong cách
-                <select id="style"><option value="day-du">Đầy đủ, chi tiết</option><option value="gon">Gọn, dễ triển khai</option><option value="sang-tao">Tích cực, sáng tạo</option></select>
-              </label>
-            </div>
-            <p class="privacy">Khóa chỉ tồn tại trong phiên trình duyệt và được gửi trực tiếp đến Google để tạo nội dung. Website không lưu khóa.</p>
-            <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener">Lấy API key miễn phí ↗</a>
+            </details>
           </div>
         </details>
 
