@@ -1,0 +1,18 @@
+--- /home/claude/repo_check/app.js	2026-09-03 15:10:08.783706965 +0000
++++ /home/claude/repo_fix/app.js	2026-09-03 23:16:16.661094056 +0000
+@@ -39,10 +39,11 @@
+        +(AI_YCCD[grade]||'')+'\n';
+   }
+   if(digital){
+-    out+=`\n[BẢNG MÃ CHỈ BÁO NĂNG LỰC SỐ — NLS — mức NC1, áp dụng nhóm lớp 10-11-12]\n`
+-       +`Trích Phụ lục 1 — Bảng mã chỉ báo Năng lực số (Thông tư 02/2025/TT-BGDĐT quy định Khung năng lực số cho người học).\n`
+-       +`Định dạng mã dùng ở đây: "[Mục].[Tiểu mục]-NC1[ý]" (vd 6.2-NC1a). Mục 6 "Ứng dụng trí tuệ nhân tạo" thuộc khung NLS (TT 02/2025) — KHÁC với khung NLAI (QĐ 2422) ở trên; hai hệ mã độc lập, không gộp/nhầm lẫn định dạng.\n`
+-       +NLS_NC1+'\n';
++    out+=`\n[BẢNG MÃ NĂNG LỰC SỐ — NLS — đầy đủ 24 năng lực thành phần x 8 bậc, áp dụng nhóm lớp 10-11-12]\n`
++       +`Trích nguyên văn Phụ lục — Khung năng lực số cho người học (Thông tư 02/2025/TT-BGDĐT ngày 24/01/2025 của Bộ GDĐT).\n`
++       +`Định dạng mã dùng ở đây: "[Miền].[Tiểu mục]-B[Số bậc][ý]" (vd 6.3-B5a = Miền 6, tiểu mục 3, Bậc 5, ý a). Đây là quy ước tự đặt để tiện tham chiếu (Thông tư gốc chỉ gọi "Bậc 1".."Bậc 8", không có ký hiệu viết tắt chính thức) — Bậc 1-2 ứng Cơ bản, 3-4 Trung cấp, 5-6 Nâng cao, 7-8 Chuyên sâu. Mục 6 "Ứng dụng trí tuệ nhân tạo" thuộc khung NLS (TT 02/2025) — KHÁC với khung NLAI (QĐ 2422) ở trên; hai hệ mã độc lập, không gộp/nhầm lẫn định dạng.\n`
++       +`Chọn bậc phù hợp với đối tượng học sinh ${v.students} của lớp ${grade} (ưu tiên Bậc 3-6 cho học sinh THPT đại trà; chỉ dùng Bậc 1-2 nếu học sinh yếu/mới bắt đầu, hoặc Bậc 7-8 nếu học sinh thực sự xuất sắc/chuyên sâu) — KHÔNG tự bịa bậc hay nội dung ngoài danh sách dưới đây.\n`
++       +buildNLSText()+'\n';
+   }
+   out+='\n===== HẾT NGUỒN THAM CHIẾU BẮT BUỘC =====\n'
+      +'QUY TẮC BẮT BUỘC KHI GẮN MÃ: (a) chỉ dùng đúng nguyên văn mã có trong bảng trên, tuyệt đối không tự tạo mã mới, không mượn mã của lớp/khối khác; (b) chỉ gắn mã vào một bước khi bước đó thực sự tạo ra hành vi học sinh quan sát được, khớp với đúng mô tả của mã; nếu không có, ghi "—", không cố gắn cho đủ; (c) việc lồng ghép NLS/NLAI KHÔNG được làm thay đổi hoặc gia tăng yêu cầu cần đạt của môn học đang soạn — chỉ dùng để củng cố, vận dụng; (d) TUYỆT ĐỐI không lập cột điểm/đầu điểm riêng cho NLS hoặc NLAI trong bất kỳ phần đánh giá nào của KHBD; (e) khi dùng yêu cầu cần đạt NLAI thuộc nội dung mở rộng (có tiền tố MR), phải ghi rõ đây là nội dung mở rộng, không bắt buộc.\n';
