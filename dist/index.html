@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Trợ lý soạn kế hoạch bài dạy theo CT GDPT 2018, tích hợp năng lực số và năng lực AI.">
+  <title>Trợ lý Soạn Giáo Án 2026–2027</title>
+  <link rel="stylesheet" href="styles.css">
+  <script>window.MathJax={tex:{inlineMath:[['$','$'],['\\(','\\)']],displayMath:[['$$','$$'],['\\[','\\]']],processEscapes:true},svg:{fontCache:'global'},options:{skipHtmlTags:['script','noscript','style','textarea','pre','code']}};</script>
+  <script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand-mark">K</div>
+    <div>
+      <strong>TRỢ LÝ SOẠN GIÁO ÁN</strong>
+      <span>CT GDPT 2018 · Năm học 2026–2027</span>
+    </div>
+    <button id="themeBtn" class="icon-btn" aria-label="Đổi giao diện" title="Đổi giao diện">◐</button>
+  </header>
+
+  <main class="workspace">
+    <section class="panel form-panel" aria-labelledby="inputTitle">
+      <div class="panel-head">
+        <div><span class="step">01</span><h1 id="inputTitle">Thông tin bài dạy</h1></div>
+        <button id="sampleBtn" class="text-btn">Điền dữ liệu mẫu</button>
+      </div>
+
+      <form id="lessonForm">
+        <div class="grid two">
+          <label>Môn học <input id="subject" required placeholder="Ví dụ: Toán"></label>
+          <label>Lớp <input id="grade" required inputmode="numeric" placeholder="Ví dụ: 12"></label>
+        </div>
+        <label>Tên bài học <input id="lesson" required placeholder="Ví dụ: Giá trị lớn nhất và giá trị nhỏ nhất của hàm số"></label>
+        <div class="grid two">
+          <label>Bộ sách
+            <select id="book" required>
+              <option value="">Chọn bộ sách</option>
+              <option>Kết nối tri thức với cuộc sống</option>
+              <option>Chân trời sáng tạo</option>
+              <option>Cánh Diều</option>
+              <option>Khác</option>
+            </select>
+          </label>
+          <label>Số tiết <input id="periods" inputmode="numeric" placeholder="Để trống nếu chưa biết"></label>
+        </div>
+        <div class="grid two">
+          <label>Đặc điểm học sinh <input id="students" required placeholder="Ví dụ: Trung bình–khá"></label>
+          <label>Sĩ số <input id="classSize" required inputmode="numeric" placeholder="Ví dụ: 45"></label>
+        </div>
+        <label>Thiết bị dạy học <input id="equipment" required placeholder="Ví dụ: TV 32 inch, bảng phụ, điện thoại theo nhóm"></label>
+
+        <div class="source-block">
+          <div class="source-title">
+            <div><span class="step">02</span><h2>Tài liệu nguồn</h2></div>
+            <span class="badge">Tối đa 20 MB/tệp</span>
+          </div>
+          <label id="dropZone" class="drop-zone" tabindex="0">
+            <input id="files" type="file" multiple accept=".pdf,.doc,.docx,.txt,.png,.jpg,.jpeg" hidden>
+            <span class="upload-icon">⇧</span>
+            <strong>Kéo thả hoặc bấm để chọn tài liệu</strong>
+            <small>SGK, SGV, yêu cầu cần đạt, giáo án tham khảo · PDF, Word, ảnh, TXT</small>
+          </label>
+          <div id="fileList" class="file-list" aria-live="polite"></div>
+          <label>Nội dung bổ sung hoặc trích đoạn nguồn
+            <textarea id="notes" rows="3" placeholder="Dán phân phối chương trình, yêu cầu riêng hoặc nội dung cần khóa nguồn..."></textarea>
+          </label>
+        </div>
+
+        <details class="ai-settings">
+          <summary>Cấu hình AI miễn phí <span>cần để đọc sâu tài liệu</span></summary>
+          <div class="settings-body">
+            <label>Gemini API key
+              <div class="password-row"><input id="apiKey" type="password" autocomplete="off" placeholder="Dán khóa API của giáo viên"><button type="button" id="showKey" class="mini-btn">Hiện</button></div>
+            </label>
+            <div class="grid two">
+              <label>Mô hình
+                <div class="model-row"><select id="model"><option value="auto">Tự động dò mô hình phù hợp (Khuyên dùng)</option></select><button type="button" id="scanModels" class="mini-btn">Dò lại</button></div>
+                <small id="modelStatus" class="model-status" aria-live="polite">Nhập API key để hệ thống tự dò mô hình đang hoạt động.</small>
+              </label>
+              <label>Phong cách
+                <select id="style"><option value="day-du">Đầy đủ, chi tiết</option><option value="gon">Gọn, dễ triển khai</option><option value="sang-tao">Tích cực, sáng tạo</option></select>
+              </label>
+            </div>
+            <p class="privacy">Khóa chỉ tồn tại trong phiên trình duyệt và được gửi trực tiếp đến Google để tạo nội dung. Website không lưu khóa.</p>
+            <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener">Lấy API key miễn phí ↗</a>
+          </div>
+        </details>
+
+        <label class="check"><input id="includeDigital" type="checkbox" checked> Tích hợp năng lực số (NLS)</label>
+        <label class="check"><input id="includeAI" type="checkbox" checked> Tích hợp năng lực AI (NLAI) đúng hoạt động</label>
+        <button id="generateBtn" class="primary" type="submit"><span>✦</span> Soạn kế hoạch bài dạy</button>
+      </form>
+    </section>
+
+    <section class="panel result-panel" aria-labelledby="resultTitle">
+      <div class="panel-head sticky">
+        <div><span class="step">03</span><h2 id="resultTitle">Bản kế hoạch</h2></div>
+        <div id="resultActions" class="actions" hidden>
+          <button id="copyBtn" class="secondary">Sao chép</button>
+          <button id="wordBtn" class="secondary accent">Tải Word</button>
+          <button id="printBtn" class="secondary">In/PDF</button>
+        </div>
+      </div>
+      <div id="emptyState" class="empty-state">
+        <div class="paper-stack"><i></i><i></i><i></i></div>
+        <h3>Kế hoạch bài dạy sẽ xuất hiện tại đây</h3>
+        <p>Điền thông tin bên trái, thêm tài liệu nguồn và bấm “Soạn kế hoạch bài dạy”.</p>
+        <div class="promise-grid">
+          <span>✓ Bám CT GDPT 2018</span><span>✓ Tiến trình 4 bước</span><span>✓ NLS &amp; NLAI</span><span>✓ Xuất Word</span>
+        </div>
+      </div>
+      <div id="progress" class="progress-box" hidden>
+        <div class="spinner"></div><h3 id="progressTitle">Đang phân tích...</h3><p id="progressText">Kiểm tra thông tin đầu vào</p>
+        <div class="progress-track"><span id="progressBar"></span></div>
+      </div>
+      <article id="result" class="document" hidden></article>
+    </section>
+  </main>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  <script src="app.js"></script>
+  <script src="flow.js"></script>
+</body>
+</html>
