@@ -1,0 +1,17 @@
+(function(){
+  const original=window.mdToHtml;
+  if(typeof original!=='function')return;
+  const h=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const fmt=s=>h(s).replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>').replace(/\$([^$]+)\$/g,'<span class="math">\\($1\\)</span>');
+  const list=items=>`<ul>${(Array.isArray(items)?items:[items]).filter(Boolean).map(x=>`<li>${fmt(x)}</li>`).join('')}</ul>`;
+  function parseLoose(raw){try{return JSON.parse(raw)}catch(_){return JSON.parse(raw.replace(/\\(?!["\\/bfnrtu])/g,'\\\\'))}}
+  function flowTable(spec){const rows=Array.isArray(spec.rows)?spec.rows:[];return `<div class="flow-wrap"><table class="lesson-flow"><thead><tr><th>HĐ CỦA GV VÀ HS</th><th>SẢN PHẨM DỰ KIẾN</th><th>NLS/NLAI</th></tr></thead><tbody>${rows.map(r=>`<tr><td><strong class="flow-step">${fmt(r.step)}</strong>${list(r.teacherStudent)}</td><td>${list(r.product)}</td><td>${list(r.competency?.length?r.competency:['—'])}</td></tr>`).join('')}</tbody></table></div>`}
+  function addFlow(raw,flows){try{const spec=parseLoose(raw.trim());if(spec?.type!=='lessonflow'||!Array.isArray(spec.rows))return null;return `\n@@LESSONFLOW_${flows.push(raw.trim())-1}@@\n`}catch(_){return null}}
+  function replaceBareFlows(text,flows){let pos=0;while(true){const hit=text.slice(pos).search(/["']type["']\s*:\s*["']lessonflow["']/i);if(hit<0)break;const marker=pos+hit;let start=marker;while(start>=0&&text[start]!=='{')start--;if(start<0){pos=marker+10;continue}let depth=0,inString=false,quote='',escaped=false,end=-1;for(let i=start;i<text.length;i++){const c=text[i];if(inString){if(escaped)escaped=false;else if(c==='\\')escaped=true;else if(c===quote)inString=false;continue}if(c==='"'||c==="'"){inString=true;quote=c;continue}if(c==='{')depth++;else if(c==='}'&&--depth===0){end=i+1;break}}if(end<0){pos=marker+10;continue}const token=addFlow(text.slice(start,end),flows);if(!token){pos=end;continue}text=text.slice(0,start)+token+text.slice(end);pos=start+token.length}return text}
+  window.mdToHtml=function(markdown){const flows=[];let clean=String(markdown||'').replace(/```(?:lessonflow|json)?\s*([\s\S]*?)```/gi,(whole,raw)=>addFlow(raw,flows)||whole);clean=replaceBareFlows(clean,flows);clean=clean.split('\n').map(line=>{line=/^\s*(#{1,6}\s|---\s*$)/.test(line)?line.trimStart():line;return /^#{4,6}\s/.test(line)?line.replace(/^#{4,6}/,'###'):line}).join('\n');let html=original(clean).replace(/<p>---<\/p>/g,'<hr>');flows.forEach((raw,i)=>{let rendered;try{rendered=flowTable(parseLoose(raw))}catch(_){rendered='<p class="mathviz-error">Bảng tổ chức thực hiện chưa đúng cấu trúc. Vui lòng bấm soạn lại.</p>'}html=html.replace(`<p>@@LESSONFLOW_${i}@@</p>`,rendered)});return html};
+  const nativeFetch=window.fetch.bind(window);
+  // Giới hạn 90s/lần gọi (thay vì 240s): app.js hiện thử tối đa 3 mô hình dự phòng tuần tự,
+  // nên với timeout cũ thời gian chờ tối đa lý thuyết là 12 phút — quá lâu với người dùng phổ thông.
+  // 90s vẫn đủ rộng rãi cho việc đọc tài liệu đính kèm của một lượt gọi.
+  window.fetch=function(url,options={}){if(!String(url).includes(':generateContent'))return nativeFetch(url,options);const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),90000);return nativeFetch(url,{...options,signal:controller.signal}).catch(err=>{if(err.name==='AbortError')throw new Error('AI phản hồi quá lâu. Vui lòng thử lại hoặc chọn mô hình khác.');throw err}).finally(()=>clearTimeout(timer))};
+})();
