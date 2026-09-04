@@ -158,7 +158,54 @@ function buildVariationSVG(spec){
   svg+='</svg>';
   return svg;
 }
-function renderMathViz(){document.querySelectorAll('.mathviz').forEach(el=>{try{const s=JSON.parse(decodeURIComponent(el.dataset.spec));if(s.type==='graph'){const W=760,H=390,p=38,x0=+s.xMin||-5,x1=+s.xMax||5,y0=+s.yMin||-5,y1=+s.yMax||5,X=x=>p+(x-x0)/(x1-x0)*(W-2*p),Y=y=>H-p-(y-y0)/(y1-y0)*(H-2*p);let svg=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(s.title||'Đồ thị hàm số')}"><defs><clipPath id="plotClip"><rect x="${p}" y="${p}" width="${W-2*p}" height="${H-2*p}"/></clipPath></defs><rect x="${p}" y="${p}" width="${W-2*p}" height="${H-2*p}" class="plot-bg"/>`;for(let k=Math.ceil(x0);k<=Math.floor(x1);k++)svg+=`<line x1="${X(k)}" y1="${p}" x2="${X(k)}" y2="${H-p}" class="grid-line"/>`;for(let k=Math.ceil(y0);k<=Math.floor(y1);k++)svg+=`<line x1="${p}" y1="${Y(k)}" x2="${W-p}" y2="${Y(k)}" class="grid-line"/>`;svg+=`<line x1="${p}" y1="${Y(0)}" x2="${W-p}" y2="${Y(0)}" class="axis"/><line x1="${X(0)}" y1="${p}" x2="${X(0)}" y2="${H-p}" class="axis"/>`;for(const fn of s.functions||[]){const f=compileExpr(fn.expr);let d='',pen=false;for(let i=0;i<=700;i++){const x=x0+(x1-x0)*i/700,y=f(x),ok=Number.isFinite(y)&&y>=y0-(y1-y0)&&y<=y1+(y1-y0);if(ok){d+=(pen?'L':'M')+X(x).toFixed(2)+' '+Y(y).toFixed(2);pen=true}else pen=false}svg+=`<path d="${d}" stroke="${esc(fn.color||'#176fa8')}" class="plot-path" clip-path="url(#plotClip)"/>`}el.innerHTML=`<div class="mathviz-title">${esc(s.title||'Đồ thị')}</div>${svg}</svg><div class="mathviz-legend">${(s.functions||[]).map(f=>`<span style="--c:${esc(f.color||'#176fa8')}">$${esc(f.label||f.expr)}$</span>`).join('')}</div>`}else if(s.type==='variation'&&Array.isArray(s.points)){const svg=buildVariationSVG(s);if(!svg)throw new Error('variation schema không hợp lệ');el.innerHTML=`<div class="mathviz-title">${esc(s.title||'Bảng biến thiên')}</div><div class="mathviz-scroll vt-scroll">${svg}</div>`}else{const cols=s.columns||[],rows=s.rows||[];el.innerHTML=`<div class="mathviz-title">${esc(s.title|| (s.type==='sign'?'Bảng xét dấu':'Bảng biến thiên'))}</div><div class="mathviz-scroll"><table class="variation-table"><thead><tr>${cols.map(c=>`<th>${wrapMathCell(c)}</th>`).join('')}</tr></thead><tbody>${rows.map(r=>`<tr><th>${wrapMathCell(r.label)}</th>${(r.cells||[]).map(c=>`<td class="variation-cell">${wrapMathCell(c)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`}}catch(e){el.innerHTML='<p class="mathviz-error">Không dựng được hình toán học này. Vui lòng tạo lại nội dung.</p>'}})}
+
+/* Tách riêng bộ vẽ đồ thị (trước đây nằm lọt trong renderMathViz) để docx-export.js dùng lại
+   được khi xuất Word, thay vì phải chép lại toàn bộ mã vẽ. Nhân tiện sửa ba lỗi:
+   1) id="plotClip" bị đặt cứng: hai đồ thị trở lên trong cùng một bài dùng chung một id,
+      trình duyệt lấy id đầu tiên nên đồ thị sau bị cắt sai vùng.
+   2) `+s.xMin||-5` trả về -5 khi xMin đúng bằng 0, vì 0 là giá trị falsy — mọi đồ thị khai
+      báo xMin:0 hoặc yMin:0 đều bị vẽ sai miền. Dùng ?? và kiểm tra hữu hạn.
+   3) Trục toạ độ không có số nào, giáo viên không đọc được giá trị. Nay có vạch chia.
+   opt.standalone = true: nhúng kèm xmlns và CSS để SVG tự đứng một mình (dùng để đổi ra ảnh PNG). */
+let GRAPH_UID=0;
+const GRAPH_CSS='.plot-bg{fill:#fff;stroke:#b7c9d4}.grid-line{stroke:#dfe9ee;stroke-width:1}'
+  +'.axis{stroke:#263d4c;stroke-width:1.7}.plot-path{fill:none;stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round}'
+  +'.tick{font:11px Arial,sans-serif;fill:#40566b}';
+function buildGraphSVG(s,opt){
+  opt=opt||{};
+  const num=(v,d)=>{const n=Number(v);return Number.isFinite(n)?n:d};
+  const W=760,H=390,p=38;
+  let x0=num(s.xMin,-5),x1=num(s.xMax,5),y0=num(s.yMin,-5),y1=num(s.yMax,5);
+  if(x1<=x0){x0=-5;x1=5}
+  if(y1<=y0){y0=-5;y1=5}
+  const X=x=>p+(x-x0)/(x1-x0)*(W-2*p),Y=y=>H-p-(y-y0)/(y1-y0)*(H-2*p);
+  const uid='plotClip'+(++GRAPH_UID);
+  const step=r=>{const raw=(r)/10,pow=Math.pow(10,Math.floor(Math.log10(raw)||0));const m=raw/pow;return (m<1.5?1:m<3.5?2:m<7.5?5:10)*pow};
+  const sx=step(x1-x0),sy=step(y1-y0);
+  let svg=`<svg ${opt.standalone?'xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" '.replace('${W}',W).replace('${H}',H):''}viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(s.title||'Đồ thị hàm số')}">`;
+  if(opt.standalone)svg+=`<style>${GRAPH_CSS}</style><rect width="${W}" height="${H}" fill="#ffffff"/>`;
+  svg+=`<defs><clipPath id="${uid}"><rect x="${p}" y="${p}" width="${W-2*p}" height="${H-2*p}"/></clipPath></defs>`;
+  svg+=`<rect x="${p}" y="${p}" width="${W-2*p}" height="${H-2*p}" class="plot-bg"/>`;
+  for(let k=Math.ceil(x0/sx)*sx;k<=x1+1e-9;k+=sx)svg+=`<line x1="${X(k).toFixed(2)}" y1="${p}" x2="${X(k).toFixed(2)}" y2="${H-p}" class="grid-line"/>`;
+  for(let k=Math.ceil(y0/sy)*sy;k<=y1+1e-9;k+=sy)svg+=`<line x1="${p}" y1="${Y(k).toFixed(2)}" x2="${W-p}" y2="${Y(k).toFixed(2)}" class="grid-line"/>`;
+  if(y0<=0&&y1>=0)svg+=`<line x1="${p}" y1="${Y(0).toFixed(2)}" x2="${W-p}" y2="${Y(0).toFixed(2)}" class="axis"/>`;
+  if(x0<=0&&x1>=0)svg+=`<line x1="${X(0).toFixed(2)}" y1="${p}" x2="${X(0).toFixed(2)}" y2="${H-p}" class="axis"/>`;
+  const fmtTick=v=>Math.abs(v)<1e-9?'0':(Math.round(v*100)/100).toString();
+  const baseY=(y0<=0&&y1>=0)?Y(0):H-p, baseX=(x0<=0&&x1>=0)?X(0):p;
+  for(let k=Math.ceil(x0/sx)*sx;k<=x1+1e-9;k+=sx){if(Math.abs(k)<1e-9)continue;
+    svg+=`<text x="${X(k).toFixed(2)}" y="${Math.min(H-6,baseY+14).toFixed(2)}" text-anchor="middle" class="tick">${fmtTick(k)}</text>`}
+  for(let k=Math.ceil(y0/sy)*sy;k<=y1+1e-9;k+=sy){if(Math.abs(k)<1e-9)continue;
+    svg+=`<text x="${Math.max(4,baseX-6).toFixed(2)}" y="${(Y(k)+4).toFixed(2)}" text-anchor="end" class="tick">${fmtTick(k)}</text>`}
+  for(const fn of s.functions||[]){
+    let f;try{f=compileExpr(fn.expr)}catch(_){continue}
+    let d='',pen=false;
+    for(let i=0;i<=700;i++){const x=x0+(x1-x0)*i/700,y=f(x),ok=Number.isFinite(y)&&y>=y0-(y1-y0)&&y<=y1+(y1-y0);
+      if(ok){d+=(pen?'L':'M')+X(x).toFixed(2)+' '+Y(y).toFixed(2);pen=true}else pen=false}
+    svg+=`<path d="${d}" stroke="${esc(fn.color||'#176fa8')}" class="plot-path" clip-path="url(#${uid})"/>`}
+  return svg+'</svg>';
+}
+function renderMathViz(){document.querySelectorAll('.mathviz').forEach(el=>{try{const s=JSON.parse(decodeURIComponent(el.dataset.spec));if(s.type==='graph'){el.innerHTML=`<div class="mathviz-title">${esc(s.title||'Đồ thị')}</div>`+buildGraphSVG(s)+`<div class="mathviz-legend">${(s.functions||[]).map(f=>`<span style="--c:${esc(f.color||'#176fa8')}">$${esc(f.label||f.expr)}$</span>`).join('')}</div>`}
+  else if(s.type==='variation'&&Array.isArray(s.points)){const svg=buildVariationSVG(s);if(!svg)throw new Error('variation schema không hợp lệ');el.innerHTML=`<div class="mathviz-title">${esc(s.title||'Bảng biến thiên')}</div><div class="mathviz-scroll vt-scroll">${svg}</div>`}else{const cols=s.columns||[],rows=s.rows||[];el.innerHTML=`<div class="mathviz-title">${esc(s.title|| (s.type==='sign'?'Bảng xét dấu':'Bảng biến thiên'))}</div><div class="mathviz-scroll"><table class="variation-table"><thead><tr>${cols.map(c=>`<th>${wrapMathCell(c)}</th>`).join('')}</tr></thead><tbody>${rows.map(r=>`<tr><th>${wrapMathCell(r.label)}</th>${(r.cells||[]).map(c=>`<td class="variation-cell">${wrapMathCell(c)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`}}catch(e){el.innerHTML='<p class="mathviz-error">Không dựng được hình toán học này. Vui lòng tạo lại nội dung.</p>'}})}
 function balancedFences(s){return (String(s).match(/```/g)||[]).length%2===0}
 function parseLessonFlows(md){const out=[];String(md).replace(/```(?:lessonflow|json)?\s*([\s\S]*?)```/gi,(_,raw)=>{if(/['"]type['"]\s*:\s*['"]lessonflow['"]/i.test(raw)){try{out.push(JSON.parse(raw.replace(/\\(?!["\\/bfnrtu])/g,'\\\\')))}catch(e){out.push({__error:e.message})}}return _});return out}
 function allowedNLSTokens(grade){const b=nlsLevelForGrade(grade??$('grade').value);return new Set((buildNLSText([b]).match(new RegExp(`\\b\\d\\.\\d-B${b}[a-h]\\b`,'g'))||[]))}
