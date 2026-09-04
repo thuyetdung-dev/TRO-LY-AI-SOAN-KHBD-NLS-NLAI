@@ -459,9 +459,16 @@
     return arr.map(t => para(run('• ') + runsFrom(t, opt), { indent: 170, hanging: 170, spaceAfter: 20 })).join('');
   };
 
+  /* Vá dấu gạch chéo TRƯỚC khi đọc, cùng một cách với app.js và flow.js — nếu ba nơi hiểu
+     khác nhau thì màn hình một đằng, tệp Word một nẻo. */
+  const fixEscapes = typeof repairJsonEscapes === 'function'
+    ? repairJsonEscapes
+    : raw => String(raw).replace(/\\(u[0-9a-fA-F]{4}|[a-zA-Z]+|[\s\S])/g, (m, g) =>
+        (/^u[0-9a-fA-F]{4}$/.test(g) || g === '"' || g === '\\' || g === '/' || /^[bfnrt]$/.test(g))
+          ? m : '\\' + m);
   function parseLoose(raw) {
-    try { return JSON.parse(raw); }
-    catch (_) { return JSON.parse(raw.replace(/\\(?!["\\/bfnrtu])/g, '\\\\')); }
+    try { return JSON.parse(fixEscapes(raw)); }
+    catch (_) { return JSON.parse(raw); }
   }
 
   function flowTableXml(spec) {
