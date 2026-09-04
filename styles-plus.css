@@ -1,0 +1,88 @@
+/* styles-plus.css — bổ sung cho styles.css, đặt SAU nó trong index.html.
+ * Không sửa gì trong styles.css để bạn dễ đối chiếu và gỡ bỏ nếu cần. */
+
+/* ---------- 1. Hiển thị vị trí bàn phím ----------
+ * styles.css không định nghĩa trạng thái focus cho bất kỳ nút nào, lại còn đặt
+ * outline:none cho ô nhập. Người dùng bàn phím Tab qua giao diện mà không biết
+ * mình đang đứng ở đâu — đây là lỗi tiếp cận nặng nhất của bản hiện tại. */
+.primary:focus-visible, .secondary:focus-visible, .mini-btn:focus-visible,
+.icon-btn:focus-visible, .text-btn:focus-visible, .drop-zone:focus-visible,
+.file-chip button:focus-visible, summary:focus-visible, .key-steps a:focus-visible,
+.dialog-close:focus-visible, .version-item button:focus-visible {
+  outline: 3px solid var(--cyan);
+  outline-offset: 2px;
+  border-radius: 8px;
+}
+input:focus-visible, select:focus-visible, textarea:focus-visible {
+  outline: 2px solid var(--blue); outline-offset: 1px;
+}
+.dark .primary:focus-visible, .dark .secondary:focus-visible, .dark .mini-btn:focus-visible,
+.dark .icon-btn:focus-visible, .dark .text-btn:focus-visible, .dark .drop-zone:focus-visible,
+.dark summary:focus-visible { outline-color: #7fd6e4; }
+
+.skip-link {
+  position: absolute; left: -9999px; top: 0; z-index: 99;
+  background: var(--navy); color: #fff; padding: 11px 16px;
+  border-radius: 0 0 9px 0; font-weight: 650; text-decoration: none;
+}
+.skip-link:focus { left: 0; }
+
+/* ---------- 2. Tôn trọng tuỳ chọn giảm chuyển động ---------- */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+  }
+  .primary:hover { transform: none; }
+}
+
+/* ---------- 3. Vá chế độ tối ----------
+ * Các khối này dùng màu cố định nên vẫn nền sáng chói giữa giao diện tối. */
+.dark .validation-report.ok    { background: #10302a; border-color: #2f6f5e; color: #9fe0cb; }
+.dark .validation-report.warn  { background: #33280f; border-color: #7a6222; color: #f0d79a; }
+.dark .validation-report.block { background: #351a1d; border-color: #7d3b42; color: #f3b0b6; }
+.dark .draft-notice    { background: #2c2410; border-left-color: #c9962b; color: #eedcae; }
+.dark .privacy-confirm { background: #2c2410; border-color: #6d5a24; }
+.dark .privacy-warning { color: #e0c489; }
+.dark .toast           { background: #1d3648; border: 1px solid var(--line); }
+.dark .document blockquote { background: #12313a; }
+.dark .document code   { background: #1b3040; }
+.dark .mathviz-error   { color: #f3a3aa; }
+.dark .history-dialog  { background: var(--paper); color: var(--ink); }
+.dark .version-item    { background: var(--soft); border-color: var(--line); }
+
+/* ---------- 4. Vùng chạm trên điện thoại ---------- */
+@media (pointer: coarse) {
+  .icon-btn { width: 44px; height: 44px; }
+  .mini-btn { min-height: 44px; }
+  .file-chip button { min-width: 34px; min-height: 34px; }
+}
+
+/* ---------- 5. Đang sửa tay & cảnh báo lệch bản DOCX ----------
+ * styles.css chưa có quy tắc nào cho .editing dù professional.js gán lớp này. */
+.document.editing {
+  outline: 2px dashed var(--cyan);
+  outline-offset: -6px;
+  background: #fcfeff;
+}
+.dark .document.editing { background: #10202c; }
+.document.edited-by-hand::before {
+  content: "Đã sửa tay — bản DOCX dựng từ nội dung AI gốc, hãy lưu phiên bản trước khi xuất.";
+  display: block; margin-bottom: 14px; padding: 9px 12px;
+  border-left: 4px solid #d19a25; background: #fff8e8; color: #684c12;
+  font-family: Inter, "Segoe UI", sans-serif; font-size: .82rem;
+}
+.dark .document.edited-by-hand::before { background: #2c2410; color: #eedcae; }
+
+/* ---------- 6. In ấn ----------
+ * Báo cáo kiểm định là ghi chú kỹ thuật cho giáo viên, không thuộc kế hoạch bài
+ * dạy nộp lên — ẩn khi in. Dòng lưu ý bản dự thảo thì giữ. */
+@media print {
+  .validation-report, .skip-link { display: none !important; }
+  .document.edited-by-hand::before { display: none; }
+  .draft-notice { background: #fff; border-left-color: #666; color: #000; }
+  .document h1, .document h2, .document h3 { break-after: avoid; page-break-after: avoid; }
+  .flow-wrap { overflow: visible !important; }
+  .lesson-flow { min-width: 0 !important; }
+}
