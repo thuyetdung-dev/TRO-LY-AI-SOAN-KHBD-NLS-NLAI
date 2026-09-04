@@ -2,7 +2,13 @@
   const original=window.mdToHtml;
   if(typeof original!=='function')return;
   const h=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-  const fmt=s=>h(s).replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>').replace(/\$([^$]+)\$/g,'<span class="math">\\($1\\)</span>');
+  // Trước khi format, chuẩn hoá MỌI kiểu xuống dòng có thể gặp trong 1 phần tử mảng JSON:
+  // (a) xuống dòng thật (\u000A) — model đôi khi nhét nhiều ý vào một string thay vì tách mảng;
+  // (b) chuỗi 2 ký tự "\"+"n" còn sót lại do model tự escape kép (viết \\n trong JSON thay vì \n),
+  //     khiến JSON.parse trả về đúng 2 ký tự "\n" hiển thị chứ không phải một dòng mới thật.
+  // Cả hai đều phải quy về <br> để không lộ ký tự thô ra bảng.
+  const normalizeBreaks=s=>String(s??'').replace(/\r\n|\r|\n/g,'\u0000BR\u0000').replace(/\\n/g,'\u0000BR\u0000');
+  const fmt=s=>h(normalizeBreaks(s)).replace(/\u0000BR\u0000/g,'<br>').replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>').replace(/\$([^$]+)\$/g,'<span class="math">\\($1\\)</span>');
   const list=items=>`<ul>${(Array.isArray(items)?items:[items]).filter(Boolean).map(x=>`<li>${fmt(x)}</li>`).join('')}</ul>`;
   function parseLoose(raw){try{return JSON.parse(raw)}catch(_){return JSON.parse(raw.replace(/\\(?!["\\/bfnrtu])/g,'\\\\'))}}
   function flowTable(spec){const rows=Array.isArray(spec.rows)?spec.rows:[];return `<div class="flow-wrap"><table class="lesson-flow"><thead><tr><th>HĐ CỦA GV VÀ HS</th><th>SẢN PHẨM DỰ KIẾN</th><th>NLS/NLAI</th></tr></thead><tbody>${rows.map(r=>`<tr><td><strong class="flow-step">${fmt(r.step)}</strong>${list(r.teacherStudent)}</td><td>${list(r.product)}</td><td>${list(r.competency?.length?r.competency:['—'])}</td></tr>`).join('')}</tbody></table></div>`}
