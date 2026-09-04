@@ -39,9 +39,19 @@
     return arr.length ? `<ul>${arr.map(x => `<li>${fmt(x)}</li>`).join('')}</ul>` : '';
   };
 
+  /* PHẢI VÁ TRƯỚC RỒI MỚI ĐỌC. Bản cũ thử JSON.parse(raw) trước và chỉ vá khi ném lỗi —
+     nhưng đúng những lệnh LaTeX hay dùng nhất lại KHÔNG làm JSON.parse ném lỗi: "\f" "\b"
+     "\n" "\r" "\t" là ký tự thoát hợp lệ, nên "$\frac{a}{b}$" đọc THÀNH CÔNG mà nội dung
+     biến thành ký tự xuống trang + "rac{a}{b}". Công thức mất sạch, không một lời báo lỗi.
+     Vá trước thì cả hai trường hợp đều đúng. */
+  const fixEscapes = typeof repairJsonEscapes === 'function'
+    ? repairJsonEscapes
+    : raw => String(raw).replace(/\\(u[0-9a-fA-F]{4}|[a-zA-Z]+|[\s\S])/g, (m, g) =>
+        (/^u[0-9a-fA-F]{4}$/.test(g) || g === '"' || g === '\\' || g === '/' || /^[bfnrt]$/.test(g))
+          ? m : '\\' + m);
   function parseLoose(raw) {
-    try { return JSON.parse(raw); }
-    catch (_) { return JSON.parse(raw.replace(/\\(?!["\\/bfnrtu])/g, '\\\\')); }
+    try { return JSON.parse(fixEscapes(raw)); }
+    catch (_) { return JSON.parse(raw); }
   }
 
   const duration = r => r.duration ? `<span class="flow-duration">${h(r.duration)} phút</span>` : '';
@@ -120,7 +130,17 @@
       if (start < 0) { pos = marker + 10; continue; }
       const end = findObjectEnd(text, start);
       if (end < 0) { pos = marker + 10; continue; }
-      const token = addFlow(text.slice(start, end), flows);
+      const chunk = text.slice(start, end);
+      let token = addFlow(chunk, flows);
+      /* Khối JSON trần mang nhãn lessonflow nhưng đọc không được: bản cũ để nguyên, nên cả
+         đoạn mã thô đổ thẳng vào giữa bản kế hoạch (giáo viên nhìn thấy {"type":"lessonflow"...).
+         Thay bằng một ô báo lỗi gọn để biết mà bấm soạn lại. */
+      if (!token && /['"]type['"]\s*:\s*['"]lessonflow['"]/i.test(chunk)) {
+        token = `\n@@LESSONFLOW_${flows.push(null) - 1}@@\n`;
+        text = text.slice(0, start) + token + text.slice(end);
+        pos = start + token.length;
+        continue;
+      }
       if (!token) {
         /* CHỐT CHẶN: nếu vì lý do nào đó "end" không nằm sau vị trí đang xét, con trỏ sẽ
            đứng yên và vòng lặp chạy mãi — trình duyệt đơ, giáo viên phải tắt tab. Luôn ép
