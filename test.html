@@ -220,6 +220,43 @@ async function runAll(){
     return h.indexOf('GV nói')>=0||'Mất nội dung ô';
   });
 
+  await T('Lệnh LaTeX trong JSON không bị hiểu nhầm là ký tự thoát',function(){
+    var hong=[];
+    ['frac','forall','times','neq','beta','theta','bar','rightarrow','underline','right','begin','ne','nabla']
+      .forEach(function(c){
+        var raw='{"type":"lessonflow","rows":[{"step":"B","teacherActions":["a"],"studentActions":["b"],'
+          +'"product":["SP1: $\\'+c+' x$"],"assessment":["TC1"],"competency":[]}]}';
+        var h=mdToHtml('```lessonflow\n'+raw+'\n```');
+        // Phai dung duoc bang, va noi dung phai con nguyen lenh, khong lot ky tu dieu khien
+        if(h.indexOf('lesson-flow')<0||h.indexOf(c)<0||/[\u0000-\u0008\u000b\u000c\u000e-\u001f]/.test(h))hong.push('\\'+c);
+      });
+    return hong.length===0||'Hỏng với: '+hong.join(', ')
+      +'\n(trong JSON, \\f \\b \\n \\r \\t là ký tự thoát hợp lệ nên phải vá TRƯỚC khi đọc, không phải sau khi lỗi)';
+  });
+
+  await T('JSON trần (không có dấu ```) vẫn dựng thành bảng',function(){
+    var raw='{"type":"lessonflow","rows":[{"step":"Bước 1","duration":10,"teacherActions":["GV giao"],'
+      +'"studentActions":["HS làm"],"product":["SP1: $\\frac{a}{b}$"],"assessment":["TC1"],"competency":[]}]}';
+    var h=mdToHtml('d) Tổ chức thực hiện:\n\n'+raw+'\n\nTIẾT 2:');
+    if(h.indexOf('"type":"lessonflow"')>=0||h.indexOf('&quot;type&quot;')>=0)return 'Mã JSON thô bị đổ thẳng vào bản kế hoạch';
+    return h.indexOf('lesson-flow')>=0||'Không dựng được bảng';
+  });
+
+  await T('Bộ kiểm định thấy được JSON trần (không báo oan 0 bảng)',function(){
+    var raw=flowJson(4,11);
+    var md=BASE+'\nd) Tổ chức thực hiện:\n\n'+raw+'\n\n'+DIEUCHINH;
+    var r=validatePlan(md,V,true);
+    if(r.blockers.some(function(x){return x.indexOf('Không tìm thấy bảng lessonflow')>=0}))
+      return 'Vẫn báo không tìm thấy bảng dù bài có đủ — màn hình và bộ kiểm định nhìn thấy hai thứ khác nhau';
+    return !r.blockers.some(function(x){return x.indexOf('Tổng thời lượng các bước là 0')>=0})||'Cộng thời lượng ra 0 phút';
+  });
+
+  await T('Giới hạn tệp đã nâng lên 30 MB nhờ Files API',function(){
+    if(typeof MAX_FILE_MB==='undefined')return 'Không tìm thấy MAX_FILE_MB';
+    if(typeof uploadToFilesApi!=='function')return 'Chưa có hàm tải tệp lên Files API';
+    return MAX_FILE_MB>=30||'Mới ở mức '+MAX_FILE_MB+' MB';
+  });
+
   await T('Bảng 3 cột dựng được khi chọn mẫu 3 cột',function(){
     document.getElementById('tableLayout').value='3';
     var h=mdToHtml('```lessonflow\n'+flowJson(4,11)+'\n```');
@@ -321,9 +358,9 @@ async function runAll(){
 
   /* ===== D. Giới hạn tài liệu ===== */
   group('D · Giới hạn tài liệu gửi Gemini');
-  await T('Trần dung lượng nằm trong giới hạn ~20 MB của Gemini',function(){
+  await T('Ngưỡng gửi kèm trực tiếp nằm trong giới hạn ~20 MB của Gemini',function(){
     if(typeof MAX_TOTAL_MB==='undefined')return 'Không tìm thấy MAX_TOTAL_MB trong app.js';
-    return (MAX_TOTAL_MB<=15&&MAX_FILE_MB<=15)||'Trần '+MAX_TOTAL_MB+' MB quá cao: base64 làm phình 4/3 nên yêu cầu sẽ bị Google từ chối';
+    return (INLINE_LIMIT_MB<=15)||'Ngưỡng gửi kèm trực tiếp '+INLINE_LIMIT_MB+' MB quá cao: base64 làm phình 4/3 nên yêu cầu sẽ bị Google từ chối';
   });
 
   /* ===== E. Đồ thị hàm số ===== */
