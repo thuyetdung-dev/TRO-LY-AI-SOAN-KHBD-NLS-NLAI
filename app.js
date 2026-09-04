@@ -26,13 +26,72 @@ const dz=$('dropZone');['dragenter','dragover'].forEach(e=>dz.addEventListener(e
 /* Gemini giới hạn khoảng 20 MB cho toàn bộ một yêu cầu gửi kèm dữ liệu nội tuyến, mà mã hóa
    base64 làm dữ liệu phình thêm 1/3. Trần 40 MB của bản cũ vượt xa giới hạn đó: giáo viên
    chọn đủ 40 MB thì yêu cầu luôn bị Google từ chối, kèm thông báo lỗi khó hiểu. */
-const MAX_FILE_MB=12,MAX_TOTAL_MB=12;
-function addFiles(list){for(const f of list){if(f.size>MAX_FILE_MB*1024*1024){toast(`${f.name}: vượt ${MAX_FILE_MB} MB`);continue}const total=selectedFiles.reduce((s,x)=>s+x.size,0);if(total+f.size>MAX_TOTAL_MB*1024*1024){toast(`Tổng dung lượng tài liệu không được vượt ${MAX_TOTAL_MB} MB (giới hạn của Gemini)`);break}if(!selectedFiles.some(x=>x.name===f.name&&x.size===f.size))selectedFiles.push(f)}renderFiles()}
+/* Giới hạn 12 MB trước đây là do gửi tài liệu kèm thẳng trong thân yêu cầu (inline): Gemini
+   chỉ nhận khoảng 20 MB cho cả yêu cầu, mà mã hoá base64 làm dữ liệu phình thêm 1/3.
+   Nay dùng thêm Files API của Gemini: tệp được TẢI LÊN TRƯỚC, yêu cầu soạn bài chỉ gửi kèm
+   đường dẫn, nên giới hạn 20 MB kia không còn áp dụng. Tệp nhỏ vẫn gửi inline cho nhanh
+   (đỡ một vòng gọi mạng); tệp lớn tự chuyển sang Files API. */
+const MAX_FILE_MB=30,MAX_TOTAL_MB=60,INLINE_LIMIT_MB=8;
+function addFiles(list){for(const f of list){if(f.size>MAX_FILE_MB*1024*1024){toast(`${f.name}: vượt ${MAX_FILE_MB} MB`);continue}const total=selectedFiles.reduce((s,x)=>s+x.size,0);if(total+f.size>MAX_TOTAL_MB*1024*1024){toast(`Tổng dung lượng tài liệu không được vượt ${MAX_TOTAL_MB} MB`);break}if(!selectedFiles.some(x=>x.name===f.name&&x.size===f.size))selectedFiles.push(f)}renderFiles()}
 function renderFiles(){$('fileList').innerHTML=selectedFiles.map((f,i)=>`<div class="file-chip"><b>${esc(f.name)}</b><span>${(f.size/1048576).toFixed(1)} MB</span><button type="button" data-i="${i}" aria-label="Bỏ tệp">×</button></div>`).join('');$('fileList').querySelectorAll('button').forEach(b=>b.onclick=()=>{selectedFiles.splice(+b.dataset.i,1);renderFiles()})}
 function values(){return Object.fromEntries(fields.map(k=>[k,$(k).value.trim()]))}
 function setProgress(p,title,text){$('emptyState').hidden=true;$('result').hidden=true;$('progress').hidden=false;$('resultActions').hidden=true;$('progressBar').style.width=p+'%';$('progressTitle').textContent=title;$('progressText').textContent=text}
 function bytesToBase64(buf){let bin='',arr=new Uint8Array(buf),step=0x8000;for(let i=0;i<arr.length;i+=step)bin+=String.fromCharCode(...arr.subarray(i,i+step));return btoa(bin)}
 async function filePart(file){return {inlineData:{mimeType:file.type||mime(file.name),data:bytesToBase64(await file.arrayBuffer())}}}
+
+/* ===== Tải tệp lớn lên Gemini Files API =====
+   Giao thức tải nhiều bước: xin đường dẫn tải lên, đẩy dữ liệu, rồi chờ Google xử lý xong
+   (tệp PDF phải ở trạng thái ACTIVE mới dùng được, nếu gửi lúc còn PROCESSING sẽ báo lỗi). */
+async function uploadToFilesApi(file,key,onProgress){
+  const mimeType=file.type||mime(file.name);
+  const start=await fetch('https://generativelanguage.googleapis.com/upload/v1beta/files',{
+    method:'POST',
+    headers:{'x-goog-api-key':key,'X-Goog-Upload-Protocol':'resumable','X-Goog-Upload-Command':'start',
+      'X-Goog-Upload-Header-Content-Length':String(file.size),
+      'X-Goog-Upload-Header-Content-Type':mimeType,'Content-Type':'application/json'},
+    body:JSON.stringify({file:{display_name:file.name}})});
+  if(!start.ok)throw new Error((await start.json().catch(()=>({})))?.error?.message||`Không xin được đường dẫn tải lên (HTTP ${start.status})`);
+  const uploadUrl=start.headers.get('x-goog-upload-url')||start.headers.get('X-Goog-Upload-URL');
+  /* Trình duyệt chỉ đọc được tiêu đề phản hồi khi máy chủ cho phép lộ nó ra. Nếu không đọc
+     được thì không thể tải kiểu này từ trình duyệt — báo rõ để còn quay về cách gửi kèm. */
+  if(!uploadUrl)throw new Error('Trình duyệt không đọc được đường dẫn tải lên do Google trả về');
+  const up=await fetch(uploadUrl,{method:'POST',
+    headers:{'Content-Length':String(file.size),'X-Goog-Upload-Offset':'0','X-Goog-Upload-Command':'upload, finalize'},
+    body:file});
+  if(!up.ok)throw new Error(`Tải tệp lên thất bại (HTTP ${up.status})`);
+  let info=(await up.json())?.file;
+  if(!info?.uri)throw new Error('Google không trả về đường dẫn tệp');
+  for(let i=0;i<30&&info.state==='PROCESSING';i++){
+    onProgress&&onProgress(`Google đang xử lý ${file.name}...`);
+    await new Promise(r=>setTimeout(r,2000));
+    const st=await fetch(`https://generativelanguage.googleapis.com/v1beta/${info.name}`,{headers:{'x-goog-api-key':key}});
+    info=await st.json();
+  }
+  if(info.state==='FAILED')throw new Error(`Google không đọc được tệp ${file.name}`);
+  return {fileData:{mimeType:info.mimeType||mimeType,fileUri:info.uri}};
+}
+
+/* Chọn cách gửi cho từng tệp. Tải lên thất bại vì bất kỳ lý do gì (kể cả trình duyệt chặn
+   đọc tiêu đề) thì vẫn quay về gửi kèm trực tiếp nếu tệp đủ nhỏ, để không mất luôn tài liệu. */
+async function buildFileParts(key){
+  const parts=[];
+  for(const f of selectedFiles){
+    setProgress(25,'Đang đọc tài liệu...',f.name);
+    const big=f.size>INLINE_LIMIT_MB*1024*1024;
+    if(big){
+      try{
+        setProgress(25,'Đang tải tài liệu lên Google...',`${f.name} (${(f.size/1048576).toFixed(1)} MB)`);
+        parts.push(await uploadToFilesApi(f,key,t=>setProgress(28,'Đang tải tài liệu lên Google...',t)));
+        continue;
+      }catch(err){
+        if(f.size>15*1024*1024)throw new Error(`Không tải được ${f.name} lên Google (${err.message}). Hãy tách nhỏ tệp dưới 15 MB rồi thử lại.`);
+        toast(`Không tải lên được ${f.name}, chuyển sang gửi kèm trực tiếp`);
+      }
+    }
+    parts.push(await filePart(f));
+  }
+  return parts;
+}
 function mime(n){const e=n.split('.').pop().toLowerCase();return {pdf:'application/pdf',png:'image/png',jpg:'image/jpeg',jpeg:'image/jpeg',txt:'text/plain',doc:'application/msword',docx:'application/vnd.openxmlformats-officedocument.wordprocessingml.document'}[e]||'application/octet-stream'}
 // Phạm vi sản phẩm: lớp 6–12. NLAI hiện chỉ có bảng chuẩn được nhúng cho lớp 10–12.
 function clampGrade(g){const n=parseInt(g,10);return Number.isFinite(n)?Math.min(12,Math.max(6,n)):12}
@@ -74,7 +133,7 @@ YÊU CẦU BẮT BUỘC:
 1) Ghi rõ căn cứ xác định số tiết; nếu nguồn thiếu thì ghi “đề xuất” và không bịa trang sách.
 2) Bám sát ĐÚNG khung dưới đây — không tự đổi tên đề mục, không bỏ mục nào, không gộp mục. Bốn kiểu hoạt động (Khởi động, Hình thành kiến thức mới, Luyện tập, Vận dụng) là bắt buộc; riêng số lượng "Hoạt động 1, 2, 3..." bên trong mục Hình thành kiến thức mới do nội dung bài quyết định. Mọi hoạt động đều phải có đủ bốn phần a) Mục tiêu, b) Nội dung, c) Sản phẩm, d) Tổ chức thực hiện. Tiến trình phải CHIA THEO TỪNG TIẾT bằng các dòng "TIẾT 1: ...", "TIẾT 2: ..." cho đủ số tiết được giao:
 ${KHBD_TEMPLATE_5512}
-3) Mục d) Tổ chức thực hiện của các "Hoạt động 1, 2, 3..." thuộc phần HÌNH THÀNH KIẾN THỨC MỚI phải xuất một khối mã lessonflow chứa JSON hợp lệ, đúng 4 rows, tuyệt đối không dùng bảng Markdown. Riêng HOẠT ĐỘNG KHỞI ĐỘNG, HOẠT ĐỘNG LUYỆN TẬP và HOẠT ĐỘNG VẬN DỤNG thì viết bốn bước theo văn xuôi, mỗi bước là một đề mục in đậm, KHÔNG dùng lessonflow — đúng như giáo án mẫu của tổ chuyên môn. Mỗi row dùng schema: {"step":"Bước 1: Chuyển giao nhiệm vụ","duration":3,"goalIds":["MT1"],"teacherActions":["GV ..."],"studentActions":["HS ..."],"product":["<VIẾT RA nội dung kiến thức hoặc lời giải đầy đủ>"],"assessment":["TC1: tiêu chí và cách thu thập minh chứng"],"competency":["Mã: hành vi quan sát được"],"sourceTag":"Theo nguồn: tên tệp/mục; hoặc AI đề xuất"}. Tên bốn bước phải đúng nguyên văn: "Bước 1: Chuyển giao nhiệm vụ", "Bước 2: Thực hiện nhiệm vụ", "Bước 3: Báo cáo, thảo luận", "Bước 4: Kết luận, nhận định". TRƯỜNG "product" LÀ CHỖ QUAN TRỌNG NHẤT CỦA CẢ BẢN KẾ HOẠCH: nó phải chứa nội dung kiến thức viết ra thành chữ — định nghĩa nguyên văn, định lí, kết luận, chú ý, và lời giải chi tiết từng bước của mọi hoạt động/ví dụ/luyện tập được nhắc tới. Viết "SP1: Kết luận về tính đơn điệu" là SAI; phải viết hẳn: "SP1: Cho hàm số $y=f(x)$ có đạo hàm trên khoảng $K$. Nếu $f'(x)>0$ với mọi $x \\in K$ thì hàm số đồng biến trên $K$; nếu $f'(x)<0$ với mọi $x \\in K$ thì hàm số nghịch biến trên $K$." Phần tử product của bước 3 và bước 4 thường dài vài câu trở lên. Giáo viên phải cầm bản in này lên lớp dạy được ngay mà không cần mở lại sách. Khối đầy đủ có dạng {"type":"lessonflow","rows":[...]}. duration là số phút nguyên dương; goalIds chỉ được dùng mã mục tiêu đã khai báo; sản phẩm phải có mã SP; tiêu chí phải có mã TC. Mỗi công thức trong JSON đặt giữa $...$ và gạch chéo ngược LaTeX viết thành hai gạch chéo ngược để JSON hợp lệ.
+3) Mục d) Tổ chức thực hiện của các "Hoạt động 1, 2, 3..." thuộc phần HÌNH THÀNH KIẾN THỨC MỚI phải xuất một khối mã lessonflow chứa JSON hợp lệ, đúng 4 rows, tuyệt đối không dùng bảng Markdown. Riêng HOẠT ĐỘNG KHỞI ĐỘNG, HOẠT ĐỘNG LUYỆN TẬP và HOẠT ĐỘNG VẬN DỤNG thì viết bốn bước theo văn xuôi, mỗi bước là một đề mục in đậm, KHÔNG dùng lessonflow — đúng như giáo án mẫu của tổ chuyên môn. Mỗi row dùng schema: {"step":"Bước 1: Chuyển giao nhiệm vụ","duration":3,"goalIds":["MT1"],"teacherActions":["GV ..."],"studentActions":["HS ..."],"product":["SP1: <VIẾT RA nội dung kiến thức hoặc lời giải đầy đủ>"],"assessment":["TC1: tiêu chí và cách thu thập minh chứng"],"competency":["Mã: hành vi quan sát được"],"sourceTag":"Theo nguồn: <tên tệp và mục cụ thể>" hoặc "AI đề xuất"} (nhãn phải bắt đầu đúng bằng chữ "Theo nguồn:" hoặc "AI đề xuất"). Tên bốn bước phải đúng nguyên văn: "Bước 1: Chuyển giao nhiệm vụ", "Bước 2: Thực hiện nhiệm vụ", "Bước 3: Báo cáo, thảo luận", "Bước 4: Kết luận, nhận định". TRƯỜNG "product" LÀ CHỖ QUAN TRỌNG NHẤT CỦA CẢ BẢN KẾ HOẠCH: nó phải chứa nội dung kiến thức viết ra thành chữ — định nghĩa nguyên văn, định lí, kết luận, chú ý, và lời giải chi tiết từng bước của mọi hoạt động/ví dụ/luyện tập được nhắc tới. Mỗi phần tử bắt đầu bằng mã SP1, SP2... rồi mới đến nội dung. Dừng ở "SP1: Kết luận về tính đơn điệu" là SAI; phải viết hẳn: "SP1: Cho hàm số $y=f(x)$ có đạo hàm trên khoảng $K$. Nếu $f'(x)>0$ với mọi $x \\in K$ thì hàm số đồng biến trên $K$; nếu $f'(x)<0$ với mọi $x \\in K$ thì hàm số nghịch biến trên $K$." Phần tử product của bước 3 và bước 4 thường dài vài câu trở lên. Giáo viên phải cầm bản in này lên lớp dạy được ngay mà không cần mở lại sách. Khối đầy đủ có dạng {"type":"lessonflow","rows":[...]}. duration là số phút nguyên dương; goalIds chỉ được dùng mã mục tiêu đã khai báo; sản phẩm phải có mã SP; tiêu chí phải có mã TC. Mỗi công thức trong JSON đặt giữa $...$ và gạch chéo ngược LaTeX viết thành hai gạch chéo ngược để JSON hợp lệ.
 Bảng phải tách rõ việc GV làm và HS làm, thể hiện câu hỏi/nhiệm vụ, cách tổ chức, thời lượng, phân hoá cho ${v.students}, phù hợp ${v.classSize} HS và thiết bị ${v.equipment}. Sản phẩm dự kiến phải đặt song song với từng bước, có nội dung/đáp án/kiến thức chốt cụ thể. assessment phải nêu phương pháp/công cụ, minh chứng và tiêu chí quan sát được. competency chỉ gắn khi có hành vi quan sát được; nếu không phát sinh ghi "—".
 ${buildStandardsBlock(v)}
 4) ${$('includeDigital').checked?'Đề xuất NLS ở Bậc '+nlsLevelForGrade(grade)+' chỉ khi có hành vi số quan sát được; nếu không phù hợp ghi “—”.':'Không tích hợp NLS.'} ${$('includeAI').checked&&grade>=10?'NLAI không bắt buộc ở mọi môn/tiết; chỉ gắn mã đúng lớp '+grade+' khi học sinh thực sự tìm hiểu, sử dụng, kiểm chứng hoặc đánh giá AI; phải đối chiếu kết quả AI và không gắn hình thức.':'Không tích hợp NLAI'+(grade<10?' vì phần mềm chưa có bảng NLAI chuẩn cho lớp này.':'.')}
@@ -89,7 +148,7 @@ ${mathRulesFor(v)}
 12) ĐỘ DÀI: một kế hoạch bài dạy đạt yêu cầu cho ${v.periods||"số tiết đề xuất"} tiết thường dài hàng chục nghìn ký tự vì phải chép đủ kiến thức và lời giải. Không rút gọn, không viết tắt nội dung bằng nhãn, không dùng dấu ba chấm để lược bỏ. Nếu buộc phải chọn giữa ngắn gọn và đầy đủ nội dung dạy học, luôn chọn đầy đủ.
 13) Câu hỏi phải chính xác; tự giải và kiểm tra đáp án hai lần. Không sao chép máy móc giáo án tham khảo; không bịa dữ kiện từ nguồn. Đầu ra bằng Markdown, không mở đầu xã giao, phong cách ${$('style').value}.`}
 const MAX_MODEL_ATTEMPTS=3; // Giới hạn số mô hình thử tuần tự, tránh giáo viên phải chờ hàng chục phút nếu key có nhiều model nhưng đều lỗi.
-async function callGemini(v,key){const parts=[{text:promptFor(v)}];for(const f of selectedFiles){setProgress(25,'Đang đọc tài liệu...',f.name);parts.push(await filePart(f))}if(!availableModels.length)await scanModels(false);const selected=$('model').value,allCandidates=selected!=='auto'?[selected,...availableModels.map(m=>m.name).filter(n=>n!==selected)]:availableModels.map(m=>m.name);if(!allCandidates.length)throw new Error('Không tìm thấy mô hình Gemini đang hoạt động cho API key này');const candidates=allCandidates.slice(0,MAX_MODEL_ATTEMPTS),skipped=allCandidates.length-candidates.length;const errors=[];for(let i=0;i<candidates.length;i++){const fullName=candidates[i],model=fullName.replace(/^models\//,'');setProgress(48+Math.min(i,4)*5,'Đang chọn mô hình AI...',`Đang thử ${model}${i?` (dự phòng ${i}/${candidates.length-1})`:''}`);try{const url=`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`;const res=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':key},body:JSON.stringify({contents:[{role:'user',parts}],generationConfig:{temperature:.25,maxOutputTokens:maxTokensFor(fullName)}})}),data=await res.json();if(!res.ok)throw new Error(data?.error?.message||`Lỗi HTTP ${res.status}`);const candidate=data.candidates?.[0],finish=candidate?.finishReason||'',text=candidate?.content?.parts?.map(x=>x.text||'').join('\n')||'';if(!text)throw new Error('Mô hình không trả về nội dung');
+async function callGemini(v,key){const parts=[{text:promptFor(v)},...(await buildFileParts(key))];if(!availableModels.length)await scanModels(false);const selected=$('model').value,allCandidates=selected!=='auto'?[selected,...availableModels.map(m=>m.name).filter(n=>n!==selected)]:availableModels.map(m=>m.name);if(!allCandidates.length)throw new Error('Không tìm thấy mô hình Gemini đang hoạt động cho API key này');const candidates=allCandidates.slice(0,MAX_MODEL_ATTEMPTS),skipped=allCandidates.length-candidates.length;const errors=[];for(let i=0;i<candidates.length;i++){const fullName=candidates[i],model=fullName.replace(/^models\//,'');setProgress(48+Math.min(i,4)*5,'Đang chọn mô hình AI...',`Đang thử ${model}${i?` (dự phòng ${i}/${candidates.length-1})`:''}`);try{const url=`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`;const res=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':key},body:JSON.stringify({contents:[{role:'user',parts}],generationConfig:{temperature:.25,maxOutputTokens:maxTokensFor(fullName)}})}),data=await res.json();if(!res.ok)throw new Error(data?.error?.message||`Lỗi HTTP ${res.status}`);const candidate=data.candidates?.[0],finish=candidate?.finishReason||'',text=candidate?.content?.parts?.map(x=>x.text||'').join('\n')||'';if(!text)throw new Error('Mô hình không trả về nội dung');
 /* MAX_TOKENS nghĩa là mô hình đã viết hết hạn mức chứ không phải mô hình lỗi — thử mô hình
    dự phòng khác cũng sẽ bị cắt y hệt, chỉ tốn thêm vài phút chờ. Dừng ngay và nói rõ cách xử lý. */
 if(finish==='MAX_TOKENS')throw new Error(`Bài soạn dài hơn hạn mức của ${model} (${maxTokensFor(fullName)} token) nên bị cắt giữa chừng. Hãy giảm số tiết, chọn phong cách “Gọn, dễ triển khai”, hoặc tách bài thành 2 lần soạn.`);
@@ -210,7 +269,54 @@ function buildGraphSVG(s,opt){
 function renderMathViz(){document.querySelectorAll('.mathviz').forEach(el=>{try{const s=JSON.parse(decodeURIComponent(el.dataset.spec));if(s.type==='graph'){el.innerHTML=`<div class="mathviz-title">${esc(s.title||'Đồ thị')}</div>`+buildGraphSVG(s)+`<div class="mathviz-legend">${(s.functions||[]).map(f=>`<span style="--c:${esc(f.color||'#176fa8')}">$${esc(f.label||f.expr)}$</span>`).join('')}</div>`}
   else if(s.type==='variation'&&Array.isArray(s.points)){const svg=buildVariationSVG(s);if(!svg)throw new Error('variation schema không hợp lệ');el.innerHTML=`<div class="mathviz-title">${esc(s.title||'Bảng biến thiên')}</div><div class="mathviz-scroll vt-scroll">${svg}</div>`}else{const cols=s.columns||[],rows=s.rows||[];el.innerHTML=`<div class="mathviz-title">${esc(s.title|| (s.type==='sign'?'Bảng xét dấu':'Bảng biến thiên'))}</div><div class="mathviz-scroll"><table class="variation-table"><thead><tr>${cols.map(c=>`<th>${wrapMathCell(c)}</th>`).join('')}</tr></thead><tbody>${rows.map(r=>`<tr><th>${wrapMathCell(r.label)}</th>${(r.cells||[]).map(c=>`<td class="variation-cell">${wrapMathCell(c)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`}}catch(e){el.innerHTML='<p class="mathviz-error">Không dựng được hình toán học này. Vui lòng tạo lại nội dung.</p>'}})}
 function balancedFences(s){return (String(s).match(/```/g)||[]).length%2===0}
-function parseLessonFlows(md){const out=[];String(md).replace(/```(?:lessonflow|json)?\s*([\s\S]*?)```/gi,(_,raw)=>{if(/['"]type['"]\s*:\s*['"]lessonflow['"]/i.test(raw)){try{out.push(JSON.parse(raw.replace(/\\(?!["\\/bfnrtu])/g,'\\\\')))}catch(e){out.push({__error:e.message})}}return _});return out}
+/* Vá dấu gạch chéo trong JSON do AI sinh ra.
+   VÌ SAO PHẢI VIẾT LẠI: bản cũ dùng /\\(?!["\\/bfnrtu])/ — nghĩa là để nguyên dấu gạch
+   chéo khi ký tự sau nó là b, f, n, r, t, u vì đó là ký tự thoát hợp lệ của JSON.
+   Nhưng đó cũng chính là chữ cái đầu của các lệnh LaTeX hay dùng nhất:
+   \frac \times \to \neq \beta \text \right \forall \bar \underline...
+   Hậu quả: "\frac{1}{2}" bị JSON.parse đổi thành ký tự xuống trang + "rac{1}{2}",
+   công thức mất sạch mà không có thông báo lỗi nào.
+   Cách phân biệt: một ký tự thoát JSON thật chỉ có ĐÚNG MỘT chữ cái (\n rồi hết);
+   còn lệnh LaTeX luôn có từ hai chữ cái trở lên (\to, \frac). */
+function repairJsonEscapes(raw) {
+  return String(raw).replace(/\\(u[0-9a-fA-F]{4}|[a-zA-Z]+|[\s\S])/g, (m, g) => {
+    if (/^u[0-9a-fA-F]{4}$/.test(g)) return m;          // \uXXXX — mã Unicode hợp lệ
+    if (g === '"' || g === '\\' || g === '/') return m;  // ký tự thoát hợp lệ, giữ nguyên
+    if (/^[bfnrt]$/.test(g)) return m;                   // \n \t \r \b \f đứng một mình
+    return '\\' + m;                                     // còn lại là LaTeX, nhân đôi
+  });
+}
+
+/* Quét cả khối có dấu ``` lẫn JSON trần. Bản cũ chỉ đọc khối có dấu ```, nên khi mô hình
+   trả JSON trần (rất hay xảy ra) thì flow.js vẫn dựng được bảng trên màn hình nhưng bộ
+   kiểm định lại báo "Không tìm thấy bảng lessonflow" và "Tổng thời lượng 0 phút" —
+   hai phần của phần mềm nhìn thấy hai thứ khác nhau. */
+function findFlowBlocks(text){
+  const out=[]; text=String(text||'');
+  text.replace(/```(?:lessonflow|json)?\s*([\s\S]*?)```/gi,(_,raw)=>{
+    if(/['"]type['"]\s*:\s*['"]lessonflow['"]/i.test(raw))out.push({raw:raw.trim(),fenced:true});
+    return _;});
+  let pos=0,guard=0;
+  while(guard++<500){
+    const hit=text.slice(pos).search(/["']type["']\s*:\s*["']lessonflow["']/i);
+    if(hit<0)break;
+    const marker=pos+hit;
+    let start=-1,depth=0;
+    for(let i=marker;i>=0;i--){const c=text[i];if(c==='}')depth++;else if(c==='{'){if(!depth){start=i;break}depth--}}
+    if(start<0){pos=marker+10;continue}
+    let end=-1,d=0,inStr=false,q='',esc=false;
+    for(let i=start;i<text.length;i++){const c=text[i];
+      if(inStr){if(esc)esc=false;else if(c==='\\')esc=true;else if(c===q)inStr=false;continue}
+      if(c==='"'||c==="'"){inStr=true;q=c;continue}
+      if(c==='{')d++;else if(c==='}'&&--d===0){end=i+1;break}}
+    if(end<0){pos=marker+10;continue}
+    const raw=text.slice(start,end);
+    if(!out.some(x=>x.raw===raw.trim()))out.push({raw:raw.trim(),fenced:false});
+    pos=Math.max(end,marker+10);
+  }
+  return out;
+}
+function parseLessonFlows(md){return findFlowBlocks(md).map(b=>{try{return JSON.parse(repairJsonEscapes(b.raw))}catch(e){return {__error:e.message}}})}
 function allowedNLSTokens(grade){const b=nlsLevelForGrade(grade??$('grade').value);return new Set((buildNLSText([b]).match(new RegExp(`\\b\\d\\.\\d-B${b}[a-h]\\b`,'g'))||[]))}
 function allowedAITokens(grade){return new Set(((AI_YCCD[String(grade)]||'').match(/\b(?:10|11|12)\.[A-D]\d\.(?:MR)?\d+\b/g)||[]))}
 /* LỖI NẶNG ĐÃ SỬA — bỏ dấu tiếng Việt:
