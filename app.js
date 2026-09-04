@@ -96,10 +96,15 @@ function svgLabel(cx,cy,content,anchor,w,h){w=w||100;h=h||24;const x=anchor==='s
 // points: N mốc x (thường có -∞/+∞ ở 2 đầu). derivative: đúng 2N-3 phần tử, xen kẽ dấu-khoảng/giá trị-tại-điểm.
 // values: N giá trị y tương ứng từng điểm trong "points"; một phần tử có thể là {left,right} để biểu diễn
 // điểm gián đoạn/tiệm cận (vd hàm phân thức) — khi đó vẽ dấu ngắt "‖" và tách 2 nhãn giá trị trái/phải.
+function coerceLen(arr,n,fill){arr=Array.isArray(arr)?arr.slice():[];while(arr.length<n)arr.push(fill);if(arr.length>n)arr.length=n;return arr}
 function buildVariationSVG(spec){
-  const points=spec.points||[],deriv=spec.derivative||[],values=spec.values||[];
+  const points=Array.isArray(spec.points)?spec.points:[];
   const N=points.length;
-  if(N<2||deriv.length!==2*N-3||values.length!==N)return null;
+  if(N<2)return null;
+  // Model đôi khi đếm lệch 1-2 phần tử trong "derivative"/"values" — tự đệm/cắt cho khớp thay vì
+  // bỏ cuộc và báo lỗi ngay, để vẫn dựng được một sơ đồ có ích (có thể thiếu 1 dấu, còn hơn trắng trang).
+  const deriv=coerceLen(spec.derivative,2*N-3,'');
+  const values=coerceLen(spec.values,N,'');
   const W=760,leftLabel=40,rightPad=16,plotW=W-leftLabel-rightPad;
   const xAt=i=>leftLabel+(N===1?0:i*(plotW/(N-1)));
   const bandX=36,bandDeriv=56,bandVal=204,padTop=10,padBot=10;
@@ -109,8 +114,9 @@ function buildVariationSVG(spec){
   for(let i=0;i<N-1;i++){const s=intervalSign(i),d=s==='+'?1:s==='-'?-1:0,nextArrive=departLevel[i]+d;arriveLevel.push(nextArrive);const v=values[i+1];departLevel.push(v&&typeof v==='object'?(v.right==='+∞'?nextArrive+3:v.right==='-∞'?nextArrive-3:nextArrive):nextArrive)}
   const allLv=arriveLevel.concat(departLevel),minL=Math.min(...allLv),maxL=Math.max(...allLv),span=Math.max(1,maxL-minL);
   const yForLevel=lv=>valBotY-26-((lv-minL)/span)*(bandVal-52);
-  const yArrive=i=>{const lbl=String(points[i]);if(lbl==='+∞')return valTopY+16;if(lbl==='-∞')return valBotY-16;return yForLevel(arriveLevel[i])};
-  const yDepart=i=>{const lbl=String(points[i]);if(lbl==='+∞')return valTopY+16;if(lbl==='-∞')return valBotY-16;return yForLevel(departLevel[i])};
+  const valLabel=i=>{const v=values[i];return (v&&typeof v==='object')?null:String(v)};
+  const yArrive=i=>{const v=valLabel(i);if(v==='+∞')return valTopY+16;if(v==='-∞')return valBotY-16;return yForLevel(arriveLevel[i])};
+  const yDepart=i=>{const v=valLabel(i);if(v==='+∞')return valTopY+16;if(v==='-∞')return valBotY-16;return yForLevel(departLevel[i])};
   let svg=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(spec.title||'Bảng biến thiên')}">`;
   svg+=`<rect x="${leftLabel}" y="${yTop}" width="${plotW}" height="${valBotY-yTop}" class="vt-frame" fill="none" stroke="#333" stroke-width="1.2"/>`;
   svg+=`<line x1="${leftLabel}" y1="${derivTopY}" x2="${W-rightPad}" y2="${derivTopY}" class="vt-frame" stroke="#333" stroke-width="1.2"/>`;
