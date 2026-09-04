@@ -432,12 +432,12 @@
   };
 
   function tableXml(rows, widths, opt = {}) {
-    const total = widths.reduce((a, b) => a + b, 0);
-    const grid = widths.map(w => `<w:gridCol w:w="${Math.round(w / total * 9638)}"/>`).join('');
+    const total = widths.reduce((a, b) => a + b, 0), FULL = 9354;
+    const grid = widths.map(w => `<w:gridCol w:w="${Math.round(w / total * FULL)}"/>`).join('');
     const body = rows.map((cells, ri) => {
       const head = ri === 0 && opt.header !== false;
       const tds = cells.map((c, ci) => {
-        const w = Math.round(widths[ci] / total * 9638);
+        const w = Math.round(widths[ci] / total * FULL);
         const shade = head ? '<w:shd w:val="clear" w:fill="D9E2EC"/>' : '';
         const content = Array.isArray(c) ? c.join('') : c;
         return `<w:tc><w:tcPr><w:tcW w:w="${w}" w:type="dxa"/>${shade}<w:vAlign w:val="top"/></w:tcPr>${content || para(run(''))}</w:tc>`;
@@ -445,7 +445,7 @@
       return `<w:tr>${head ? '<w:trPr><w:tblHeader/></w:trPr>' : ''}${tds}</w:tr>`;
     }).join('');
     // Trình tự bắt buộc của w:tblPr: tblW → tblBorders → tblLayout.
-    return `<w:tbl><w:tblPr><w:tblW w:w="9638" w:type="dxa"/><w:tblBorders>` +
+    return `<w:tbl><w:tblPr><w:tblW w:w="${FULL}" w:type="dxa"/><w:tblBorders>` +
       ['top', 'left', 'bottom', 'right', 'insideH', 'insideV']
         .map(s => `<w:${s} w:val="single" w:sz="6" w:color="595959"/>`).join('') +
       `</w:tblBorders><w:tblLayout w:type="fixed"/></w:tblPr><w:tblGrid>${grid}</w:tblGrid>${body}</w:tbl>`;
@@ -493,8 +493,95 @@
     return tableXml([head, ...body], [26, 22, 24, 16, 12]);
   }
 
-  /* mathviz: bảng xét dấu / bảng biến thiên → bảng Word thật (không phải ảnh). */
-  function mathvizXml(spec) {
+  /* ---- Đồ thị hàm số: SVG → PNG → nhúng thật vào DOCX ----
+   * Word không đọc được SVG (bản cũ hơn Office 2019 hoàn toàn không, bản mới cũng
+   * hay vỡ nét), nên phải chuyển thành ảnh raster. Việc chuyển là bất đồng bộ (phải
+   * chờ trình duyệt tải ảnh), trong khi bộ dựng markdown chạy đồng bộ — vì vậy làm
+   * hai lượt: lượt một quét trước toàn bộ đồ thị và đổi ra PNG, lượt hai mới dựng
+   * thân tài liệu với ảnh đã sẵn sàng. */
+  const GRAPH_W = 760, GRAPH_H = 390;
+  const EMU_PER_TWIP = 635;
+  /* Vùng chữ = khổ A4 (11906 twip) trừ lề trái 1418 và lề phải 1134 = 9354 twip ≈ 16,5 cm.
+     Dùng 9638 như trước sẽ làm ảnh và bảng rộng hơn vùng chữ 0,5 cm và tràn ra ngoài lề. */
+  const CONTENT_TWIPS = 9354;
+
+  /* Có thể thay thế khi kiểm thử ngoài trình duyệt. */
+  window.rasterizeSVG = window.rasterizeSVG || function (svg, w, h, scale) {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      const url = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
+      img.onload = () => {
+        try {
+          const cv = document.createElement('canvas');
+          cv.width = Math.round(w * scale);
+          cv.height = Math.round(h * scale);
+          const cx = cv.getContext('2d');
+          cx.fillStyle = '#ffffff';
+          cx.fillRect(0, 0, cv.width, cv.height);
+          cx.drawImage(img, 0, 0, cv.width, cv.height);
+          cv.toBlob(b => b ? b.arrayBuffer().then(resolve, reject) : reject(new Error('toBlob rỗng')), 'image/png');
+        } catch (e) { reject(e); }
+      };
+      img.onerror = () => reject(new Error('Không tải được ảnh SVG'));
+      img.src = url;
+    });
+  };
+
+  /* Quét trước mọi khối mathviz type "graph" trong markdown và đổi sang PNG. */
+  async function collectGraphs(md) {
+    const specs = [];
+    String(md || '').replace(/```([a-zA-Z]*)\s*\n?([\s\S]*?)```/g, (whole, lang, body) => {
+      try {
+        const spec = parseLoose(body.trim());
+        if (spec?.type === 'graph') specs.push(spec);
+      } catch (_) { }
+      return whole;
+    });
+    if (!specs.length || typeof buildGraphSVG !== 'function') return [];
+    const out = [];
+    for (const spec of specs) {
+      try {
+        const svg = buildGraphSVG(spec, { standalone: true });
+        const bytes = await window.rasterizeSVG(svg, GRAPH_W, GRAPH_H, 2);
+        out.push({ spec, bytes });
+      } catch (_) {
+        out.push({ spec, bytes: null });   // thất bại thì ghi chú, không làm hỏng cả tệp
+      }
+    }
+    return out;
+  }
+
+  function drawingXml(index, relId) {
+    const cx = CONTENT_TWIPS * EMU_PER_TWIP;
+    const cy = Math.round(cx * GRAPH_H / GRAPH_W);
+    const A = 'http://schemas.openxmlformats.org/drawingml/2006/main';
+    return `<w:r><w:drawing><wp:inline distT="0" distB="0" distL="0" distR="0">` +
+      `<wp:extent cx="${cx}" cy="${cy}"/><wp:effectExtent l="0" t="0" r="0" b="0"/>` +
+      `<wp:docPr id="${index}" name="Đồ thị ${index}"/>` +
+      `<wp:cNvGraphicFramePr><a:graphicFrameLocks xmlns:a="${A}" noChangeAspect="1"/></wp:cNvGraphicFramePr>` +
+      `<a:graphic xmlns:a="${A}"><a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/picture">` +
+      `<pic:pic xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture">` +
+      `<pic:nvPicPr><pic:cNvPr id="${index}" name="image${index}.png"/><pic:cNvPicPr/></pic:nvPicPr>` +
+      `<pic:blipFill><a:blip r:embed="${relId}"/><a:stretch><a:fillRect/></a:stretch></pic:blipFill>` +
+      `<pic:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="${cx}" cy="${cy}"/></a:xfrm>` +
+      `<a:prstGeom prst="rect"><a:avLst/></a:prstGeom></pic:spPr>` +
+      `</pic:pic></a:graphicData></a:graphic></wp:inline></w:drawing></w:r>`;
+  }
+
+  /* mathviz: bảng xét dấu / bảng biến thiên → bảng Word thật; đồ thị → ảnh PNG. */
+  function mathvizXml(spec, images) {
+    if (spec.type === 'graph') {
+      const slot = images && images.shift();
+      const title = spec.title ? para(runsFrom(spec.title, { b: true }), { align: 'center', spaceAfter: 60 }) : '';
+      const legend = (spec.functions || []).map(f => f.label || f.expr).filter(Boolean);
+      const caption = legend.length
+        ? para(runsFrom('*' + legend.map(t => t.includes('$') ? t : `$${t}$`).join(';  ') + '*', { small: true }), { align: 'center' })
+        : '';
+      if (slot && slot.bytes) {
+        return title + para(drawingXml(slot.index, slot.relId), { align: 'center' }) + caption;
+      }
+      return title + para(runsFrom('*[Không chuyển được đồ thị sang ảnh — xem bản trên màn hình hoặc in ra PDF]*', { i: true })) + caption;
+    }
     if (spec.type === 'sign' || (spec.columns && spec.rows)) {
       const cols = spec.columns || [], rows = spec.rows || [];
       const head = cols.map(c => para(runsFrom(wrapMath(c), { b: true })));
@@ -526,7 +613,7 @@
   };
 
   /* Markdown → thân document.xml */
-  function markdownToBody(md) {
+  function markdownToBody(md, images) {
     const src = String(md || '');
     const blocks = [];
 
@@ -546,10 +633,10 @@
       if (f) {
         const blk = fenced[+f[1]];
         try {
-          if (blk.lang === 'mathviz') { blocks.push(mathvizXml(parseLoose(blk.body))); continue; }
+          if (blk.lang === 'mathviz') { blocks.push(mathvizXml(parseLoose(blk.body), images)); continue; }
           const spec = parseLoose(blk.body);
           if (spec?.type === 'lessonflow') { blocks.push(flowTableXml(spec)); continue; }
-          if (spec?.type) { blocks.push(mathvizXml(spec)); continue; }
+          if (spec?.type) { blocks.push(mathvizXml(spec, images)); continue; }
         } catch (_) { /* rơi xuống dưới */ }
         blocks.push(para(runsFrom('[Khối dữ liệu chưa đọc được — kiểm tra lại trên màn hình]', { i: true, small: true })));
         continue;
@@ -642,22 +729,40 @@
     return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
       '<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" ' +
       `xmlns:m="${NS_M}" ` +
+      'xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing" ' +
       'xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">' +
       `<w:body>${body}<w:sectPr><w:pgSz w:w="11906" w:h="16838"/>` +
       '<w:pgMar w:top="1134" w:right="1134" w:bottom="1134" w:left="1418" w:header="709" w:footer="709"/>' +
       '</w:sectPr></w:body></w:document>';
   }
 
-  window.buildDocxParts = function (md, title) {
-    return {
-      '[Content_Types].xml': CONTENT_TYPES,
+  /* Bất đồng bộ vì phải chờ trình duyệt vẽ xong từng đồ thị thành PNG. */
+  window.buildDocxParts = async function (md, title) {
+    const graphs = await collectGraphs(md);
+    const media = {}, rels = [];
+    graphs.forEach((g, n) => {
+      if (!g.bytes) return;
+      const index = n + 1;
+      g.index = index;
+      g.relId = 'rIdImg' + index;
+      media['word/media/image' + index + '.png'] = g.bytes;
+      rels.push(`<Relationship Id="${g.relId}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="media/image${index}.png"/>`);
+    });
+
+    const body = documentXml(markdownToBody(md, graphs.slice()));
+    const types = rels.length
+      ? CONTENT_TYPES.replace('<Default Extension="rels"', '<Default Extension="png" ContentType="image/png"/><Default Extension="rels"')
+      : CONTENT_TYPES;
+
+    return Object.assign({
+      '[Content_Types].xml': types,
       '_rels/.rels': ROOT_RELS,
       'docProps/core.xml': coreXml(title || 'Kế hoạch bài dạy'),
-      'word/document.xml': documentXml(markdownToBody(md)),
+      'word/document.xml': body,
       'word/styles.xml': STYLES,
       'word/_rels/document.xml.rels': '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
-        '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"/>'
-    };
+        '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">' + rels.join('') + '</Relationships>'
+    }, media);
   };
 
   /* =========================================================================
@@ -703,7 +808,7 @@
     btn.textContent = 'Đang tạo...';
     try {
       const v = { subject: $('subject').value, grade: $('grade').value, lesson: $('lesson').value };
-      const parts = window.buildDocxParts(md, `KHBD ${v.subject} ${v.grade} — ${v.lesson}`);
+      const parts = await window.buildDocxParts(md, `KHBD ${v.subject} ${v.grade} — ${v.lesson}`);
       const zip = new JSZip();
       Object.entries(parts).forEach(([path, content]) => zip.file(path, content));
       const blob = await zip.generateAsync({
@@ -720,7 +825,7 @@
       setTimeout(() => URL.revokeObjectURL(a.href), 2000);
       if (typeof window.khbdSaveVersion === 'function') window.khbdSaveVersion(true);
       const t = $('toast');
-      if (t) { t.textContent = 'Đã tạo tệp DOCX (công thức toán giữ nguyên)'; t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 2600); }
+      if (t) { t.textContent = 'Đã tạo tệp DOCX (công thức và đồ thị giữ nguyên)'; t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 2600); }
     } catch (err) {
       alert('Không tạo được tệp DOCX: ' + (err.message || err));
     } finally {
