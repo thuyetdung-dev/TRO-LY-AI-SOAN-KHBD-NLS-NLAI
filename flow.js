@@ -111,8 +111,8 @@
   }
 
   function replaceBareFlows(text, flows) {
-    let pos = 0;
-    while (true) {
+    let pos = 0, guard = 0;
+    while (guard++ < 500) {
       const hit = text.slice(pos).search(/["']type["']\s*:\s*["']lessonflow["']/i);
       if (hit < 0) break;
       const marker = pos + hit;
@@ -121,7 +121,14 @@
       const end = findObjectEnd(text, start);
       if (end < 0) { pos = marker + 10; continue; }
       const token = addFlow(text.slice(start, end), flows);
-      if (!token) { pos = end; continue; }
+      if (!token) {
+        /* CHỐT CHẶN: nếu vì lý do nào đó "end" không nằm sau vị trí đang xét, con trỏ sẽ
+           đứng yên và vòng lặp chạy mãi — trình duyệt đơ, giáo viên phải tắt tab. Luôn ép
+           con trỏ tiến lên. Mã hiện tại không rơi vào tình huống này, nhưng một lần sửa
+           findObjectStart sau này có thể tạo ra nó, và treo máy là kiểu hỏng tệ nhất. */
+        pos = Math.max(end, marker + 10);
+        continue;
+      }
       text = text.slice(0, start) + token + text.slice(end);
       pos = start + token.length;
     }
