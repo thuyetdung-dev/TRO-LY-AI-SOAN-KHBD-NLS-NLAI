@@ -155,12 +155,21 @@ function flowJson(nSteps,minutes){
   var rows=[];
   for(var i=0;i<nSteps;i++)rows.push({step:'Bước '+(i+1),duration:minutes,goalIds:['MT1'],
     teacherActions:['GV giao nhiệm vụ'],studentActions:['HS thực hiện'],
-    product:['SP1: kết quả'],assessment:['TC1: quan sát'],competency:[]});
+    product:['SP1: Cho hàm số $y=f(x)$ có đạo hàm trên khoảng $K$. Nếu $f\'(x)>0$ với mọi $x$ thuộc $K$ thì hàm số đồng biến trên $K$; nếu $f\'(x)<0$ thì hàm số nghịch biến trên $K$.'],
+    assessment:['TC1: quan sát'],competency:[]});
   return JSON.stringify({type:'lessonflow',rows:rows});
 }
-var BASE='# KẾ HOẠCH BÀI DẠY\n## I. MỤC TIÊU\nMT1 SP1 TC1\nMA TRẬN LIÊN KẾT MỤC TIÊU – HOẠT ĐỘNG – SẢN PHẨM – ĐÁNH GIÁ\n'
-  +'## II. THIẾT BỊ DẠY HỌC VÀ HỌC LIỆU\n## III. TIẾN TRÌNH DẠY HỌC\n'
-  +'Hoạt động 1 · Hoạt động 2 · Hoạt động 3 · Hoạt động 4\n'
+/* Khung mẫu theo giáo án của tổ chuyên môn: chia tiết, đủ 4 kiểu hoạt động,
+   mỗi hoạt động có a) b) c) d), có Hướng dẫn về nhà. */
+var ABCD='a) Mục tiêu: ...\nb) Nội dung: ...\nc) Sản phẩm: ...\nd) Tổ chức thực hiện: ...\n';
+var BASE='# KẾ HOẠCH BÀI DẠY\n## I. MỤC TIÊU\nMT1 SP1 TC1 — công thức mẫu $y=f(x)$\n'
+  +'MA TRẬN LIÊN KẾT MỤC TIÊU – HOẠT ĐỘNG – SẢN PHẨM – ĐÁNH GIÁ\n'
+  +'## II. THIẾT BỊ DẠY HỌC VÀ HỌC LIỆU\n## III. TIẾN TRÌNH DẠY HỌC\nTIẾT 1: Nội dung tiết một\n'
+  +'### 1. HOẠT ĐỘNG KHỞI ĐỘNG (MỞ ĐẦU)\n'+ABCD
+  +'### 2. HÌNH THÀNH KIẾN THỨC MỚI\n'+ABCD
+  +'### 3. HOẠT ĐỘNG LUYỆN TẬP\n'+ABCD
+  +'### 4. HOẠT ĐỘNG VẬN DỤNG\n'+ABCD
+  +'## HƯỚNG DẪN VỀ NHÀ\n- Hoàn thành bài tập.\n'
   +'## DẤU VẾT NGUỒN VÀ TRÁCH NHIỆM GIẢI TRÌNH\n'+new Array(60).join('nội dung mẫu ')+'\n';
 function plan(counts,minutes,tail){
   var b=BASE;
@@ -168,7 +177,7 @@ function plan(counts,minutes,tail){
   return b+(tail||'');
 }
 var DIEUCHINH='\n## ĐIỀU CHỈNH SAU BÀI DẠY\n.....\n';
-var V={periods:'1',assessmentMode:'khong',grade:'12'};
+var V={subject:'Toán',periods:'1',assessmentMode:'khong',grade:'12'};
 
 /* ---------- Bộ kiểm tra ---------- */
 async function runAll(){
@@ -222,14 +231,14 @@ async function runAll(){
   group('B · Bộ kiểm định chuyên môn');
 
   await T('Bỏ dấu đúng chữ "đ" — không báo oan "Thiếu Hoạt động N"',function(){
-    var r=validatePlan(plan([4,4,4,4],11)+DIEUCHINH,{periods:'4',assessmentMode:'khong'},true);
-    var oan=r.blockers.filter(function(x){return x.indexOf('Thiếu Hoạt động')>=0});
+    var r=validatePlan(plan([4,4,4,4],11)+DIEUCHINH,{subject:'Toán',periods:'4',assessmentMode:'khong'},true);
+    var oan=r.blockers.filter(function(x){return /^Thiếu (Hoạt động|Hình thành)/.test(x)});
     return oan.length===0||'Vẫn báo: '+oan.join(' | ')
       +'\n(chữ "đ" U+0111 không có dạng phân rã NFD nên phải đổi thành "d" trước khi bỏ dấu)';
   });
 
   await T('Một bản kế hoạch hợp lệ thì ĐẠT kiểm định',function(){
-    var r=validatePlan(plan([4,4,4,4],11)+DIEUCHINH,{periods:'4',assessmentMode:'khong'},true);
+    var r=validatePlan(plan([4,4,4,4],11)+DIEUCHINH,{subject:'Toán',periods:'4',assessmentMode:'khong'},true);
     return r.passed||'Bị chặn bởi: '+r.blockers.join(' | ');
   });
 
@@ -245,24 +254,55 @@ async function runAll(){
   });
 
   await T('Hoạt động 4 có 2 bước (giao ngoài giờ) chỉ cảnh báo',function(){
-    var r=validatePlan(plan([4,4,4,2],11)+DIEUCHINH,{periods:'3',assessmentMode:'khong'},true);
+    var r=validatePlan(plan([4,4,4,2],11)+DIEUCHINH,{subject:'Toán',periods:'3',assessmentMode:'khong'},true);
     if(r.blockers.some(function(x){return /(đúng 4|từ 2 đến 4) bước/.test(x)}))return 'Vẫn chặn Hoạt động 4';
     return r.warnings.some(function(x){return x.indexOf('Hoạt động 4')>=0})||'Không nhắc gì về Hoạt động 4';
   });
 
-  await T('Hoạt động 3 thiếu bước thì vẫn chặn',function(){
-    var r=validatePlan(plan([4,4,2,4],11)+DIEUCHINH,{periods:'3',assessmentMode:'khong'},true);
+  await T('Hoạt động giữa thiếu bước thì vẫn chặn',function(){
+    var r=validatePlan(plan([4,4,2,4],11)+DIEUCHINH,{subject:'Toán',periods:'3',assessmentMode:'khong'},true);
     return r.blockers.some(function(x){return x.indexOf('đúng 4 bước')>=0})||'Không chặn — đã nới nhầm cho cả hoạt động giữa';
   });
 
   await T('Hoạt động 4 chỉ 1 bước thì vẫn chặn',function(){
-    var r=validatePlan(plan([4,4,4,1],11)+DIEUCHINH,{periods:'3',assessmentMode:'khong'},true);
+    var r=validatePlan(plan([4,4,4,1],11)+DIEUCHINH,{subject:'Toán',periods:'3',assessmentMode:'khong'},true);
     return r.blockers.some(function(x){return x.indexOf('2 đến 4 bước')>=0})||'Không chặn';
   });
 
   await T('Thiếu mục "Điều chỉnh sau bài dạy" thì nhắc nhở',function(){
     var r=validatePlan(plan([4],11),V,true);
     return r.warnings.some(function(x){return x.indexOf('Điều chỉnh sau bài dạy')>=0})||'Không nhắc';
+  });
+
+  await T('Bài nhiều tiết mà không chia tiết thì bị chặn',function(){
+    var md=plan([4],11).replace(/TIẾT 1: Nội dung tiết một\n/,'')+DIEUCHINH;
+    var r=validatePlan(md,{subject:'Toán',periods:'3',assessmentMode:'khong'},true);
+    return r.blockers.some(function(x){return x.indexOf('chưa chia theo tiết')>=0})||'Không chặn — giáo viên sẽ không biết dạy đến đâu hết tiết';
+  });
+
+  await T('Sản phẩm dự kiến rỗng ruột bị nhắc',function(){
+    var mong=JSON.stringify({type:'lessonflow',rows:[1,2,3,4].map(function(i){return{
+      step:'Bước '+i,duration:11,goalIds:['MT1'],teacherActions:['GV'],studentActions:['HS'],
+      product:['SP1: Kết luận về tính đơn điệu'],assessment:['TC1'],competency:[]}})});
+    var r=validatePlan(BASE+'\n```lessonflow\n'+mong+'\n```\n'+DIEUCHINH,V,true);
+    return r.warnings.some(function(x){return x.indexOf('quá sơ sài')>=0})||'Không phát hiện — đây chính là lỗi làm bản soạn không dạy được';
+  });
+
+  await T('Môn Toán mà không có công thức nào thì bị chặn',function(){
+    var md=(plan([4],11)+DIEUCHINH).replace(/\$[^$]*\$/g,'x');
+    var r=validatePlan(md,V,true);
+    return r.blockers.some(function(x){return x.indexOf('không có công thức nào')>=0})||'Không chặn — bản tóm tắt vẫn lọt qua';
+  });
+
+  await T('Trích số trang sách mà không đính kèm tài liệu thì bị chặn',function(){
+    var r=validatePlan(plan([4],11)+DIEUCHINH+'\nBài tập 1.2 (SGK tr.9)\n',V,true);
+    return r.blockers.some(function(x){return x.indexOf('số trang')>=0})||'Không chặn — số trang bịa sẽ lọt vào giáo án';
+  });
+
+  await T('Thiếu mục "Hướng dẫn về nhà" thì nhắc nhở',function(){
+    var md=(plan([4],11)+DIEUCHINH).replace('## HƯỚNG DẪN VỀ NHÀ\n- Hoàn thành bài tập.\n','');
+    var r=validatePlan(md,V,true);
+    return r.warnings.some(function(x){return x.indexOf('Hướng dẫn về nhà')>=0})||'Không nhắc';
   });
 
   await T('Mã NLS sai bậc bị chặn',function(){
