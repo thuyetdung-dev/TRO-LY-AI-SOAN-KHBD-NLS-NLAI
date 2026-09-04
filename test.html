@@ -1,0 +1,520 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tự kiểm tra phần mềm soạn giáo án</title>
+<style>
+:root{--navy:#123252;--blue:#176fa8;--ok:#157a64;--bad:#a12e36;--line:#d5e0e7;--muted:#647586}
+*{box-sizing:border-box}
+body{margin:0;font:16px/1.5 Inter,"Segoe UI",Arial,sans-serif;color:#182431;background:#eef4f8}
+header{background:var(--navy);color:#fff;padding:16px clamp(14px,4vw,40px)}
+header h1{margin:0;font-size:1.1rem;letter-spacing:.04em}
+header p{margin:5px 0 0;color:#b9d4e4;font-size:.84rem}
+main{max-width:960px;margin:18px auto;padding:0 clamp(10px,3vw,20px) 60px}
+.bar{display:flex;gap:12px;align-items:center;flex-wrap:wrap;background:#fff;border:1px solid var(--line);
+     border-radius:14px;padding:16px 18px;margin-bottom:16px;box-shadow:0 8px 24px rgba(24,52,76,.07)}
+button{font:inherit;font-weight:650;border-radius:9px;cursor:pointer;padding:11px 18px;border:1px solid var(--line);background:#fff;color:var(--navy)}
+button.primary{background:linear-gradient(110deg,var(--navy),var(--blue));color:#fff;border:0}
+button:disabled{opacity:.5;cursor:wait}
+button:focus-visible{outline:3px solid #21a6b8;outline-offset:2px}
+#verdict{font-weight:800;font-size:1.05rem;margin-left:auto;padding:8px 16px;border-radius:99px}
+#verdict.pass{background:#e6f6f1;color:var(--ok)}
+#verdict.fail{background:#ffeef0;color:var(--bad)}
+#verdict.run{background:#eef3f7;color:var(--muted)}
+h2{font-size:.82rem;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);margin:22px 0 8px}
+.case{display:flex;gap:11px;align-items:flex-start;background:#fff;border:1px solid var(--line);
+      border-left-width:5px;border-radius:9px;padding:11px 14px;margin-bottom:7px}
+.case.ok{border-left-color:var(--ok)}
+.case.bad{border-left-color:var(--bad);background:#fff7f8}
+.mark{font-weight:800;flex:none;width:22px;text-align:center}
+.case.ok .mark{color:var(--ok)}
+.case.bad .mark{color:var(--bad)}
+.case.skip{border-left-color:#b6c4ce;background:#f8fafb}
+.case.skip .mark{color:var(--muted)}
+.case .note{display:block;color:var(--muted);font-size:.83rem;margin-top:5px}
+.case .why{display:block;color:var(--bad);font-size:.83rem;margin-top:5px;
+           font-family:ui-monospace,Consolas,monospace;white-space:pre-wrap;word-break:break-word}
+.hint{background:#fff8e8;border:1px solid #ead49b;border-radius:11px;padding:14px 16px;color:#6b4d12;font-size:.88rem}
+.hint code{background:#f2e6c8;padding:1px 5px;border-radius:4px}
+#stage{position:absolute;left:-9999px;top:0;width:1px;height:1px;overflow:hidden}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>TỰ KIỂM TRA PHẦN MỀM SOẠN GIÁO ÁN</h1>
+  <p>Chạy trên đúng các tệp trong thư mục này. Sửa mã xong, mở trang này bấm một cái là biết còn lành hay không.</p>
+</header>
+
+<main>
+  <div class="bar">
+    <button id="run" class="primary" type="button">Chạy kiểm tra</button>
+    <button id="dl" type="button" disabled>Tải tệp Word thử để mở bằng Word</button>
+    <span id="verdict" class="run">Chưa chạy</span>
+  </div>
+  <div id="out"></div>
+  <div class="hint" id="hint" hidden></div>
+</main>
+
+<!--
+  Sân khấu ẩn: bản sao các ô nhập mà app.js, professional.js và docx-export.js cần tìm
+  bằng getElementById ngay lúc nạp. Không có chúng thì mã sẽ dừng ở dòng đầu tiên.
+  Nếu sau này thầy cô thêm ô mới vào index.html, hãy thêm cả vào đây, hoặc phép kiểm tra
+  "đủ ô nhập" ở cuối trang sẽ báo thiếu.
+-->
+<div id="stage" aria-hidden="true">
+  <button id="themeBtn"></button><button id="sampleBtn"></button><button id="clearDraftBtn"></button>
+  <form id="lessonForm">
+    <input id="subject" value="Toán"><input id="grade" type="number" value="12"><input id="lesson" value="Bài kiểm tra">
+    <select id="book"><option value="Kết nối tri thức với cuộc sống" selected>a</option></select>
+    <input id="periods" type="number" value="1"><input id="students" value="Khá"><input id="classSize" type="number" value="45">
+    <input id="equipment" value="TV">
+    <select id="tableLayout"><option value="5" selected>5</option><option value="3">3</option></select>
+    <select id="assessmentMode"><option value="khong" selected>k</option><option value="day-du">d</option></select>
+    <select id="lessonTemplate"><option value="auto" selected>a</option></select>
+    <select id="sourceMode"><option value="flexible" selected>f</option><option value="strict">s</option></select>
+    <label id="dropZone" tabindex="0"><input id="files" type="file" hidden></label>
+    <div id="fileList"></div>
+    <input id="privacyConfirm" type="checkbox">
+    <textarea id="notes"></textarea>
+    <input id="apiKey" type="password"><button id="showKey" type="button"></button><button id="clearKey" type="button"></button>
+    <select id="style"><option value="day-du" selected>d</option></select>
+    <select id="model"><option value="auto" selected>auto</option></select>
+    <button id="scanModels" type="button"></button><small id="modelStatus"></small>
+    <input id="includeDigital" type="checkbox" checked>
+    <input id="includeAI" type="checkbox">
+    <input id="traceSources" type="checkbox" checked>
+    <button id="generateBtn" type="submit"></button>
+  </form>
+  <div id="resultActions">
+    <button id="editBtn"></button><button id="saveVersionBtn"></button><button id="historyBtn"></button>
+    <button id="copyBtn"></button><button id="wordBtn"></button><button id="printBtn"></button>
+  </div>
+  <div id="emptyState"></div>
+  <div id="progress"><h3 id="progressTitle"></h3><p id="progressText"></p><span id="progressBar"></span></div>
+  <div id="validationReport"></div>
+  <article id="result"></article>
+  <p id="draftNotice"></p>
+  <dialog id="historyDialog"><div id="historyList"></div><div id="compareView"></div></dialog>
+  <div id="toast"></div>
+</div>
+
+<script>
+/* Thay localStorage bằng bộ nhớ tạm TRƯỚC khi nạp app.js.
+   Nếu không, trang kiểm tra sẽ đọc và ghi đè bản nháp cùng 10 phiên bản đã lưu
+   của thầy cô — chạy kiểm tra mà mất bài thì còn tệ hơn không kiểm tra. */
+(function(){
+  var mem={};
+  var shim={getItem:function(k){return k in mem?mem[k]:null},setItem:function(k,v){mem[k]=String(v)},
+            removeItem:function(k){delete mem[k]},clear:function(){mem={}},key:function(i){return Object.keys(mem)[i]||null}};
+  Object.defineProperty(shim,'length',{get:function(){return Object.keys(mem).length}});
+  try{Object.defineProperty(window,'localStorage',{value:shim,configurable:true})}catch(e){
+    console.warn('Không thay được localStorage — kiểm tra vẫn chạy nhưng có thể động vào bản nháp.');
+  }
+})();
+</script>
+
+<script src="standards.js"></script>
+<script src="app.js"></script>
+<script src="flow.js"></script>
+<script src="professional.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+<script src="docx-export.js"></script>
+
+<script>
+(function(){
+'use strict';
+var out=document.getElementById('out'), verdict=document.getElementById('verdict'),
+    hint=document.getElementById('hint'), runBtn=document.getElementById('run'), dlBtn=document.getElementById('dl');
+var pass=0, fail=0, failNames=[];
+
+function group(t){var h=document.createElement('h2');h.textContent=t;out.appendChild(h)}
+var skip=0;
+function record(name,state,why){
+  var isSkip=state==='skip', ok=state===true;
+  var d=document.createElement('div');
+  d.className='case '+(isSkip?'skip':ok?'ok':'bad');
+  d.innerHTML='<span class="mark">'+(isSkip?'–':ok?'✓':'✕')+'</span><span></span>';
+  d.children[1].textContent=name;
+  if(why){var s=document.createElement('span');s.className=isSkip?'note':'why';s.textContent=why;d.children[1].appendChild(s)}
+  out.appendChild(d);
+  if(isSkip)skip++;else if(ok)pass++;else{fail++;failNames.push(name)}
+}
+async function T(name,fn){
+  try{
+    var r=await fn();
+    if(r===true||r===undefined)record(name,true);
+    else if(r&&r.skip)record(name,'skip',r.skip);
+    else record(name,false,typeof r==='string'?r:'Kết quả không như mong đợi');
+  }catch(e){record(name,false,'Lỗi khi chạy: '+(e&&e.message||e))}
+}
+
+/* ---------- Dữ liệu mẫu ---------- */
+function flowJson(nSteps,minutes){
+  var rows=[];
+  for(var i=0;i<nSteps;i++)rows.push({step:'Bước '+(i+1),duration:minutes,goalIds:['MT1'],
+    teacherActions:['GV giao nhiệm vụ'],studentActions:['HS thực hiện'],
+    product:['SP1: kết quả'],assessment:['TC1: quan sát'],competency:[]});
+  return JSON.stringify({type:'lessonflow',rows:rows});
+}
+var BASE='# KẾ HOẠCH BÀI DẠY\n## I. MỤC TIÊU\nMT1 SP1 TC1\nMA TRẬN LIÊN KẾT MỤC TIÊU – HOẠT ĐỘNG – SẢN PHẨM – ĐÁNH GIÁ\n'
+  +'## II. THIẾT BỊ DẠY HỌC VÀ HỌC LIỆU\n## III. TIẾN TRÌNH DẠY HỌC\n'
+  +'Hoạt động 1 · Hoạt động 2 · Hoạt động 3 · Hoạt động 4\n'
+  +'## DẤU VẾT NGUỒN VÀ TRÁCH NHIỆM GIẢI TRÌNH\n'+new Array(60).join('nội dung mẫu ')+'\n';
+function plan(counts,minutes,tail){
+  var b=BASE;
+  for(var i=0;i<counts.length;i++)b+='\n```lessonflow\n'+flowJson(counts[i],minutes)+'\n```\n';
+  return b+(tail||'');
+}
+var DIEUCHINH='\n## ĐIỀU CHỈNH SAU BÀI DẠY\n.....\n';
+var V={periods:'1',assessmentMode:'khong',grade:'12'};
+
+/* ---------- Bộ kiểm tra ---------- */
+async function runAll(){
+  out.innerHTML='';pass=0;fail=0;skip=0;failNames=[];
+  verdict.className='run';verdict.textContent='Đang chạy...';
+  hint.hidden=true;dlBtn.disabled=true;
+  document.getElementById('periods').value='1';
+  document.getElementById('grade').value='12';
+  document.getElementById('assessmentMode').value='khong';
+  document.getElementById('tableLayout').value='5';
+
+  /* ===== A. Bảng tổ chức thực hiện (flow.js) ===== */
+  group('A · Bảng tổ chức thực hiện');
+
+  await T('JSON có đối tượng lồng đứng trước "type" vẫn dựng được bảng',function(){
+    var spec={meta:{n:1},type:'lessonflow',rows:JSON.parse(flowJson(1,5)).rows};
+    var h=mdToHtml('Mở đầu\n\n'+JSON.stringify(spec)+'\n\nKết thúc.');
+    return (h.indexOf('lesson-flow')>=0&&h.indexOf('Bước 1')>=0)||'Bảng không được dựng — xem lại findObjectStart trong flow.js';
+  });
+
+  await T('Dấu $ và chuỗi $& trong nội dung không phá vỡ bảng',function(){
+    var spec={type:'lessonflow',rows:[{step:'Giá 5$ mỗi cái',teacherActions:['AB$&CD'],
+      studentActions:['x'],product:['y'],assessment:['z'],competency:[]}]};
+    var h=mdToHtml('```lessonflow\n'+JSON.stringify(spec)+'\n```');
+    if(h.indexOf('@@LESSONFLOW')>=0)return 'Thẻ đánh dấu còn sót lại trong bài';
+    return h.indexOf('AB$&amp;CD')>=0||'Nội dung bị biến dạng — phải dùng split/join thay cho replace()';
+  });
+
+  await T('JSON hỏng thì báo lỗi, không đổ mã thô vào giáo án',function(){
+    var h=mdToHtml('```lessonflow\n{"type":"lessonflow","rows":[{"step":"A" HONG\n```');
+    if(h.indexOf('HONG')>=0)return 'Mã JSON thô lọt vào bản kế hoạch';
+    return h.indexOf('mathviz-error')>=0||'Không thấy ô báo lỗi';
+  });
+
+  await T('Ô dữ liệu dạng đối tượng không in ra [object Object]',function(){
+    var spec={type:'lessonflow',rows:[{step:'S',teacherActions:[{text:'GV nói'}],
+      studentActions:['x'],product:['y'],assessment:['z'],competency:'NLS 1.1'}]};
+    var h=mdToHtml('```json\n'+JSON.stringify(spec)+'\n```');
+    if(h.indexOf('object Object')>=0)return 'Vẫn in ra [object Object]';
+    return h.indexOf('GV nói')>=0||'Mất nội dung ô';
+  });
+
+  await T('Bảng 3 cột dựng được khi chọn mẫu 3 cột',function(){
+    document.getElementById('tableLayout').value='3';
+    var h=mdToHtml('```lessonflow\n'+flowJson(4,11)+'\n```');
+    document.getElementById('tableLayout').value='5';
+    return h.indexOf('layout-3')>=0||'Không đổi sang bảng 3 cột';
+  });
+
+  /* ===== B. Bộ kiểm định chuyên môn (app.js) ===== */
+  group('B · Bộ kiểm định chuyên môn');
+
+  await T('Bỏ dấu đúng chữ "đ" — không báo oan "Thiếu Hoạt động N"',function(){
+    var r=validatePlan(plan([4,4,4,4],11)+DIEUCHINH,{periods:'4',assessmentMode:'khong'},true);
+    var oan=r.blockers.filter(function(x){return x.indexOf('Thiếu Hoạt động')>=0});
+    return oan.length===0||'Vẫn báo: '+oan.join(' | ')
+      +'\n(chữ "đ" U+0111 không có dạng phân rã NFD nên phải đổi thành "d" trước khi bỏ dấu)';
+  });
+
+  await T('Một bản kế hoạch hợp lệ thì ĐẠT kiểm định',function(){
+    var r=validatePlan(plan([4,4,4,4],11)+DIEUCHINH,{periods:'4',assessmentMode:'khong'},true);
+    return r.passed||'Bị chặn bởi: '+r.blockers.join(' | ');
+  });
+
+  await T('Thời lượng lệch ít (44/45 phút) chỉ cảnh báo, không chặn',function(){
+    var r=validatePlan(plan([4],11)+DIEUCHINH,V,true);
+    if(r.blockers.some(function(x){return /vượt dung sai/.test(x)}))return 'Vẫn bị chặn vì lệch 1 phút';
+    return r.warnings.some(function(x){return x.indexOf('lệch')>=0})||'Không thấy cảnh báo thời lượng';
+  });
+
+  await T('Thời lượng lệch nhiều (20/45 phút) thì vẫn chặn',function(){
+    var r=validatePlan(plan([4],5)+DIEUCHINH,V,true);
+    return r.blockers.some(function(x){return /vượt dung sai/.test(x)})||'Không chặn — dung sai đang quá rộng';
+  });
+
+  await T('Hoạt động 4 có 2 bước (giao ngoài giờ) chỉ cảnh báo',function(){
+    var r=validatePlan(plan([4,4,4,2],11)+DIEUCHINH,{periods:'3',assessmentMode:'khong'},true);
+    if(r.blockers.some(function(x){return /(đúng 4|từ 2 đến 4) bước/.test(x)}))return 'Vẫn chặn Hoạt động 4';
+    return r.warnings.some(function(x){return x.indexOf('Hoạt động 4')>=0})||'Không nhắc gì về Hoạt động 4';
+  });
+
+  await T('Hoạt động 3 thiếu bước thì vẫn chặn',function(){
+    var r=validatePlan(plan([4,4,2,4],11)+DIEUCHINH,{periods:'3',assessmentMode:'khong'},true);
+    return r.blockers.some(function(x){return x.indexOf('đúng 4 bước')>=0})||'Không chặn — đã nới nhầm cho cả hoạt động giữa';
+  });
+
+  await T('Hoạt động 4 chỉ 1 bước thì vẫn chặn',function(){
+    var r=validatePlan(plan([4,4,4,1],11)+DIEUCHINH,{periods:'3',assessmentMode:'khong'},true);
+    return r.blockers.some(function(x){return x.indexOf('2 đến 4 bước')>=0})||'Không chặn';
+  });
+
+  await T('Thiếu mục "Điều chỉnh sau bài dạy" thì nhắc nhở',function(){
+    var r=validatePlan(plan([4],11),V,true);
+    return r.warnings.some(function(x){return x.indexOf('Điều chỉnh sau bài dạy')>=0})||'Không nhắc';
+  });
+
+  await T('Mã NLS sai bậc bị chặn',function(){
+    var r=validatePlan(plan([4],11)+DIEUCHINH+'\nMã 6.1-B1a\n',V,true);
+    return r.blockers.some(function(x){return x.indexOf('6.1-B1a')>=0})||'Không phát hiện mã sai bậc';
+  });
+
+  /* ===== C. Nhận diện môn học ===== */
+  group('C · Nhận diện môn học');
+  [['Toán',true],['Toán 12',true],['Đại số',true],['Hình học 12',true],['Giải tích',true],
+   ['Ngữ văn',false],['Lịch sử',false]].forEach(function(p){
+    T('Môn "'+p[0]+'" '+(p[1]?'dùng':'không dùng')+' mô-đun biểu diễn Toán',function(){
+      return isMathSubject({subject:p[0]})===p[1]||'Nhận diện sai';
+    });
+  });
+
+  /* ===== D. Giới hạn tài liệu ===== */
+  group('D · Giới hạn tài liệu gửi Gemini');
+  await T('Trần dung lượng nằm trong giới hạn ~20 MB của Gemini',function(){
+    if(typeof MAX_TOTAL_MB==='undefined')return 'Không tìm thấy MAX_TOTAL_MB trong app.js';
+    return (MAX_TOTAL_MB<=15&&MAX_FILE_MB<=15)||'Trần '+MAX_TOTAL_MB+' MB quá cao: base64 làm phình 4/3 nên yêu cầu sẽ bị Google từ chối';
+  });
+
+  /* ===== E. Đồ thị hàm số ===== */
+  group('E · Đồ thị hàm số');
+
+  await T('xMin bằng 0 không bị hiểu nhầm thành -5',function(){
+    var s=buildGraphSVG({xMin:0,xMax:4,yMin:0,yMax:16,functions:[{expr:'x^2'}]});
+    return !/class="tick">-/.test(s)||'Vẫn vẽ miền âm — số 0 đang bị coi là giá trị rỗng';
+  });
+
+  await T('Hai đồ thị trong cùng bài không dùng chung id vùng cắt',function(){
+    var a=buildGraphSVG({functions:[{expr:'x'}]}), b=buildGraphSVG({functions:[{expr:'x*x'}]});
+    var i1=a.match(/clipPath id="([^"]+)"/)[1], i2=b.match(/clipPath id="([^"]+)"/)[1];
+    return i1!==i2||'Trùng id "'+i1+'" — đồ thị thứ hai sẽ bị cắt sai vùng';
+  });
+
+  await T('Trục toạ độ có vạch chia số',function(){
+    var s=buildGraphSVG({xMin:-4,xMax:4,yMin:-4,yMax:4,functions:[{expr:'x'}]});
+    return (s.match(/class="tick"/g)||[]).length>=4||'Không thấy số nào trên trục';
+  });
+
+  await T('Đổi được đồ thị SVG sang ảnh PNG',async function(){
+    var svg=buildGraphSVG({xMin:-3,xMax:3,yMin:-2,yMax:8,functions:[{expr:'x^2'}]},{standalone:true});
+    var buf=await window.rasterizeSVG(svg,760,390,1);
+    var b=new Uint8Array(buf);
+    return (b[0]===137&&b[1]===80&&b[2]===78&&b[3]===71)||'Dữ liệu trả về không phải tệp PNG';
+  });
+
+  /* ===== F. Tệp Word xuất ra ===== */
+  group('F · Tệp Word xuất ra');
+
+  var FORMULAS=[['\\frac{x^2+1}{x-3}','phân số'],['\\sqrt{x^2+1}','căn bậc hai'],['\\sqrt[3]{x}','căn bậc ba'],
+    ['\\vec{a}=k\\vec{b}','vectơ'],['\\overrightarrow{AB}','vectơ AB'],['\\widehat{AOB}=60^{\\circ}','số đo góc'],
+    ['\\lim_{x \\to 2}\\frac{x^2-4}{x-2}','giới hạn'],['\\int_{0}^{1}x^2 dx','tích phân'],
+    ['\\sum_{i=1}^{n}a_i','tổng sigma'],['x \\in \\mathbb{R}','tập số thực'],
+    ['\\left(\\frac{1}{2}\\right)^{n}','ngoặc lớn'],['\\log_{2}8=3','lôgarit'],
+    ['a_{n+1}=a_n+d','chỉ số dưới'],['\\vec{IA}+\\vec{IB}=\\vec{0}','tổng vectơ']];
+
+  await T('Chuyển được '+FORMULAS.length+' dạng công thức Toán THPT sang công thức Word',async function(){
+    var hong=[];
+    for(var i=0;i<FORMULAS.length;i++){
+      var parts=await buildDocxParts('$'+FORMULAS[i][0]+'$','t');
+      var x=parts['word/document.xml'];
+      if(x.indexOf('<m:oMath>')<0||x.indexOf('B00020')>=0)hong.push(FORMULAS[i][1]);
+    }
+    return hong.length===0||'Chưa dịch được: '+hong.join(', ');
+  });
+
+  var docMd=plan([4,4,4,4],11)+DIEUCHINH
+    +'\nĐồ thị $y=x^2-4x+3$:\n\n```mathviz\n{"type":"graph","title":"Đồ thị","xMin":0,"xMax":5,"yMin":-2,"yMax":8,"functions":[{"expr":"x^2-4*x+3","label":"y=x^2-4x+3"}]}\n```\n'
+    +'\n```mathviz\n{"type":"variation","title":"Bảng biến thiên","points":["-\\\\infty","2","+\\\\infty"],"derivative":["-","0","+"],"values":["+\\\\infty","-1","+\\\\infty"]}\n```\n'
+    +'\n| Mục tiêu | Hoạt động |\n|---|---|\n| MT1 | HĐ1 |\n';
+  var docParts=null, docXml=null;
+
+  await T('Dựng được bộ phận của tệp Word',async function(){
+    docParts=await buildDocxParts(docMd,'Bài kiểm tra');
+    docXml=new DOMParser().parseFromString(docParts['word/document.xml'],'application/xml');
+    if(docXml.getElementsByTagName('parsererror').length)return 'XML sai cú pháp';
+    return true;
+  });
+
+  await T('Mọi thẻ thuộc tính đúng trình tự schema OOXML (nếu sai Word đòi sửa tệp)',function(){
+    if(!docXml)return 'Chưa dựng được tài liệu';
+    var ORDER={pPr:['pStyle','keepNext','spacing','ind','jc'],
+               rPr:['rFonts','b','i','color','sz','szCs'],
+               tblPr:['tblW','tblBorders','tblLayout'],
+               tcPr:['tcW','shd','vAlign'],
+               naryPr:['chr','limLoc','subHide','supHide']};
+    var loi=[];
+    Object.keys(ORDER).forEach(function(tag){
+      var seq=ORDER[tag], els=docXml.getElementsByTagName('*');
+      for(var i=0;i<els.length;i++){
+        if(els[i].localName!==tag)continue;
+        var idx=[];
+        for(var j=0;j<els[i].children.length;j++){
+          var p=seq.indexOf(els[i].children[j].localName);
+          if(p>=0)idx.push(p);
+        }
+        for(var k=1;k<idx.length;k++)if(idx[k]<idx[k-1]){loi.push(tag);return}
+      }
+    });
+    return loi.length===0||'Sai trình tự trong: '+loi.join(', ');
+  });
+
+  await T('Số ô mỗi hàng khớp với số cột khai báo trong tblGrid',function(){
+    if(!docXml)return 'Chưa dựng được tài liệu';
+    var tbls=docXml.getElementsByTagName('*'), lech=0, n=0;
+    for(var i=0;i<tbls.length;i++){
+      if(tbls[i].localName!=='tbl')continue;
+      n++;
+      var grid=0, ch=tbls[i].children;
+      for(var g=0;g<ch.length;g++)if(ch[g].localName==='tblGrid')grid=ch[g].children.length;
+      for(var r=0;r<ch.length;r++){
+        if(ch[r].localName!=='tr')continue;
+        var cells=0;
+        for(var c=0;c<ch[r].children.length;c++)if(ch[r].children[c].localName==='tc')cells++;
+        if(cells!==grid)lech++;
+      }
+    }
+    if(!n)return 'Không có bảng nào trong tài liệu thử';
+    return lech===0||lech+' hàng lệch số ô — Word sẽ vỡ bảng';
+  });
+
+  await T('Bảng và ảnh không rộng quá vùng chữ khổ A4',function(){
+    if(!docXml)return 'Chưa dựng được tài liệu';
+    var els=docXml.getElementsByTagName('*'), pgW=0,mL=0,mR=0,tran=[];
+    for(var i=0;i<els.length;i++){
+      var e=els[i];
+      if(e.localName==='pgSz')pgW=+e.getAttribute('w:w')||+e.getAttributeNS('*','w');
+      if(e.localName==='pgMar'){mL=+e.getAttribute('w:left')||0;mR=+e.getAttribute('w:right')||0}
+    }
+    // DOMParser giữ tiền tố trong tên thuộc tính; lấy lại bằng cách quét thuộc tính thô
+    function attr(e,name){for(var i=0;i<e.attributes.length;i++){var a=e.attributes[i];
+      if(a.localName===name)return +a.value}return 0}
+    for(var i=0;i<els.length;i++){
+      if(els[i].localName==='pgSz')pgW=attr(els[i],'w');
+      if(els[i].localName==='pgMar'){mL=attr(els[i],'left');mR=attr(els[i],'right')}
+    }
+    var vung=pgW-mL-mR;
+    if(!vung)return 'Không đọc được kích thước trang';
+    for(var i=0;i<els.length;i++){
+      if(els[i].localName==='tblW'&&attr(els[i],'w')>vung)tran.push('bảng '+attr(els[i],'w')+' twip');
+      if(els[i].localName==='extent'&&(+els[i].getAttribute('cx'))>vung*635)tran.push('ảnh');
+    }
+    return tran.length===0||'Tràn lề: '+tran.join(', ')+' (vùng chữ chỉ '+vung+' twip = '+(vung*2.54/1440).toFixed(2)+' cm)';
+  });
+
+  await T('Đồ thị được nhúng thành ảnh và khai báo quan hệ đúng',function(){
+    if(!docParts)return 'Chưa dựng được tài liệu';
+    var media=Object.keys(docParts).filter(function(k){return k.indexOf('word/media/')===0});
+    if(!media.length)return 'Không có ảnh nào được nhúng';
+    if(docParts['[Content_Types].xml'].indexOf('image/png')<0)return 'Thiếu khai báo image/png trong [Content_Types].xml';
+    var rels=docParts['word/_rels/document.xml.rels'];
+    var ids=[], m, re=/Id="([^"]+)"[^>]*Target="media\/([^"]+)"/g;
+    while((m=re.exec(rels)))ids.push(m);
+    if(!ids.length)return 'Thiếu quan hệ trỏ tới ảnh';
+    for(var i=0;i<ids.length;i++){
+      if(docParts['word/document.xml'].indexOf(ids[i][1])<0)return 'Quan hệ '+ids[i][1]+' không được dùng';
+      var bytes=docParts['word/media/'+ids[i][2]];
+      if(!bytes)return 'Thiếu tệp ảnh '+ids[i][2];
+      // Kiểm tra chữ ký PNG (89 50 4E 47) — nếu chỉ đếm tệp có mặt thì một mảng byte
+      // sai vẫn lọt qua, Word mở lên sẽ báo ảnh hỏng.
+      var b=new Uint8Array(bytes);
+      if(!(b[0]===0x89&&b[1]===0x50&&b[2]===0x4E&&b[3]===0x47))
+        return 'Tệp '+ids[i][2]+' không phải ảnh PNG hợp lệ (byte đầu: '+b[0]+' '+b[1]+' '+b[2]+' '+b[3]+')';
+    }
+    return true;
+  });
+
+  await T('Bảng biến thiên xuất thành bảng Word chỉnh sửa được',function(){
+    if(!docParts)return 'Chưa dựng được tài liệu';
+    return docParts['word/document.xml'].indexOf('Bảng biến thiên')>=0||'Không thấy bảng biến thiên trong tệp';
+  });
+
+  await T('Lệnh LaTeX lạ được giữ nguyên văn, không biến mất âm thầm',async function(){
+    var p=await buildDocxParts('$\\xhoangduong{a}$','t');
+    return p['word/document.xml'].indexOf('xhoangduong')>=0||'Lệnh không dịch được đã bị đánh rơi';
+  });
+
+  /* ===== G. Tính toàn vẹn trang ===== */
+  group('G · Tính toàn vẹn');
+
+  await T('Đủ các ô nhập mà mã nguồn cần',function(){
+    var ids=['subject','grade','lesson','book','periods','students','classSize','equipment','notes',
+      'tableLayout','assessmentMode','lessonTemplate','sourceMode','files','dropZone','fileList',
+      'privacyConfirm','apiKey','showKey','clearKey','style','model','scanModels','modelStatus',
+      'includeDigital','includeAI','traceSources','generateBtn','editBtn','saveVersionBtn','historyBtn',
+      'copyBtn','wordBtn','printBtn','emptyState','progress','progressTitle','progressText','progressBar',
+      'validationReport','result','draftNotice','historyDialog','historyList','compareView','toast',
+      'themeBtn','sampleBtn','clearDraftBtn','resultActions','lessonForm'];
+    var thieu=ids.filter(function(i){return !document.getElementById(i)});
+    return thieu.length===0||'Thiếu: '+thieu.join(', ');
+  });
+
+  await T('Nạp lại flow.js hai lần không bọc chồng mdToHtml',function(){
+    return window.__lessonFlowPatched===true||'Thiếu cờ chống nạp hai lần';
+  });
+
+  await T('Mỗi lượt gọi AI có giới hạn thời gian chờ',function(){
+    if(typeof window.fetch!=='function')
+      return {skip:'Trình duyệt/môi trường này không có fetch nên flow.js bỏ qua bản vá — đúng như thiết kế. Chrome và Edge đều có fetch.'};
+    return window.__aiTimeoutPatched===true||'Chưa đặt giới hạn — giáo viên có thể phải chờ vô hạn';
+  });
+
+  await T('Bộ tạo tệp nén JSZip đã sẵn sàng',function(){
+    return typeof JSZip!=='undefined'||'Chưa tải được JSZip — cần Internet để xuất DOCX';
+  });
+
+  /* ---------- Kết luận ---------- */
+  var total=pass+fail;
+  verdict.className=fail?'fail':'pass';
+  verdict.textContent=(fail?fail+'/'+total+' HỎNG':pass+'/'+total+' ĐẠT')+(skip?' · '+skip+' bỏ qua':'');
+  if(fail){
+    hint.hidden=false;
+    hint.innerHTML='<strong>Có '+fail+' phép kiểm tra không đạt.</strong><br>'
+      +'Mỗi dòng đỏ ghi rõ chỗ sai. Nếu vừa sửa mã, hãy quay lại chỗ vừa sửa trước. '
+      +'Nếu chưa sửa gì mà vẫn đỏ, có thể thiếu tệp trong thư mục hoặc chưa có Internet '
+      +'(<code>JSZip</code> tải từ mạng).';
+  }else{
+    hint.hidden=false;
+    hint.innerHTML='<strong>Toàn bộ '+pass+' phép kiểm tra đều đạt.</strong><br>'
+      +'Bấm "Tải tệp Word thử" rồi mở bằng Word để mắt thường xác nhận công thức và đồ thị hiển thị đúng — '
+      +'máy chỉ kiểm được cấu trúc tệp, không thay được việc thầy cô nhìn tận mắt.';
+    dlBtn.disabled=false;
+  }
+  runBtn.disabled=false;
+  window.__docMd=docMd;
+}
+
+runBtn.onclick=function(){runBtn.disabled=true;runAll().catch(function(e){
+  verdict.className='fail';verdict.textContent='LỖI';
+  record('Bộ kiểm tra dừng giữa chừng',false,e&&e.message||String(e));
+  runBtn.disabled=false;
+})};
+
+dlBtn.onclick=async function(){
+  dlBtn.disabled=true;
+  try{
+    var parts=await buildDocxParts(window.__docMd,'Tệp Word thử');
+    var zip=new JSZip();
+    Object.keys(parts).forEach(function(p){zip.file(p,parts[p])});
+    var blob=await zip.generateAsync({type:'blob',compression:'DEFLATE',
+      mimeType:'application/vnd.openxmlformats-officedocument.wordprocessingml.document'});
+    var a=document.createElement('a');
+    a.href=URL.createObjectURL(blob);a.download='KIEM_TRA_XUAT_WORD.docx';
+    document.body.appendChild(a);a.click();a.remove();
+    setTimeout(function(){URL.revokeObjectURL(a.href)},2000);
+  }catch(e){alert('Không tạo được tệp thử: '+(e&&e.message||e))}
+  dlBtn.disabled=false;
+};
+})();
+</script>
+</body>
+</html>
