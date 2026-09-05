@@ -1,11 +1,11 @@
 BÁO CÁO ĐÁNH GIÁ VÀ HIỆU CHỈNH TRỢ LÝ KHBD
-Phiên bản rà soát: 2026-09-05 · b13
+Phiên bản rà soát: 2026-09-05 · b14
 
 I. KẾT LUẬN NGẮN
 
 Ứng dụng có nền tảng tốt và đã vượt mức một biểu mẫu tạo giáo án thông thường:
 có kiểm soát nguồn, kiểm định cấu trúc, đối chiếu mã NLS/NLAI, dựng công thức
-Toán và xuất DOCX. Sau hiệu chỉnh b13, ứng dụng phù hợp để tiếp tục chạy thử
+Toán và xuất DOCX. Sau hiệu chỉnh b14, ứng dụng phù hợp để tiếp tục chạy thử
 nghiệp vụ với giáo viên; chưa nên xem kết quả AI là văn bản đã được phê duyệt.
 
 II. ĐIỂM MẠNH
@@ -22,7 +22,7 @@ II. ĐIỂM MẠNH
 5. Phân hệ Toán hỗ trợ công thức Word, bảng xét dấu, bảng biến thiên và đồ thị.
 6. Có lịch sử phiên bản, kiểm tra đầu ra và bộ 60 phép tự kiểm tra.
 
-III. LỖI ĐÃ SỬA TRONG b10–b13
+III. LỖI ĐÃ SỬA TRONG b10–b14
 
 1. Sửa kiểm định thời lượng: trước đây chỉ cộng thời lượng của lessonflow nhưng
    so với toàn bộ số tiết × 45 phút, dễ khóa xuất Word sai. Nay phần mềm ghi rõ
@@ -44,6 +44,9 @@ III. LỖI ĐÃ SỬA TRONG b10–b13
 9. Thay đầu mũi tên rời bằng marker SVG gắn trực tiếp vào đường biến thiên; bổ
    sung tiệm cận đứng, ngang, xiên và tự nhận dạng trường hợp phân thức bậc hai
    trên bậc nhất thường gặp.
+10. Dựng lại bảng xét dấu theo mẫu SGK: bỏ khung ngoài và các vạch dọc tại
+    nghiệm; chỉ giữ vạch phân cách cột nhãn, đường ngang phân hàng, đồng thời
+    giữ đúng hai vạch song song tại điểm không xác định.
 
 IV. GÓP Ý CHUYÊN MÔN
 

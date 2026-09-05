@@ -115,12 +115,12 @@ h2{font-size:.82rem;letter-spacing:.09em;text-transform:uppercase;color:var(--mu
 })();
 </script>
 
-<script src="standards.js?v=b13"></script>
-<script src="app.js?v=b13"></script>
-<script src="flow.js?v=b13"></script>
-<script src="professional.js?v=b13"></script>
+<script src="standards.js?v=b14"></script>
+<script src="app.js?v=b14"></script>
+<script src="flow.js?v=b14"></script>
+<script src="professional.js?v=b14"></script>
 <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
-<script src="docx-export.js?v=b13"></script>
+<script src="docx-export.js?v=b14"></script>
 
 <script>
 (function(){
@@ -445,15 +445,15 @@ async function runAll(){
     var d=new DOMParser().parseFromString(svg,'application/xml');
     var all=[].slice.call(d.getElementsByTagName('*'));
     var vach=all.filter(function(e){return e.localName==='line'&&/vt-grid/.test(e.getAttribute('class')||'')});
-    if(vach.length!==4)return 'Có '+vach.length+' vạch dọc, phải đúng 4 (một vạch mỗi mốc)';
+    if(vach.length!==0)return 'Còn '+vach.length+' vạch dọc tại nghiệm — bảng chuẩn SGK không kẻ các vạch này';
     /* Đếm nhãn: 1 nhãn "x" + 1 nhãn hàng + 4 mốc + 5 dấu = 11. Nếu chỉ đếm vạch dọc thì
        một bản sửa hỏng làm rơi mất dấu vẫn lọt qua — đã thử và đúng là lọt. */
     var nhan=all.filter(function(e){return e.localName==='foreignObject'||e.localName==='text'});
     if(nhan.length!==11)return 'Vẽ ra '+nhan.length+' nhãn, phải đúng 11 (1 chữ x + 1 tên hàng + 4 mốc + 5 dấu) — đang rơi mất ô';
     if(svg.indexOf('undefined')>=0)return 'Bảng in ra chữ "undefined" — ô thiếu dữ liệu chưa được xử lý';
-    /* Kiểm vị trí: dấu trên khoảng phải nằm GIỮA hai vạch, số 0 phải nằm ĐÚNG trên vạch. */
-    var xs=vach.map(function(l){return parseFloat(l.getAttribute('x1'))}).sort(function(a,b){return a-b});
-    var giua=(xs[0]+xs[1])/2, lech=nhan.filter(function(e){
+    /* Kiểm vị trí: dấu trên khoảng phải nằm GIỮA hai mốc. Với 4 mốc,
+       vùng đặt mốc chạy từ x=90 đến x=732. */
+    var giua=(90+(90+642/3))/2, lech=nhan.filter(function(e){
       var x=parseFloat(e.getAttribute('x')), w=parseFloat(e.getAttribute('width'))||0;
       return Math.abs(x+w/2-giua)<2;});
     return lech.length>=1||'Không có dấu nào nằm giữa hai mốc đầu — các dấu đang đặt sai vị trí';

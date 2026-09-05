@@ -1,7 +1,7 @@
 /* Mốc phiên bản — hiện ngay trên thanh tiêu đề. Sau nhiều vòng sửa, đã có lần trang web
    chạy bản cũ mà cả hai bên đều tưởng là bản mới, mất công đi tìm lỗi đã sửa xong rồi.
    Nhìn dòng chữ trên đầu trang là biết ngay đang chạy bản nào. */
-const APP_BUILD='2026-09-05 · b13';
+const APP_BUILD='2026-09-05 · b14';
 const $=id=>document.getElementById(id);let selectedFiles=[],rawMarkdown='',availableModels=[],scanTimer,draftTimer,lastValidation=null;
 const fields=['subject','grade','lesson','book','periods','students','classSize','equipment','notes','tableLayout','assessmentMode','lessonTemplate','sourceMode'];
 const toast=m=>{const t=$('toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2600)};
@@ -245,34 +245,36 @@ function buildSignSVG(spec){
   if(N<2)return null;
   const rows=(spec.rows||[]).map(r=>({label:r.label??'',cells:coerceLen(r.cells,2*N-3,'')}));
   if(!rows.length)return null;
-  const W=760,leftLabel=54,rightPad=16,plotW=W-leftLabel-rightPad;
-  const xAt=i=>leftLabel+(N===1?0:i*(plotW/(N-1)));
-  const bandX=38,bandRow=44,padTop=8;
+  /* Chuẩn SGK: không đóng khung, không kẻ cột tại nghiệm; chỉ một vạch dọc sau
+     cột nhãn và các đường ngang phân hàng. Dấu khoảng nằm giữa hai mốc. */
+  const W=760,leftLabel=62,rightPad=18,xStart=leftLabel+28,xEnd=W-rightPad-10,plotW=xEnd-xStart;
+  const xAt=i=>xStart+(N===1?0:i*(plotW/(N-1)));
+  const bandX=40,bandRow=46,padTop=8;
   const H=padTop+bandX+bandRow*rows.length+8;
   const rowTop=k=>padTop+bandX+bandRow*k;
   let svg=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(spec.title||'Bảng xét dấu')}">`;
-  svg+=`<rect x="${leftLabel}" y="${padTop}" width="${plotW}" height="${bandX+bandRow*rows.length}" class="vt-frame"/>`;
-  // vạch ngang giữa các dòng
-  for(let k=0;k<=rows.length;k++){const y=rowTop(k);
-    svg+=`<line x1="${leftLabel}" y1="${y}" x2="${W-rightPad}" y2="${y}" class="vt-frame"/>`}
-  // vạch dọc tại từng mốc
-  pts.forEach((_,i)=>{const x=xAt(i);
-    svg+=`<line x1="${x}" y1="${padTop}" x2="${x}" y2="${H-8}" class="vt-grid"/>`});
+  svg+=`<line x1="${leftLabel}" y1="${padTop}" x2="${leftLabel}" y2="${H-8}" class="vt-frame"/>`;
+  for(let k=0;k<rows.length;k++){const y=rowTop(k);
+    svg+=`<line x1="8" y1="${y}" x2="${W-rightPad}" y2="${y}" class="vt-frame"/>`}
   // nhãn hàng bên trái
-  svg+=svgLabel(2,padTop+bandX/2,'$x$','start',48,20);
-  rows.forEach((r,k)=>{svg+=svgLabel(2,rowTop(k)+bandRow/2,wrapMathCell(r.label),'start',48,20)});
+  svg+=svgLabel(20,padTop+bandX/2,'$x$','middle',28,20);
+  rows.forEach((r,k)=>{svg+=svgLabel(20,rowTop(k)+bandRow/2,wrapMathCell(r.label),'middle',30,20)});
   // các mốc trên hàng x
   pts.forEach((p,i)=>{svg+=svgLabel(xAt(i),padTop+bandX/2,wrapMathCell(p),'middle',120,22)});
   // dấu: chỉ số chẵn là dấu trên khoảng, chỉ số lẻ là giá trị tại mốc trong
+  const discontinuities=new Set();
   rows.forEach((r,k)=>{
     const cy=rowTop(k)+bandRow/2;
     /* String(undefined) trả về chuỗi "undefined" chứ không phải chuỗi rỗng, nên nếu thiếu ô
        thì bảng in ra chữ "undefined" giữa bài. Phải dùng ?? '' trước khi ép kiểu. */
     for(let i=0;i<N-1;i++){const v=r.cells[2*i];
       if(String(v??'').trim())svg+=svgLabel((xAt(i)+xAt(i+1))/2,cy,wrapMathCell(v),'middle',80,22)}
-    for(let i=1;i<=N-2;i++){const v=r.cells[2*i-1];
-      if(String(v??'').trim())svg+=svgLabel(xAt(i),cy,wrapMathCell(v),'middle',60,22)}
+    for(let i=1;i<=N-2;i++){const v=r.cells[2*i-1],sv=String(v??'').trim();
+      if(/^\\?\|$/.test(sv))discontinuities.add(i);
+      else if(sv)svg+=svgLabel(xAt(i),cy,wrapMathCell(v),'middle',60,22)}
   });
+  discontinuities.forEach(i=>{svg+=`<line x1="${xAt(i)-3}" y1="${padTop+2}" x2="${xAt(i)-3}" y2="${H-10}" class="vt-discontinuity"/>`+
+    `<line x1="${xAt(i)+3}" y1="${padTop+2}" x2="${xAt(i)+3}" y2="${H-10}" class="vt-discontinuity"/>`});
   return svg+'</svg>';
 }
 function buildVariationSVG(spec){
