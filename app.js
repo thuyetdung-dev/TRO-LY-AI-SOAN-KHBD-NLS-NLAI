@@ -1,7 +1,7 @@
 /* Mốc phiên bản — hiện ngay trên thanh tiêu đề. Sau nhiều vòng sửa, đã có lần trang web
    chạy bản cũ mà cả hai bên đều tưởng là bản mới, mất công đi tìm lỗi đã sửa xong rồi.
    Nhìn dòng chữ trên đầu trang là biết ngay đang chạy bản nào. */
-const APP_BUILD='2026-09-05 · b19';
+const APP_BUILD='2026-09-05 · b20';
 const $=id=>document.getElementById(id);let selectedFiles=[],rawMarkdown='',availableModels=[],scanTimer,draftTimer,lastValidation=null;
 const fields=['subject','grade','lesson','book','periods','students','classSize','equipment','notes','tableLayout','assessmentMode','lessonTemplate','sourceMode'];
 const toast=m=>{const t=$('toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2600)};
@@ -532,6 +532,17 @@ function compileExpr(expr){
 }
 /* b17: đưa mọi cách viết vạch đôi tại điểm gián đoạn về cùng một ký hiệu, nếu không "\|"
    in ra nguyên văn giữa hàng đạo hàm như trong bản giáo viên đánh dấu. */
+/* b20 — VÌ SAO tách thành hàm riêng: quy tắc nhận dạng này trước đây nằm rải hai chỗ, một bản
+   trong wrapMathCell (dùng cho màn hình) và một bản so sánh chuỗi trong buildVariationPrintSVG
+   (dùng cho ảnh xuất Word). Hai bản lệch nhau nên cùng một bảng biến thiên hiện đúng khi In/PDF
+   mà hỏng khi xuất Word. Nay chỉ còn MỘT nơi định nghĩa, sửa một chỗ là cả hai đường cùng đổi.
+   Nhận cả \| (LaTeX), ||, //, │ và ký tự ‖ sẵn có; KHÔNG nhận một gạch đứng đơn "|" vì đó là
+   cách viết trị tuyệt đối, nhận nhầm sẽ nuốt mất nội dung ô.
+   Cho phép NHIỀU dấu gạch ngược liền nhau: tuỳ chỗ mà chuỗi tới đây đã qua JSON.parse hay
+   chưa, nên cùng một ô có thể mang "\|" hoặc "\\|". Phép kiểm mới ở test.html bắt được đúng
+   ca thứ hai này — nếu chỉ nhận một gạch thì bảng vẫn hỏng khi khối JSON không được giải mã. */
+const VACH_DOI=/^\s*(?:\\+\||\|\||\/\/|‖|││|\\+Vert|\\+parallel)\s*$/;
+const laVachDoi=v=>VACH_DOI.test(String(v??''));
 const wrapMathCell=v=>{const s=String(v??'').trim().replace(/\\\||\|\||\/\//g,'‖');if(!s)return '';if(/^[+\-0↗↘↑↓∞‖]+$/.test(s))return esc(s);return s.includes('$')?inline(s):`$${esc(s)}$`};
 // Nhãn đặt trong foreignObject để MathJax vẫn xử lý được $...$ bên trong SVG (phân số, chỉ số dưới...).
 function svgLabel(cx,cy,content,anchor,w,h){w=w||100;h=h||24;const x=anchor==='start'?cx:anchor==='end'?cx-w:cx-w/2;const justify=anchor==='start'?'flex-start':anchor==='end'?'flex-end':'center';return `<foreignObject x="${x}" y="${cy-h/2}" width="${w}" height="${h}" style="overflow:visible"><div xmlns="http://www.w3.org/1999/xhtml" class="vt-label" style="justify-content:${justify}">${content}</div></foreignObject>`}
@@ -715,6 +726,10 @@ function buildVariationPrintSVG(spec){
   const N=pts.length;
   if(N<2)return null;
   const dau=(spec.derivative||[]).map(texToPlain);
+  /* b20 — VÌ SAO giữ thêm bản GỐC: texToPlain đổi mọi tên lệnh gồm chữ cái thành chữ thường,
+     nên "\Vert" biến thành "Vert" và không còn nhận ra là vạch đôi nữa. Nhận dạng phải soi
+     chuỗi trước khi nó bị biến dạng; đây đúng là kiểu lỗi chỉ lộ ra khi thử trên trường hợp biên. */
+  const dauGoc=(spec.derivative||[]).map(v=>String(v??''));
   const gt=(spec.values||[]).map(v=>(v&&typeof v==='object')
     ?{left:texToPlain(v.left),right:texToPlain(v.right)}:texToPlain(v));
   const doRong=Math.max(24,...pts.map(t=>t.length),
@@ -747,13 +762,28 @@ function buildVariationPrintSVG(spec){
   /* Quy ước của mảng derivative: chỉ số CHẴN là dấu trên một khoảng, chỉ số LẺ là ký hiệu
      ngay tại một mốc (số 0 hoặc vạch đôi). Tính nhầm chỗ này thì số 0 và vạch đôi trôi
      sang giữa khoảng — đúng kiểu bảng biến thiên "bị lỗi" trong tệp Word. */
+  /* b20 — VÌ SAO phải nhận nhiều cách viết: bản in ra Word của bài "Khảo sát sự biến thiên"
+     hiện nguyên văn hai ký tự "\|" giữa hàng y' và KHÔNG có vạch đôi nào, trong khi bản
+     In/PDF trên màn hình vẽ đúng. Nguyên nhân: bản màn hình lọc qua wrapMathCell (dòng ~535)
+     vốn đã đưa \| , || , // về ‖, còn bản ảnh này chỉ so sánh đúng hai chuỗi '‖' và '||'.
+     texToPlain không đụng tới "\|" vì quy tắc thay lệnh LaTeX chỉ nhận tên gồm CHỮ CÁI,
+     mà "|" không phải chữ cái — nên chuỗi đi thẳng ra <text>. Nay dùng chung một hàm nhận
+     dạng cho cả hai đường vẽ, để hai bản không bao giờ lệch nhau nữa. */
+  const veVachDoi=x=>`<line x1="${x-2}" y1="${y1+6}" x2="${x-2}" y2="${y3-6}" class="bbt-l"/>`+
+    `<line x1="${x+2}" y1="${y1+6}" x2="${x+2}" y2="${y3-6}" class="bbt-l"/>`;
+  const daVe=new Set();
   dau.forEach((t,i)=>{
     if(!t)return;
     const taiMoc=i%2===1;
     const x=taiMoc?X((i+1)/2):giua(i/2);
-    if(t==='‖'||t==='||')g+=`<line x1="${x-2}" y1="${y1+6}" x2="${x-2}" y2="${y3-6}" class="bbt-l"/>`+
-      `<line x1="${x+2}" y1="${y1+6}" x2="${x+2}" y2="${y3-6}" class="bbt-l"/>`;
+    if(laVachDoi(t)||laVachDoi(dauGoc[i])){g+=veVachDoi(x);if(taiMoc)daVe.add((i+1)/2)}
     else g+=`<text x="${x}" y="${(y1+y2)/2+6}" text-anchor="middle" class="bbt">${esc(t)}</text>`;
+  });
+  /* VÌ SAO vẽ thêm ở đây: một giá trị dạng {left,right} tự nó đã là điểm gián đoạn, kể cả khi
+     AI quên ghi ký hiệu vạch đôi ở hàng y'. Bản màn hình vẽ vạch dựa vào chính values nên vẫn
+     đúng; bản ảnh trước đây chỉ dựa vào derivative nên mất vạch. Set daVe chặn vẽ chồng hai lần. */
+  gt.forEach((v,i)=>{
+    if(v&&typeof v==='object'&&!daVe.has(i)&&i>0&&i<N-1){g+=veVachDoi(X(i));daVe.add(i)}
   });
   /* Hàng giá trị: mốc ở hai mép, mũi tên chéo nối giữa — đúng lối vẽ của SGK. */
   const cao=(v,i)=>{
@@ -783,8 +813,30 @@ function buildVariationPrintSVG(spec){
     const v=gt[i];const t=(v&&typeof v==='object')?v.left:String(v??'');
     return /^[+]?∞/.test(t)?y2+16:/^[−-]∞/.test(t)?y3-16:(y2+y3)/2;
   };
+  /* b20 — VÌ SAO phải lùi mũi tên tại điểm gián đoạn: nhãn giới hạn trái được đặt ở X-8 với
+     text-anchor="end", tức nó CHIẾM chỗ về phía trái của X-8, trong khi mũi tên trước đây luôn
+     kết thúc ở X-22 — nằm gọn trong vùng chữ. Trong bản Word của giáo viên, đầu mũi tên đè lên
+     "-∞" và ăn mất dấu trừ, đọc ra thành "∞". Chừa thêm chỗ đúng bằng bề ngang ước lượng của
+     nhãn (khoảng 7,2 px một ký tự, như doRong ở trên đã dùng), chỉ tại mốc gián đoạn. */
+  const rongNhan=t=>Math.min(64,String(t??'').length*7.2+6);
+  const lui=(i,ben)=>{
+    const v=gt[i];
+    if(!(v&&typeof v==='object'))return 22;
+    return 22+rongNhan(ben==='trai'?v.left:v.right);
+  };
   for(let i=0;i<N-1;i++){
-    const a=X(i)+22,b=X(i+1)-22,ya=mocY(i),yb=mocYTrai(i+1);
+    const x0=X(i),x1=X(i+1),ya=mocY(i),yb=mocYTrai(i+1);
+    let la=lui(i,'phai'),lb=lui(i+1,'trai');
+    /* VÌ SAO có bước co lại này — BÀI HỌC CỦA b18: một ràng buộc hình học mới, khi gặp trường
+       hợp biên (ở đây là nhãn giá trị rất dài), có thể ăn hết chỗ và làm nét vẽ biến mất hẳn.
+       Nếu chỗ chừa hai bên vượt quá bề ngang khoảng thì co đều cả hai theo tỉ lệ, giữ cho mũi
+       tên còn tối thiểu 16 px. Thà mũi tên ngắn và chạm nhẹ vào nhãn, còn hơn mất mũi tên. */
+    const conLai=(x1-x0)-la-lb, TOI_THIEU=16;
+    if(conLai<TOI_THIEU){
+      const cho=Math.max(0,(x1-x0)-TOI_THIEU), tong=la+lb;
+      if(tong>0){const k=cho/tong;la*=k;lb*=k}
+    }
+    const a=x0+la,b=x1-lb;
     if(b>a)g+=`<path d="M${a} ${ya} L${b} ${yb}" class="bbt-a" marker-end="url(#mb)"/>`;
   }
   g+=`<defs><marker id="mb" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,1 L10,5 L0,9 z" fill="#176fa8"/></marker></defs>`;

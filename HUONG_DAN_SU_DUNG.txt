@@ -1,5 +1,5 @@
 TRỢ LÝ SOẠN KẾ HOẠCH BÀI DẠY 2026–2027
-BẢN CHUYÊN NGHIỆP – BƯỚC 4 · HIỆU CHỈNH b19
+BẢN CHUYÊN NGHIỆP – BƯỚC 4 · HIỆU CHỈNH b20
 
 ================================================================
 ĐIỀU KIỆN CẦN
@@ -137,7 +137,7 @@ XỬ LÝ SỰ CỐ THƯỜNG GẶP
 TỰ KIỂM TRA SAU KHI SỬA MÃ
 ================================================================
 Mở tệp test.html bằng Chrome hoặc Edge rồi bấm "Chạy kiểm tra". Trang
-này chạy 95 phép kiểm tra trên đúng các tệp đang nằm trong thư mục,
+này chạy 99 phép kiểm tra trên đúng các tệp đang nằm trong thư mục,
 không phải trên bản sao, nên kết quả phản ánh đúng tình trạng thật.
 
 - Toàn bộ xanh: phần mềm còn lành, dùng được.
@@ -290,7 +290,7 @@ Mục 1 là một lỗi do CHÍNH BẢN b17 gây ra.
    của bảng biến thiên phải là biểu thức thuần không có dấu nhân.
 
 ================================================================
-NHỮNG THAY ĐỔI CỦA b19 (so với b18) — VÒNG SỬA CUỐI
+NHỮNG THAY ĐỔI CỦA b19 (so với b18)
 ================================================================
 Căn cứ: bản in Bài 4 "Khảo sát sự biến thiên và vẽ đồ thị của hàm số".
 
@@ -323,3 +323,34 @@ Căn cứ: bản in Bài 4 "Khảo sát sự biến thiên và vẽ đồ thị 
 
 6. Chặn mã mục tiêu được dùng nhưng chưa định nghĩa: bản in có ma trận
    ghi MT6, MT7, MT8, MT9 trong khi mục Mục tiêu chỉ khai tới MT6.
+
+================================================================
+NHỮNG THAY ĐỔI CỦA b20 (so với b19)
+================================================================
+Căn cứ: thầy cô gửi kèm cùng một bài — bản xuất Word và bản xuất IN/PDF
+— và chỉ ra bảng biến thiên trong tệp Word bị sai, còn bản IN thì đúng.
+
+1. BẢNG BIẾN THIÊN TRONG TỆP WORD MẤT VẠCH ĐÔI Ở ĐIỂM GIÁN ĐOẠN, và in
+   ra nguyên văn hai ký tự "\|" giữa hàng y'. Bản In/PDF của đúng bài đó
+   lại vẽ đúng. Nguyên nhân: từ b19 bảng biến thiên có HAI đường vẽ khác
+   nhau — bản trên màn hình và bản ảnh đưa vào Word — mà quy tắc nhận
+   dạng vạch đôi chỉ được viết đầy đủ ở bản màn hình. Bản ảnh chỉ so sánh
+   đúng hai chuỗi "‖" và "||", nên cách viết LaTeX "\|" mà AI hay dùng
+   rơi thẳng ra chữ. Nay cả hai đường dùng CHUNG một quy tắc: "\|", "||",
+   "//", "‖" và "\Vert" đều thành vạch đôi thật.
+
+2. THIẾU KÝ HIỆU THÌ VẪN VẼ ĐÚNG. Một ô giá trị có cả giới hạn trái và
+   giới hạn phải tự nó đã là điểm gián đoạn, nên dù AI quên ghi ký hiệu ở
+   hàng y', bảng vẫn được vẽ vạch đôi — giống cách bản màn hình vẫn làm.
+
+3. MŨI TÊN KHÔNG CÒN ĐÈ LÊN NHÃN. Trong tệp Word cũ, đầu mũi tên trùm lên
+   nhãn "-∞" bên trái điểm gián đoạn và ăn mất dấu trừ, đọc thành "∞". Nay
+   mũi tên chừa chỗ đúng bằng bề ngang của nhãn. Kèm một mức sàn: nếu nhãn
+   quá dài thì chỗ chừa tự co lại để mũi tên KHÔNG BAO GIỜ biến mất — đúng
+   bài học của b18, khi một ràng buộc hình học mới từng bóp vùng vẽ còn 8,5
+   pixel.
+
+4. Bộ kiểm tra: 99 phép (98 đạt + 1 bỏ qua ngoài trình duyệt), thêm 4 phép
+   cho vòng này, trong đó có HAI phép kiểm ngược: bảng không có gián đoạn
+   thì không được vẽ vạch đôi, một gạch đứng đơn "|" (trị tuyệt đối) không
+   bị hiểu nhầm, và chỗ chừa cho nhãn không được làm mất mũi tên.

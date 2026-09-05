@@ -115,12 +115,12 @@ h2{font-size:.82rem;letter-spacing:.09em;text-transform:uppercase;color:var(--mu
 })();
 </script>
 
-<script src="standards.js?v=b19"></script>
-<script src="app.js?v=b19"></script>
-<script src="flow.js?v=b19"></script>
-<script src="professional.js?v=b19"></script>
+<script src="standards.js?v=b20"></script>
+<script src="app.js?v=b20"></script>
+<script src="flow.js?v=b20"></script>
+<script src="professional.js?v=b20"></script>
 <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
-<script src="docx-export.js?v=b19"></script>
+<script src="docx-export.js?v=b20"></script>
 
 <script>
 (function(){
@@ -493,6 +493,53 @@ async function runAll(){
       derivative:['+','\\|','+'],values:['1',{left:'+\\infty',right:'-\\infty'},'1']});
     var n=(svg.match(/class="vt-discontinuity"/g)||[]).length;
     return n===2||'Có '+n+' vạch gián đoạn — phải đúng 2 vạch song song';
+  });
+
+  /* b20 — Bảng biến thiên bản ẢNH (đưa vào Word) phải vẽ giống hệt bản trên màn hình.
+     Căn cứ: tệp Word của bài "Khảo sát sự biến thiên" in ra nguyên văn hai ký tự "\|" giữa
+     hàng y' và không có vạch đôi nào, trong khi bản In/PDF cùng bài lại đúng. Bốn phép dưới
+     đây khoá cả hai chiều: phải vẽ khi có gián đoạn, và KHÔNG được vẽ khi không có. */
+  function demVachDoc(svg){
+    /* Đường dọc = có x1 trùng x2. Trừ đi 1 đường phân cách cột nhãn luôn tồn tại. */
+    return ((String(svg).match(/<line x1="([0-9.]+)" y1="[0-9.]+" x2="\1"/g)||[]).length)-1;
+  }
+  await T('Bảng biến thiên bản ảnh: mọi cách viết vạch đôi đều thành vạch dọc thật',function(){
+    var cach=['\\\\|','||','//','‖','\\\\Vert'], hong=[];
+    cach.forEach(function(k){
+      var svg=buildVariationPrintSVG({points:['-\\\\infty','2','+\\\\infty'],
+        derivative:['-',k,'-'],values:['1',{left:'-\\\\infty',right:'+\\\\infty'},'1']})||'';
+      if(demVachDoc(svg)!==2)hong.push(k+' → '+demVachDoc(svg)+' vạch');
+      if(/>\\\\\|</.test(svg))hong.push(k+' → in nguyên văn ký hiệu LaTeX');
+    });
+    return hong.length===0||'Sai ở: '+hong.join('; ');
+  });
+
+  await T('Bảng biến thiên bản ảnh: có giá trị trái/phải thì vẽ vạch đôi dù thiếu ký hiệu',function(){
+    var svg=buildVariationPrintSVG({points:['-\\\\infty','2','+\\\\infty'],
+      derivative:['-','','-'],values:['1',{left:'-\\\\infty',right:'+\\\\infty'},'1']})||'';
+    return demVachDoc(svg)===2||'Được '+demVachDoc(svg)+' vạch — AI quên ghi ký hiệu thì bảng mất vạch đôi';
+  });
+
+  /* PHÉP KIỂM NGƯỢC 1 — thử trên trường hợp ĐÚNG để không vẽ thừa. */
+  await T('KIỂM NGƯỢC: bảng không có gián đoạn thì không được vẽ vạch đôi',function(){
+    var a=buildVariationPrintSVG({points:['-\\\\infty','2','+\\\\infty'],
+      derivative:['-','0','+'],values:['+\\\\infty','-1','+\\\\infty']})||'';
+    /* Một gạch đứng đơn là cách viết trị tuyệt đối, không phải vạch đôi. */
+    var b=buildVariationPrintSVG({points:['-\\\\infty','2','+\\\\infty'],
+      derivative:['-','|','-'],values:['1','0','1']})||'';
+    if(demVachDoc(a)!==0)return 'Parabol không gián đoạn mà vẫn vẽ '+demVachDoc(a)+' vạch';
+    return demVachDoc(b)===0||'Ô ghi một gạch đứng "|" bị hiểu nhầm thành vạch đôi';
+  });
+
+  /* PHÉP KIỂM NGƯỢC 2 — bài học b18: ràng buộc hình học mới không được nuốt mất nét vẽ. */
+  await T('KIỂM NGƯỢC: chừa chỗ cho nhãn không làm mất mũi tên',function(){
+    var dai=buildVariationPrintSVG({points:['-\\\\infty','2','+\\\\infty'],derivative:['-','\\\\|','-'],
+      values:['1',{left:'-12345678901234567890',right:'+12345678901234567890'},'1']})||'';
+    var thuong=buildVariationPrintSVG({points:['-\\\\infty','2','+\\\\infty'],derivative:['-','0','+'],
+      values:['+\\\\infty','-1','+\\\\infty']})||'';
+    var nDai=(dai.match(/class="bbt-a"/g)||[]).length, nTh=(thuong.match(/class="bbt-a"/g)||[]).length;
+    if(nDai!==2)return 'Nhãn dài làm mất mũi tên (còn '+nDai+'/2)';
+    return nTh===2||'Bảng thường cũng thiếu mũi tên (còn '+nTh+'/2)';
   });
 
   await T('Không kẻ lưới dọc tại các điểm cực trị',function(){

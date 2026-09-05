@@ -1,5 +1,5 @@
 BÁO CÁO ĐÁNH GIÁ VÀ HIỆU CHỈNH TRỢ LÝ KHBD
-Phiên bản rà soát: 2026-09-05 · b19 (b15 → b16 → b17 → b18 → b19, mỗi vòng theo phản hồi thật)
+Phiên bản rà soát: 2026-09-05 · b20 (b15 → b16 → b17 → b18 → b19 → b20, mỗi vòng theo phản hồi thật)
 
 I. KẾT LUẬN NGẮN
 
@@ -315,8 +315,60 @@ XI4. Chặn mã mục tiêu dùng mà chưa định nghĩa: bản in có ma tr�
 
 Bộ kiểm tra: 95 phép (94 đạt + 1 bỏ qua ngoài trình duyệt), thêm 7 phép cho vòng này.
 
-XII. VIỆC CÒN LẠI SAU NĂM VÒNG SỬA
-Ba giới hạn ở mục V vẫn nguyên: nội dung sửa tay trên màn hình chưa vào được tệp Word;
+XIII. ĐỢT SỬA b20 — MỘT BÀI, HAI BẢN XUẤT, ĐỐI CHIẾU TRỰC TIẾP
+
+Căn cứ lần này mạnh hơn mọi vòng trước: thầy cô gửi CÙNG MỘT bài dạy ở hai dạng xuất —
+tệp Word và bản IN/PDF — kèm nhận xét "xuất dạng Word thì sai Bảng biến thiên, xuất dạng
+IN thì đúng". Có cả hai bản của cùng một nội dung nên không phải suy đoán: chỉ việc mở
+hai bên ra so.
+
+XIII0. TÁI HIỆN TRƯỚC KHI SỬA.
+Giải nén tệp .docx, lấy ra 27 ảnh, đối chiếu với trang tương ứng của bản IN. Bảng biến
+thiên của y=(x+1)/(x-2) trong Word: hàng y' in ra nguyên văn hai ký tự "\|", không có
+vạch đôi nào tại x=2, và đầu mũi tên trùm lên nhãn "-∞" làm mất dấu trừ (đọc thành "∞").
+Cùng bảng đó ở trang 17 bản IN: vạch đôi thật cắt dọc, nhãn đủ dấu.
+Dựng lại đúng dữ liệu đó trong môi trường chạy thử rồi cho cả hai đường vẽ chấm:
+   bản màn hình  : 2 vạch dọc gián đoạn — ĐÚNG
+   bản ảnh (Word): 0 vạch, in nguyên văn "\|" — HỎNG
+Đo được chênh lệch này thì nguyên nhân lộ ra ngay.
+
+XIII1. NGUYÊN NHÂN GỐC: MỘT QUY TẮC, HAI CHỖ VIẾT.
+Từ b19, bảng biến thiên có hai đường vẽ riêng — buildVariationSVG cho màn hình (nhãn dựng
+bằng foreignObject để MathJax xử lý) và buildVariationPrintSVG cho ảnh đưa vào Word (chỉ
+dùng <text> nên đổi sang PNG được). Quy tắc "mọi cách viết vạch đôi đều đưa về ‖" mà b17
+đặt ra chỉ nằm trong wrapMathCell, tức đường màn hình. Đường ảnh so sánh chuỗi trực tiếp
+với '‖' và '||', nên "\|" — cách viết LaTeX mà mô hình dùng nhiều nhất — không khớp và
+rơi thẳng ra chữ. texToPlain cũng không cứu được, vì nó chỉ thay các lệnh LaTeX có tên
+gồm CHỮ CÁI, mà "|" không phải chữ cái.
+Đây là đúng lớp lỗi của mục III.4 (chữ "đ" xử lý không đồng bộ giữa hai tệp): một quy tắc
+được chép ra hai nơi thì sớm muộn hai nơi lệch nhau. Nay quy tắc chỉ còn MỘT định nghĩa
+dùng chung cho cả hai đường vẽ.
+
+XIII2. THỬ TRÊN TRƯỜNG HỢP BIÊN NGAY — VÀ ĐÃ BẮT ĐƯỢC MỘT CA.
+Theo đúng bài học hai vòng trước, phép kiểm mới được thử ngay trên các biến thể. Nó bắt
+được một ca mà bản sửa đầu tiên còn sót: chuỗi mang HAI dấu gạch ngược ("\\|"), xảy ra
+khi khối JSON chưa qua bước giải escape. Quy tắc đã được nới cho đúng chỗ đó, và vẫn
+KHÔNG nhận một gạch đứng đơn "|" — vì đó là cách viết trị tuyệt đối, nhận nhầm sẽ nuốt
+mất nội dung ô.
+
+XIII3. HAI SỬA CHỮA KÈM THEO.
+ - Ô giá trị có cả giới hạn trái và phải tự nó đã là điểm gián đoạn, nên nay vẫn vẽ vạch
+   đôi kể cả khi AI quên ghi ký hiệu ở hàng y'.
+ - Mũi tên chừa chỗ đúng bằng bề ngang nhãn nên thôi đè lên "-∞". Kèm một mức sàn: nếu
+   nhãn quá dài thì chỗ chừa tự co lại theo tỉ lệ, giữ mũi tên tối thiểu 16 px. Không có
+   mức sàn này thì một nhãn 20 ký tự sẽ ăn hết bề ngang khoảng và xoá sạch mũi tên — đúng
+   lại vết xe của b18 (vùng vẽ còn 8,5 pixel). Đã đo: nhãn 20 ký tự vẫn giữ đủ 2 mũi tên.
+
+XIII4. ĐO LẠI SAU KHI SỬA (dựng ảnh thật rồi nhìn tận mắt, không chỉ đếm chuỗi):
+   y=(x+1)/(x-2)        : vạch đôi thật, "-∞" đủ dấu trừ, mũi tên không chạm nhãn
+   y=(x²-x-1)/(x-2)     : đủ cả hai cực trị lẫn vạch đôi tại x=2
+   5 cách viết vạch đôi : \| , || , // , ‖ , \Vert — cả 5 ra vạch dọc thật
+   parabol không gián đoạn và ô ghi "|" : 0 vạch — không vẽ thừa
+Bộ kiểm tra: 99 phép (98 đạt + 1 bỏ qua ngoài trình duyệt), thêm 4 phép cho vòng này,
+trong đó hai phép là kiểm NGƯỢC.
+
+XIV. VIỆC CÒN LẠI SAU SÁU VÒNG SỬA
+Sáu việc còn tồn vẫn nguyên, vòng này không đụng tới. Ba giới hạn ở mục V vẫn nguyên: nội dung sửa tay trên màn hình chưa vào được tệp Word;
 tệp nguồn tải lên lại mỗi lần soạn; validatePlan còn đọc thẳng trạng thái ô nhập. Ngoài ra
 phần mềm vẫn không đối chiếu chéo được nội dung do AI viết ở hai chỗ khác nhau (ví dụ tiêu
 đề hình ghi một hàm còn chú thích dưới hình ghi hàm khác). Những việc đó nên làm thành một
