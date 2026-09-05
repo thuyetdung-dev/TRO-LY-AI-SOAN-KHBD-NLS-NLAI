@@ -1,5 +1,5 @@
 BÁO CÁO ĐÁNH GIÁ VÀ HIỆU CHỈNH TRỢ LÝ KHBD
-Phiên bản rà soát: 2026-09-05 · b16 (soát lại toàn bộ b15)
+Phiên bản rà soát: 2026-09-05 · b17 (soát b15, rồi soát tiếp theo bản in giáo viên)
 
 I. KẾT LUẬN NGẮN
 
@@ -166,5 +166,67 @@ VIII. CĂN CỨ ĐÃ ĐỐI CHIẾU
 - Thông tư 02/2025/TT-BGDĐT ngày 24/01/2025 – Khung năng lực số cho người học.
 - Quyết định 2422/QĐ-BGDĐT ngày 18/08/2026 – Khung nội dung giáo dục trí tuệ nhân tạo
   cho học sinh phổ thông.
+
+IX. ĐỢT SỬA b17 — CĂN CỨ LÀ MỘT BẢN IN THẬT ĐƯỢC RÀ BẰNG BÚT ĐỎ
+
+Đây là loại bằng chứng có giá trị nhất: sản phẩm cuối cùng, in ra giấy, do người dạy đọc.
+Kiểm chứng bằng máy: dựng lại đúng các đoạn bị khoanh rồi cho cả hai bản chấm.
+   b16: 0 lỗi bị chặn — bản kế hoạch này ĐẠT kiểm định và xuất Word được.
+   b17: 4 lỗi bị chặn + 1 cảnh báo mới.
+
+A. LỖI PHẦN MỀM (b17 tự sửa, giáo viên không phải làm gì)
+
+A1. "(- infty; 0)" in ra giữa bài — bộ vá lệnh LaTeX không nhận dấu chấm phẩy.
+    Điều kiện cũ chỉ chấp nhận { khoảng trắng ( ) + - = , . } đứng sau tên lệnh. Khoảng vô
+    hạn trong tiếng Việt gần như luôn viết kèm dấu chấm phẩy, nên "(- infty)" vá được mà
+    "(- infty; 0)" thì không — một sự tình cờ khiến lỗi khó bị phát hiện khi thử nghiệm.
+    Nay dùng đúng quy tắc LaTeX (tên lệnh kết thúc ở ký tự không phải chữ cái) và mở rộng
+    bảng lệnh từ 55 lên 150 mục. Đã che \text{...} để không sửa nhầm văn xuôi.
+
+A2. Tập xác định in ra "ℝ\{1\}" — lỗi nằm trong BỘ XUẤT WORD, không phải ở AI.
+    Bảng ký hiệu OMML thiếu hai lệnh \{ và \}, nên bộ đọc rơi xuống nhánh "chưa dịch được"
+    và in nguyên văn dấu gạch chéo. Nay ra đúng ℝ∖{1}.
+
+A3. Nhãn tiệm cận xiên "y=-1x+2.99998" và "y=1x+4.00024" — nhiễu của phép tính xấp xỉ,
+    cộng với cách viết "1x" không ai dùng. Nay nắn số và viết y=-x+3, y=x+4.
+
+A4. Đồ thị y = x^4-3x^2+1 vẽ trên trục tung 0..55, hai cực tiểu -5/4 bẹp dí sát trục
+    hoành. Nguyên nhân kép: đệm trục hoành cộng cứng 2 đơn vị mỗi bên (ba nghiệm nằm gọn
+    trong [-1,22; 1,22] mà khung kéo ra [-4; 4], tại x=4 hàm bậc bốn đã lên 209); và miền
+    tung độ đọc từ spec.values, nhưng bảng ghi "-5/4" nên Number() trả NaN và bị bỏ hết.
+    Nay tính thẳng giá trị hàm tại các điểm cực trị. Đo lại: 71% đường cong nằm trong
+    khung và thấy rõ cả một cực đại lẫn hai cực tiểu.
+
+A5. Ô gián đoạn của bảng biến thiên trong Word nay xếp giá trị trái trên, phải dưới trong
+    cùng một ô như SGK; mọi cách viết vạch đôi đều đưa về ký hiệu ‖.
+
+B. LỖI NỘI DUNG DO AI SINH (phần mềm không sửa hộ được, nay CHẶN và nói rõ sai ở đâu)
+
+B1. Cột NLS/NLAI bị điền toàn năng lực đặc thù môn Toán. Hệ quả nặng hơn vẻ ngoài: hai mã
+    NLS 1.1-B5b và 5.3-B5b khai ở mục Mục tiêu KHÔNG hề xuất hiện ở bất kỳ bước nào trong
+    tiến trình — tức là phần tích hợp năng lực số chỉ tồn tại trên giấy. Nay chặn khi cột
+    ghi sai loại, và cảnh báo riêng khi mã khai ở Mục tiêu không được dùng tới.
+
+B2. Thiếu hẳn mục Năng lực AI dù đã bật tích hợp NLAI (giáo viên ghi "thiếu năng lực AI").
+
+B3. Công thức thiếu dấu ngoặc đóng: "(-∞; (3-√3)/3 và ((3+√3)/3; +∞;" và "y(±√(3/2) = -5/4"
+    và "[0; +∞)]". Nay tự rà từng cặp $...$ và chặn.
+
+B4. Mã SP/TC đánh lại từ SP1 ở mỗi hoạt động. Ma trận liên kết đầu bài trỏ "SP1" nhưng
+    trong bài có bốn SP1 khác nhau — mất hẳn khả năng truy vết, tức là hỏng đúng cái mà
+    ma trận sinh ra để làm.
+
+C. ĐÃ SỬA PROMPT
+Bổ sung năm quy tắc (12.1–12.5) để AI viết đúng ngay từ đầu: đánh mã liên tục toàn bài;
+cột NLS/NLAI chỉ ghi mã; bắt buộc có mục NLAI; cách viết ký hiệu tập hợp, khoảng vô hạn,
+căn bậc ba, hàm mũ; và tự rà cân đối dấu ngoặc trước khi trả lời.
+
+D. CÒN LẠI TRONG BẢN IN, PHẦN MỀM CHƯA XỬ LÝ ĐƯỢC
+- Ảnh chú thích đồ thị bậc ba ghi tiêu đề "cực đại tại x=-1, cực tiểu tại x=1" nhưng dòng
+  chú thích bên dưới lại ghi y = x^3-3x+3 trong khi tiêu đề nói x^3-3x+1. Đây là mâu thuẫn
+  nội dung giữa hai chỗ do AI viết; máy chưa đối chiếu chéo được.
+- "5e^{-t}" bị mất phần mũ thành "5e − t" ở bài 1.9. Nếu AI trả về đã mất ngoặc mũ thì
+  không thể khôi phục chắc chắn được; hiện chỉ chặn gián tiếp qua phép kiểm cân đối ngoặc.
+- Bộ kiểm tra nay có 81 phép (80 đạt + 1 bỏ qua ngoài trình duyệt).
 
 Đánh giá sau hiệu chỉnh: ĐẠT ĐỂ CHẠY THỬ CÓ KIỂM SOÁT.

@@ -115,12 +115,12 @@ h2{font-size:.82rem;letter-spacing:.09em;text-transform:uppercase;color:var(--mu
 })();
 </script>
 
-<script src="standards.js?v=b16"></script>
-<script src="app.js?v=b16"></script>
-<script src="flow.js?v=b16"></script>
-<script src="professional.js?v=b16"></script>
+<script src="standards.js?v=b17"></script>
+<script src="app.js?v=b17"></script>
+<script src="flow.js?v=b17"></script>
+<script src="professional.js?v=b17"></script>
 <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
-<script src="docx-export.js?v=b16"></script>
+<script src="docx-export.js?v=b17"></script>
 
 <script>
 (function(){
@@ -151,12 +151,16 @@ async function T(name,fn){
 }
 
 /* ---------- Dữ liệu mẫu ---------- */
-function flowJson(nSteps,minutes){
+/* b17: mã SP/TC nay phải đánh liên tục cho cả bài, nên dữ liệu mẫu cũng phải đánh liên
+   tục — chính bộ kiểm định mới sẽ chặn nếu hai bảng cùng dùng SP1. Tham số "moc" cho
+   phép mỗi bảng bắt đầu ở một mốc khác nhau. */
+function flowJson(nSteps,minutes,moc){
+  moc=moc||0;
   var rows=[];
   for(var i=0;i<nSteps;i++)rows.push({step:'Bước '+(i+1),duration:minutes,goalIds:['MT1'],
     teacherActions:['GV giao nhiệm vụ'],studentActions:['HS thực hiện'],
-    product:['SP1: Cho hàm số $y=f(x)$ có đạo hàm trên khoảng $K$. Nếu $f\'(x)>0$ với mọi $x$ thuộc $K$ thì hàm số đồng biến trên $K$; nếu $f\'(x)<0$ thì hàm số nghịch biến trên $K$.'],
-    assessment:['TC1: quan sát'],competency:[]});
+    product:['SP'+(moc+i+1)+': Cho hàm số $y=f(x)$ có đạo hàm trên khoảng $K$. Nếu $f\'(x)>0$ với mọi $x$ thuộc $K$ thì hàm số đồng biến trên $K$; nếu $f\'(x)<0$ thì hàm số nghịch biến trên $K$.'],
+    assessment:['TC'+(moc+i+1)+': quan sát'],competency:[]});
   return JSON.stringify({type:'lessonflow',rows:rows});
 }
 /* Khung mẫu theo giáo án của tổ chuyên môn: chia tiết, đủ 4 kiểu hoạt động,
@@ -173,7 +177,7 @@ var BASE='# KẾ HOẠCH BÀI DẠY\n## I. MỤC TIÊU\nMT1 SP1 TC1 — công th
   +'## DẤU VẾT NGUỒN VÀ TRÁCH NHIỆM GIẢI TRÌNH\n'+new Array(60).join('nội dung mẫu ')+'\n';
 function plan(counts,minutes,tail){
   var b=BASE;
-  for(var i=0;i<counts.length;i++)b+='\n```lessonflow\n'+flowJson(counts[i],minutes)+'\n```\n';
+  for(var i=0;i<counts.length;i++)b+='\n```lessonflow\n'+flowJson(counts[i],minutes,i*20)+'\n```\n';
   return b+(tail||'');
 }
 var DIEUCHINH='\n## ĐIỀU CHỈNH SAU BÀI DẠY\n.....\n';
@@ -698,6 +702,89 @@ async function runAll(){
       'themeBtn','sampleBtn','clearDraftBtn','resultActions','lessonForm'];
     var thieu=ids.filter(function(i){return !document.getElementById(i)});
     return thieu.length===0||'Thiếu: '+thieu.join(', ');
+  });
+
+  /* ---------- Các phép kiểm tra thêm ở b17 (lấy từ bản in giáo viên rà bút đỏ) ---------- */
+  group('b17 — Lỗi có thật trên bản in');
+
+  await T('Vá được lệnh LaTeX đứng trước dấu chấm phẩy',function(){
+    /* Đây chính là lỗi "(- infty; 0)" in ra giữa bài. Dấu ";" không có trong điều kiện
+       nhận diện cũ, trong khi khoảng vô hạn tiếng Việt gần như luôn viết kèm ";". */
+    var r=repairLatex('(- infty; 0) cup (2; + infty)');
+    if(r.indexOf('\\infty;')<0)return 'Vẫn bỏ sót \\infty khi sau nó là dấu chấm phẩy: '+r;
+    return r.indexOf('\\cup')>=0||'Bỏ sót \\cup';
+  });
+
+  await T('Vá được ký hiệu tập xác định và căn bậc ba',function(){
+    var a=repairLatex('D = mathbb{R} setminus {2}');
+    if(a.indexOf('\\setminus\\{2\\}')<0)return 'Ngoặc nhọn của tập hợp không hiện ra: '+a;
+    var b=repairLatex('sqrt[3]{x}');
+    return b.indexOf('\\sqrt[3]')>=0||'Không vá được căn bậc ba: '+b;
+  });
+
+  await T('Không đụng vào chữ nằm trong \\text{...}',function(){
+    var r=repairLatex('\\text{in the box} + in');
+    return (r.indexOf('\\text{in the box}')>=0&&r.indexOf('+ \\in')>=0)
+      ||'Đã sửa nhầm chữ trong văn xuôi: '+r;
+  });
+
+  await T('Chặn công thức thiếu dấu ngoặc đóng',function(){
+    var lech=unbalancedMath('$(-\\infty; \\dfrac{3-\\sqrt3}{3} và (\\dfrac{3+\\sqrt3}{3}; +\\infty;$');
+    if(!lech.length)return 'Không phát hiện được công thức thiếu ngoặc đóng';
+    return unbalancedMath('$\\dfrac{a}{b}+(x-1)$').length===0||'Báo nhầm công thức cân đối';
+  });
+
+  await T('Chặn mã SP/TC bị đánh lại từ đầu ở mỗi hoạt động',function(){
+    var trung=trungMaSanPham([
+      {rows:[{product:['SP1: nội dung A'],assessment:['TC1: a']}]},
+      {rows:[{product:['SP1: nội dung B hoàn toàn khác'],assessment:['TC2: b']}]}]);
+    if(trung.indexOf('SP1')<0)return 'Không phát hiện được mã SP1 dùng lại ở hai bảng';
+    return trungMaSanPham([
+      {rows:[{product:['SP1: a'],assessment:['TC1: a']}]},
+      {rows:[{product:['SP2: b'],assessment:['TC2: b']}]}]).length===0||'Báo nhầm khi mã liên tục';
+  });
+
+  await T('Chặn cột NLS/NLAI ghi nhầm năng lực đặc thù môn học',function(){
+    /* Bản in điền "Giao tiếp toán học", "Tư duy và lập luận toán học" vào cột NLS/NLAI. */
+    var md=plan([4],11,'\n```lessonflow\n'+JSON.stringify({type:'lessonflow',rows:[1,2,3,4].map(function(i){
+      return {step:'Bước '+i,duration:11,goalIds:['MT1'],teacherActions:['GV'],studentActions:['HS'],
+        product:['SP9'+i+': nội dung kiến thức viết ra đủ dài để không bị coi là sơ sài, gồm định nghĩa và ví dụ minh hoạ cụ thể.'],
+        assessment:['TC9'+i+': quan sát'],competency:['Giao tiếp toán học: trình bày mạch lạc']};
+    })})+'\n```\n');
+    var r=validatePlan(md,V,true);
+    return r.blockers.join(' ').indexOf('Cột NLS/NLAI')>=0
+      ||'Không chặn: '+r.blockers.join(' | ');
+  });
+
+  await T('Tập xác định trong tệp Word hiện đúng ℝ∖{2}, không còn gạch chéo thô',async function(){
+    /* Bản in của giáo viên hiện "ℝ\\{1\}" — vì bảng ký hiệu OMML thiếu hai lệnh \{ và \},
+       bộ đọc rơi xuống nhánh "chưa dịch được" và in nguyên văn dấu gạch chéo. */
+    var md=BASE+'\n- TXĐ: $D = mathbb{R} setminus {2}$\n- TXĐ: $D=\\mathbb{R}\\setminus\\{-1\\}$\n';
+    var d=(await buildDocxParts(md,'kiểm tra'))['word/document.xml'];
+    var chu=(d.match(/<m:t[^>]*>[^<]*<\/m:t>/g)||[]).join('').replace(/<[^>]+>/g,'');
+    if(chu.indexOf('\\')>=0)return 'Vẫn còn dấu gạch chéo thô trong công thức: '+chu.slice(0,60);
+    if(chu.indexOf('ℝ∖{2}')<0)return 'Không dựng đúng ℝ∖{2}: '+chu.slice(0,60);
+    return chu.indexOf('ℝ∖{-1}')>=0||'Không dựng đúng ℝ∖{-1}: '+chu.slice(0,60);
+  });
+
+  await T('Nhãn tiệm cận không còn số lẻ và không còn hệ số 1',function(){
+    var a=inferAsymptotes({functions:[{expr:'(-x^2+5x-7)/(x-2)'}]});
+    var xien=null;
+    for(var i=0;i<a.length;i++)if(a[i].type==='oblique')xien=a[i];
+    if(!xien)return 'Không nhận ra tiệm cận xiên';
+    if(xien.intercept!==3)return 'Vẫn còn số lẻ: '+xien.intercept+' (bản in ghi 2.99998)';
+    return nhanDuongThang(-1,3)==='y=-x+3'||'Nhãn vẫn còn hệ số 1: '+nhanDuongThang(-1,3);
+  });
+
+  await T('Đồ thị tự sinh từ bảng biến thiên phải nhìn ra được cực trị',function(){
+    /* Bản in vẽ y = x^4-3x^2+1 trên trục tung 0..55, hai cực tiểu bẹp dí sát trục hoành. */
+    var g=graphFromVariation({expr:'x^4-3x^2+1',
+      points:['-\\infty','-1.2247','0','1.2247','+\\infty'],
+      values:['+\\infty','-5/4','1','-5/4','+\\infty']});
+    if(!g)return 'Không dựng được đồ thị';
+    if(g.yMax>8)return 'Khung tung độ vẫn quá rộng (yMax='+g.yMax+'), cực trị sẽ bị bẹp';
+    if(!(g.yMin<-1.25&&g.yMax>1))return 'Khung không chứa đủ cả cực đại lẫn hai cực tiểu';
+    return true;
   });
 
   /* ---------- Các phép kiểm tra thêm ở b16 ---------- */

@@ -1,7 +1,7 @@
 /* Mốc phiên bản — hiện ngay trên thanh tiêu đề. Sau nhiều vòng sửa, đã có lần trang web
    chạy bản cũ mà cả hai bên đều tưởng là bản mới, mất công đi tìm lỗi đã sửa xong rồi.
    Nhìn dòng chữ trên đầu trang là biết ngay đang chạy bản nào. */
-const APP_BUILD='2026-09-05 · b16';
+const APP_BUILD='2026-09-05 · b17';
 const $=id=>document.getElementById(id);let selectedFiles=[],rawMarkdown='',availableModels=[],scanTimer,draftTimer,lastValidation=null;
 const fields=['subject','grade','lesson','book','periods','students','classSize','equipment','notes','tableLayout','assessmentMode','lessonTemplate','sourceMode'];
 const toast=m=>{const t=$('toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2600)};
@@ -173,6 +173,14 @@ ${mathRulesFor(v)}
 10.1) MẪU CHUYÊN MÔN: ${v.lessonTemplate==='math'?'Ưu tiên lập luận, biểu diễn toán học, bài tập phân hóa và kiểm tra đáp án.':v.lessonTemplate==='science'?'Ưu tiên tiến trình khám phá/thí nghiệm, an toàn, quan sát và xử lí dữ liệu.':v.lessonTemplate==='language'?'Ưu tiên đọc–viết–nói–nghe, ngữ liệu, giao tiếp và sản phẩm ngôn ngữ.':v.lessonTemplate==='project'?'Ưu tiên vấn đề thực tiễn, thiết kế, chế tạo, thử nghiệm, cải tiến và rubric sản phẩm.':'Tự chọn phương pháp đặc thù phù hợp môn học; không áp dụng máy móc mẫu của môn khác.'}
 11) TRÍCH DẪN SÁCH: chỉ được ghi số trang, số hiệu bài tập, số hiệu hoạt động (HĐ1, Ví dụ 2, Luyện tập 3, Bài 1.5...) khi con số đó THỰC SỰ NHÌN THẤY trong tài liệu đính kèm. Nếu không đọc được số trang trong tài liệu, ghi "SGK — bài <tên bài>" và KHÔNG kèm số trang. Bịa số trang là lỗi nghiêm trọng vì giáo viên sẽ mở sách theo chỉ dẫn đó trước mặt học sinh.
 12) ĐỘ DÀI: một kế hoạch bài dạy đạt yêu cầu cho ${v.periods||"số tiết đề xuất"} tiết thường dài hàng chục nghìn ký tự vì phải chép đủ kiến thức và lời giải. Không rút gọn, không viết tắt nội dung bằng nhãn, không dùng dấu ba chấm để lược bỏ. Nếu buộc phải chọn giữa ngắn gọn và đầy đủ nội dung dạy học, luôn chọn đầy đủ.
+12.1) ĐÁNH MÃ LIÊN TỤC CHO CẢ BÀI: MT, SP, TC đánh số một mạch từ đầu đến cuối kế hoạch. TUYỆT ĐỐI KHÔNG bắt đầu lại từ SP1/TC1 ở mỗi hoạt động — nếu SP1 xuất hiện ở hai hoạt động với hai nội dung khác nhau thì ma trận liên kết đầu bài không còn truy được về đâu.
+12.2) CỘT NLS/NLAI (trường competency) CHỈ được ghi mã năng lực số dạng 1.1-B5b hoặc mã năng lực AI dạng 12.A1.3, kèm hành vi quan sát được; nếu hoạt động không phát sinh hành vi số thì ghi đúng một dấu "—". TUYỆT ĐỐI KHÔNG ghi năng lực đặc thù môn học ("Tư duy và lập luận toán học", "Giao tiếp toán học", "Mô hình hoá toán học"...) vào cột này — những năng lực đó thuộc mục I. Mục tiêu. Mọi mã NLS đã nêu ở mục Mục tiêu đều phải xuất hiện lại ở ít nhất một bước trong tiến trình, nếu không thì đừng nêu.
+12.3) MỤC NĂNG LỰC AI: khi được yêu cầu tích hợp NLAI, mục 2. Năng lực phải có tiểu mục "Năng lực AI (NLAI)" ngay sau tiểu mục Năng lực số. Bài không phát sinh hành vi dùng hoặc kiểm chứng AI thì vẫn giữ tiểu mục đó và ghi một dòng "không tích hợp trong bài này".
+12.4) KÝ HIỆU TẬP HỢP VÀ KHOẢNG — đây là chỗ hay sai nhất, đã có bản in ra giấy bị lỗi:
+ - Tập xác định viết $D = \\mathbb{R} \\setminus \\{2\\}$ (có dấu gạch chéo ngược ở cả \\setminus lẫn hai ngoặc nhọn). KHÔNG viết R\\{2\\}, không viết mathbbR.
+ - Khoảng vô hạn viết $(-\\infty; 0)$ và $(2; +\\infty)$ — nhớ giữ dấu gạch chéo ngược của \\infty ngay cả khi sau nó là dấu chấm phẩy.
+ - Căn bậc ba viết $\\sqrt[3]{x}$; hàm mũ viết $e^{-t}$ với mũ đặt trong ngoặc nhọn.
+12.5) MỌI CÔNG THỨC PHẢI CÂN ĐỐI DẤU NGOẶC. Trước khi trả lời, tự rà lại từng cặp $...$: số dấu "(" phải bằng số dấu ")", "{" bằng "}", "[" bằng "]". Một công thức thiếu dấu đóng là một dòng vô nghĩa trên bản in mà giáo viên phải sửa tay.
 13) Câu hỏi phải chính xác; tự giải và kiểm tra đáp án hai lần. Không sao chép máy móc giáo án tham khảo; không bịa dữ kiện từ nguồn. Đầu ra bằng Markdown, không mở đầu xã giao, phong cách ${$('style').value}.`}
 const MAX_MODEL_ATTEMPTS=3; // Giới hạn số mô hình thử tuần tự, tránh giáo viên phải chờ hàng chục phút nếu key có nhiều model nhưng đều lỗi.
 
@@ -339,16 +347,57 @@ function fallback(v){const p=v.periods||'…',g=clampGrade(v.grade);return `# K�
 // bảng tổ chức thực hiện) — ví dụ "$\vec{a}=k\vec{b}$" bị trả về thành "$veca=kvecb$". Bên trong
 // bảng (JSON lessonflow) hầu như không gặp vì model phải giữ đúng cú pháp JSON. Đây chỉ là lưới an
 // toàn, KHÔNG thay thế việc dặn model giữ đúng "\" ngay trong prompt (xem promptFor()).
-const LATEX_CMDS=['overrightarrow','widehat','mathbb','mathrm','Leftrightarrow','Rightarrow','leftrightarrow','rightarrow','overline','underline','forall','exists','angle','parallel','approx','equiv','notin','subset','infty','sqrt','frac','dfrac','left','right','quad','qquad','times','cdot','perp','cong','sim','circ','boxed','text','vec','hat','bar','sum','prod','int','alpha','beta','gamma','delta','theta','lambda','sigma','omega','phi','pi','leq','geq','neq','pm','mp','in'];
-// Mẫu riêng hay gặp nhất ở bài vectơ: model làm mất CẢ "\" lẫn "{}" (vd "\vec{IA}" -> "vecIA",
-// "\vec{0}" -> "vec0") — phải vá TRƯỚC lượt repairLatex chung ở trên (lượt chung chỉ vá được
-// trường hợp còn giữ "{}", ví dụ "vec{a}" -> "\vec{a}", không tự đoán được ranh giới đối số nếu
-// thiếu cả ngoặc). Chỉ áp dụng cho "vec" + (một chữ số 0) hoặc (cụm chữ hoa ngắn kiểu tên điểm
-// AB, IA, OC'...) vì đây là dạng tên vectơ duy nhất xuất hiện trong nội dung hình học không gian.
+/* ===== Vá lệnh LaTeX bị mất dấu gạch chéo ngược (viết lại ở b17) =====
+
+   LỖI CỦA b16, ĐÚNG NHƯ BẢN IN GIÁO VIÊN ĐÁNH DẤU BÚT ĐỎ:
+   Điều kiện nhận diện cũ đòi ngay sau tên lệnh phải là một trong { khoảng trắng ( ) + - = , .
+   và HẾT. Nhưng trong tiếng Việt, khoảng và tập hợp gần như luôn viết kèm dấu CHẤM PHẨY:
+   "(-\infty; 0)". Dấu ";" không có trong danh sách, nên "(- infty; 0)" KHÔNG được vá và in
+   ra nguyên chữ "infty" giữa bài — trong khi "(- infty)" thì lại vá được. Cùng lý do,
+   "sqrt[3]{...}" hỏng vì sau "sqrt" là dấu "[", và "setminus", "cup", "to", "lim" thì
+   không hề có trong danh sách lệnh.
+
+   NAY dùng đúng quy tắc của chính LaTeX: một tên lệnh kết thúc ở ký tự KHÔNG PHẢI CHỮ CÁI,
+   bất kể ký tự đó là gì. Nhờ vậy dấu ";" "[" "]" "|" "^" "_" đều được xử lý mà không phải
+   liệt kê. Đổi lại phải cẩn thận hai chỗ:
+   - Bên trong \text{...} và \mathrm{...} là văn xuôi, không được vá (nếu không "in", "to"
+     trong một câu tiếng Anh sẽ bị biến thành lệnh).
+   - Sau \setminus hoặc \backslash, cặp ngoặc nhọn phải là ngoặc HIỂN THỊ \{...\} chứ không
+     phải ngoặc gộp nhóm, nếu không ℝ∖{2} in ra thành "ℝ∖2". */
+const LATEX_CMDS=[
+  /* Lệnh dài đặt trước lệnh ngắn để phép so khớp không cắt cụt tên. */
+  'overrightarrow','overleftarrow','longrightarrow','leftrightarrow','Leftrightarrow',
+  'displaystyle','varepsilon','varnothing','underbrace','overbrace','Rightarrow',
+  'rightarrow','leftarrow','Leftarrow','widetilde','widehat','overline','underline',
+  'setminus','backslash','emptyset','triangle','parallel','subseteq','supseteq',
+  'nrightarrow','therefore','because','partial','nabla','forall','exists','nexists',
+  'mathbb','mathrm','mathbf','mathcal','approx','equiv','propto','notin','subset',
+  'supset','infty','angle','sqrt','frac','dfrac','tfrac','left','right','quad','qquad',
+  'times','cdot','perp','cong','prime','circ','boxed','text','limits','nolimits',
+  'mathop','operatorname','arcsin','arccos','arctan','sinh','cosh','tanh',
+  'log','ln','lg','exp','lim','max','min','sup','inf','deg','det','dim','gcd',
+  'sin','cos','tan','cot','sec','csc','vec','hat','bar','dot','ddot',
+  'sum','prod','int','iint','oint','cup','cap','land','lor','neg','ldots','cdots','dots',
+  'alpha','beta','gamma','delta','theta','lambda','sigma','omega','varphi','phi','psi',
+  'Delta','Gamma','Omega','Sigma','Lambda','Theta','Phi','Psi','Pi','Xi',
+  'leq','geq','neq','le','ge','ne','pm','mp','to','in','ni','pi','mu','nu','xi','rho','tau'
+];
 const vecBareRe=/(^|[^\\}])vec(0|[A-Z][A-Za-z']{0,3}|[a-z]'?)\b/g;
 const repairVecBare=s=>s.replace(vecBareRe,(m,pre,arg)=>pre+'\\vec{'+arg+'}');
-const latexCmdRe=new RegExp('(^|[^\\\\a-zA-Z])('+LATEX_CMDS.join('|')+')(?=\\{|\\s|\\(|\\)|$|[+\\-=,.])','g');
-const repairLatex=s=>repairVecBare(s).replace(latexCmdRe,(m,pre,cmd)=>pre+'\\'+cmd);
+/* Tên lệnh kết thúc ở ký tự không phải chữ cái — đúng quy tắc LaTeX. */
+const latexCmdRe=new RegExp('(^|[^\\\\a-zA-Z])('+LATEX_CMDS.join('|')+')(?![a-zA-Z])','g');
+/* Chỗ nào là văn xuôi thì che lại trước khi vá, trả về sau. */
+const TEXT_ARG_RE=/\\?(text|mathrm|operatorname)\s*\{[^{}]*\}/g;
+function repairLatex(s){
+  const kho=[];
+  let t=String(s).replace(TEXT_ARG_RE,m=>`\u0000${kho.push(m)-1}\u0000`);
+  t=repairVecBare(t).replace(latexCmdRe,(m,pre,cmd)=>pre+'\\'+cmd);
+  /* ℝ \setminus {2} phải thành ℝ \setminus \{2\} thì mới in ra cặp ngoặc nhọn. */
+  t=t.replace(/\\(setminus|backslash)\s*\{([^{}]*)\}/g,(m,cmd,inner)=>`\\${cmd}\\{${inner}\\}`);
+  /* Vạch đôi tại điểm gián đoạn: mọi cách viết đều đưa về một ký hiệu. */
+  t=t.replace(/\\\|/g,'\\|');
+  return t.replace(/\u0000(\d+)\u0000/g,(m,i)=>kho[+i]);
+}
 function inline(s){return esc(s).replace(/&lt;br\s*\/?&gt;/gi,'<br>').replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>').replace(/\*(.+?)\*/g,'<em>$1</em>').replace(/`(.+?)`/g,'<code>$1</code>').replace(/\$\$([^$]+)\$\$/g,(m,g1)=>`<span class="math-display">\\[${repairLatex(g1)}\\]</span>`).replace(/\$([^$]+)\$/g,(m,g1)=>`<span class="math">\\(${repairLatex(g1)}\\)</span>`)}
 function mdToHtml(md){const specs=[];md=md.replace(/```mathviz\s*([\s\S]*?)```/gi,(_,json)=>{const id=specs.push(json.trim())-1;return `\n@@MATHVIZ_${id}@@\n`});const lines=md.replace(/```[a-z]*\n?/g,'').replace(/```/g,'').split('\n');let out='',list=false;for(let i=0;i<lines.length;i++){let l=lines[i].trimEnd(),mv=l.trim().match(/^@@MATHVIZ_(\d+)@@$/);if(mv){if(list){out+='</ul>';list=false}out+=`<div class="mathviz" data-spec="${encodeURIComponent(specs[+mv[1]])}"></div>`;continue}if(l.startsWith('|')&&i+1<lines.length&&/^\|?[\s:|-]+\|?$/.test(lines[i+1].trim())){if(list){out+='</ul>';list=false}const rows=[];rows.push(l);i+=2;while(i<lines.length&&lines[i].trim().startsWith('|')){rows.push(lines[i].trim());i++}i--;out+='<table>';rows.forEach((r,ri)=>{const cells=r.replace(/^\||\|$/g,'').split('|');out+=`<tr>${cells.map(c=>`<${ri?'td':'th'}>${inline(c.trim())}</${ri?'td':'th'}>`).join('')}</tr>`});out+='</table>';continue}if(/^#{1,3} /.test(l)){if(list){out+='</ul>';list=false}const n=l.match(/^#+/)[0].length;out+=`<h${n}>${inline(l.slice(n+1))}</h${n}>`}else if(/^[-*] /.test(l)){if(!list){out+='<ul>';list=true}out+=`<li>${inline(l.slice(2))}</li>`}else if(/^\d+\. /.test(l)){if(list){out+='</ul>';list=false}out+=`<p>${inline(l)}</p>`}else if(l.startsWith('> ')){if(list){out+='</ul>';list=false}out+=`<blockquote>${inline(l.slice(2))}</blockquote>`}else if(!l){if(list){out+='</ul>';list=false}}else{if(list){out+='</ul>';list=false}out+=`<p>${inline(l)}</p>`}}if(list)out+='</ul>';return out}
 /* ===== Bộ đọc biểu thức (viết lại ở b16) =====
@@ -477,7 +526,9 @@ function compileExpr(expr){
     throw Error('Biểu thức không cho giá trị số');
   return f;
 }
-const wrapMathCell=v=>{const s=String(v??'').trim();if(!s)return '';if(/^[+\-0↗↘↑↓∞]+$/.test(s))return esc(s);return s.includes('$')?inline(s):`$${esc(s)}$`};
+/* b17: đưa mọi cách viết vạch đôi tại điểm gián đoạn về cùng một ký hiệu, nếu không "\|"
+   in ra nguyên văn giữa hàng đạo hàm như trong bản giáo viên đánh dấu. */
+const wrapMathCell=v=>{const s=String(v??'').trim().replace(/\\\||\|\||\/\//g,'‖');if(!s)return '';if(/^[+\-0↗↘↑↓∞‖]+$/.test(s))return esc(s);return s.includes('$')?inline(s):`$${esc(s)}$`};
 // Nhãn đặt trong foreignObject để MathJax vẫn xử lý được $...$ bên trong SVG (phân số, chỉ số dưới...).
 function svgLabel(cx,cy,content,anchor,w,h){w=w||100;h=h||24;const x=anchor==='start'?cx:anchor==='end'?cx-w:cx-w/2;const justify=anchor==='start'?'flex-start':anchor==='end'?'flex-end':'center';return `<foreignObject x="${x}" y="${cy-h/2}" width="${w}" height="${h}" style="overflow:visible"><div xmlns="http://www.w3.org/1999/xhtml" class="vt-label" style="justify-content:${justify}">${content}</div></foreignObject>`}
 // Dựng bảng biến thiên dạng sơ đồ đường gấp khúc (đúng chuẩn SGK) từ schema {points,derivative,values}.
@@ -503,15 +554,46 @@ function graphFromVariation(spec){
   if(!expr)return null;
   const nums=(spec.points||[]).map(p=>Number(String(p).replace(/\\infty|∞|infty/gi,'NaN')))
     .filter(Number.isFinite);
+  /* b17: bản in của giáo viên có đồ thị y = x^4-3x^2+1 vẽ trên trục tung 0..55, hai cực tiểu
+     -5/4 bị bẹp dí sát trục hoành, nhìn không ra hình. Nguyên nhân kép:
+     1) Đệm trục hoành cũ cộng thêm HẲN 2 đơn vị mỗi bên. Với ba nghiệm nằm gọn trong
+        [-1,22; 1,22] thì khung kéo ra tới [-4; 4], mà tại x=4 hàm bậc bốn đã lên tới 209.
+     2) Miền tung độ cũ đọc từ spec.values, nhưng bảng biến thiên ghi giá trị dưới dạng
+        "-5/4" và "+∞" — Number("-5/4") là NaN, nên toàn bộ bị bỏ và rơi về mặc định ±5,
+        rồi bộ tự nới lại kéo lên theo giá trị ở rìa.
+     Nay: đệm trục hoành theo tỉ lệ, và tính thẳng giá trị hàm TẠI CÁC ĐIỂM CỰC TRỊ để lấy
+     miền tung độ — không phụ thuộc vào cách AI viết phân số nữa. */
   let xMin=-5,xMax=5;
-  if(nums.length){const lo=Math.min(...nums),hi=Math.max(...nums),pad=Math.max(2,(hi-lo)*0.6||3);
-    xMin=Math.floor(lo-pad);xMax=Math.ceil(hi+pad)}
-  const vals=(spec.values||[]).map(v=>Number(typeof v==='object'?NaN:v)).filter(Number.isFinite);
-  let yMin=-5,yMax=5;
-  if(vals.length){const lo=Math.min(...vals),hi=Math.max(...vals),pad=Math.max(2,(hi-lo)*0.6||3);
-    yMin=Math.floor(lo-pad);yMax=Math.ceil(hi+pad)}
+  if(nums.length){
+    const lo=Math.min(...nums),hi=Math.max(...nums),span=hi-lo;
+    const pad=Math.max(span*0.55,1);
+    xMin=lo-pad;xMax=hi+pad;
+    if(span===0){xMin=lo-3;xMax=lo+3}
+  }
+  let yMin=-5,yMax=5,f=null;
+  try{f=compileExpr(expr)}catch(_){}
+  if(f){
+    const moc=[];
+    nums.forEach(x=>{const y=f(x);if(Number.isFinite(y))moc.push(y)});
+    if(moc.length){
+      const lo=Math.min(...moc),hi=Math.max(...moc),span=hi-lo;
+      const pad=Math.max(span*0.6,Math.abs(hi)*0.35,1);
+      yMin=lo-pad;yMax=hi+pad;
+    }else{
+      /* Không có mốc hữu hạn (ví dụ hàm phân thức chỉ có tiệm cận): lấy phân vị của mẫu
+         để điểm sát tiệm cận đứng không kéo bẹt cả đường cong. */
+      const mau=[];
+      for(let i=0;i<=400;i++){const y=f(xMin+(xMax-xMin)*i/400);if(Number.isFinite(y)&&Math.abs(y)<1e9)mau.push(y)}
+      if(mau.length>8){mau.sort((a,b)=>a-b);
+        const q=t=>mau[Math.floor((mau.length-1)*t)];
+        const lo=q(.08),hi=q(.92),pad=Math.max((hi-lo)*.25,1);
+        yMin=lo-pad;yMax=hi+pad;}
+    }
+  }
+  const r=v=>Math.round(v*100)/100;
   return {type:'graph',title:'Đồ thị '+(spec.funcLabel||('y = '+expr)),
-    xMin,xMax,yMin,yMax,asymptotes:spec.asymptotes||[],functions:[{expr,label:spec.funcLabel||('y='+expr)}]};
+    xMin:r(xMin),xMax:r(xMax),yMin:r(yMin),yMax:r(yMax),autoFit:false,
+    asymptotes:spec.asymptotes||[],functions:[{expr,label:spec.funcLabel||('y='+expr)}]};
 }
 function buildSignSVG(spec){
   const pts=(spec.columns||spec.points||[]).map(x=>String(x??''));
@@ -618,6 +700,22 @@ const GRAPH_CSS='.plot-bg{fill:#fff;stroke:#b7c9d4}.grid-line{stroke:#dfe9ee;str
   +'.axis{stroke:#263d4c;stroke-width:1.7}.plot-path{fill:none;stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round}'
   +'.asymptote{fill:none;stroke:#c4473a;stroke-width:1.8;stroke-dasharray:8 6}.asymptote-label{font:italic 12px Arial,sans-serif;fill:#a9342a}'
   +'.tick{font:11px Arial,sans-serif;fill:#40566b}';
+/* Nắn một số về giá trị "đẹp" khi nó chỉ lệch vì sai số tính xấp xỉ: số nguyên trước, rồi
+   tới các phân số mẫu nhỏ thường gặp trong SGK. Lệch nhiều thì giữ nguyên. */
+function snapNice(x){
+  if(!Number.isFinite(x))return x;
+  if(Math.abs(x)<1e-4)return 0;
+  for(const q of [1,2,3,4,5,6,8,10,12]){
+    const r=Math.round(x*q)/q;
+    if(Math.abs(x-r)<Math.max(1e-3,Math.abs(x)*1e-4))return r;
+  }
+  return Math.round(x*1e4)/1e4;
+}
+/* Dựng nhãn đường thẳng theo lối viết của SGK: bỏ hệ số 1, gộp dấu, bỏ hạng tử 0. */
+function nhanDuongThang(a,b){
+  const he=a===1?'x':a===-1?'-x':`${a}x`;
+  return b?`y=${he}${b>0?'+':'-'}${Math.abs(b)}`:`y=${he}`;
+}
 function inferAsymptotes(s){
   const explicit=Array.isArray(s.asymptotes)?s.asymptotes.filter(Boolean):[];
   if(explicit.length)return explicit;
@@ -631,7 +729,10 @@ function inferAsymptotes(s){
      bậc mẫu + 1, kết quả cho đúng tiệm cận ngang hoặc xiên; làm tròn nhiễu số. */
   try{const f=compileExpr(expr),M=1e5,a=(f(2*M)-f(M))/M,b=f(M)-a*M;
     if(Number.isFinite(a)&&Number.isFinite(b)){
-      const aa=Math.abs(a)<1e-7?0:Math.round(a*1e6)/1e6,bb=Math.abs(b)<1e-6?0:Math.round(b*1e5)/1e5;
+      /* b17: bản in của giáo viên ghi nhãn "y=-1x+2.99998" và "y=1x+4.00024". Con số lẻ là
+         nhiễu của phép tính xấp xỉ, còn "1x" thì không ai viết trong SGK. Nắn về số gọn khi
+         đã rất sát một phân số đơn giản; phần chữ để hàm dựng nhãn lo. */
+      const aa=snapNice(a),bb=snapNice(b);
       if(Math.abs(aa)<1e4&&Math.abs(bb)<1e7)out.push(aa===0?{type:'horizontal',value:bb}:{type:'oblique',slope:aa,intercept:bb});
     }}catch(_){}
   return out;
@@ -693,10 +794,10 @@ function buildGraphSVG(s,opt){
            `<text x="${(xx+5).toFixed(2)}" y="${p+14}" class="asymptote-label">x=${esc(a.value)}</text>`}
     else if(a.type==='horizontal'&&Number.isFinite(Number(a.value))&&a.value>=y0&&a.value<=y1){const yy=Y(Number(a.value));
       svg+=`<line x1="${p}" y1="${yy.toFixed(2)}" x2="${W-p}" y2="${yy.toFixed(2)}" class="asymptote" clip-path="url(#${uid})"/>`+
-           `<text x="${W-p-5}" y="${(yy-6).toFixed(2)}" text-anchor="end" class="asymptote-label">y=${esc(a.value)}</text>`}
+           `<text x="${W-p-5}" y="${(yy-6).toFixed(2)}" text-anchor="end" class="asymptote-label">y=${esc(snapNice(Number(a.value)))}</text>`}
     else if(a.type==='oblique') {const slope=Number(a.slope),intercept=Number(a.intercept);if(Number.isFinite(slope)&&Number.isFinite(intercept)){
       svg+=`<line x1="${X(x0).toFixed(2)}" y1="${Y(slope*x0+intercept).toFixed(2)}" x2="${X(x1).toFixed(2)}" y2="${Y(slope*x1+intercept).toFixed(2)}" class="asymptote" clip-path="url(#${uid})"/>`+
-           `<text x="${X(x1).toFixed(2)}" y="${Math.max(p+14,Math.min(H-p-4,Y(slope*x1+intercept)-6)).toFixed(2)}" text-anchor="end" class="asymptote-label">y=${esc(slope)}x${intercept>=0?'+':''}${esc(intercept)}</text>`}}
+           `<text x="${X(x1).toFixed(2)}" y="${Math.max(p+14,Math.min(H-p-4,Y(slope*x1+intercept)-6)).toFixed(2)}" text-anchor="end" class="asymptote-label">${esc(nhanDuongThang(slope,intercept))}</text>`}}
   }
   let plotted=0;
   for(const fn of s.functions||[]){
@@ -778,6 +879,68 @@ function allowedAITokens(grade){return new Set(((AI_YCCD[String(grade)]||'').mat
    kế hoạch đều nhận đủ 4 lỗi chặn "Thiếu Hoạt động N" và bị khoá xuất Word vĩnh viễn —
    kể cả bản soạn đúng hoàn toàn. Phải thay đ/Đ thành d TRƯỚC khi chuẩn hoá. */
 function deaccent(t){return String(t||'').replace(/đ/g,'d').replace(/Đ/g,'D').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase()}
+/* ===== Các phép kiểm định thêm ở b17 =====
+   Nguồn: một bản in thật do giáo viên rà bằng bút đỏ. Mọi lỗi dưới đây đều có thật trong
+   bản đó, và đều là loại lỗi mà máy phát hiện được nhưng b16 đã bỏ lọt. */
+
+/* Cắt các đoạn nằm giữa $...$ hoặc $$...$$ ra để soi riêng. */
+function mathSegments(text){
+  const out=[];
+  String(text||'').replace(/\$\$([^$]+)\$\$|\$([^$\n]+)\$/g,(m,a,b)=>{out.push(a||b);return m});
+  return out;
+}
+
+/* 1) Còn sót tên lệnh LaTeX viết trần.
+   Bản in có "(- infty; 0)", "D = mathbbR", "sqrt[3]" — chữ lệnh in thẳng ra giữa công thức.
+   b17 đã vá được các lệnh đã biết; phép kiểm này bắt các lệnh CHƯA có trong danh sách,
+   để lần sau còn biết mà bổ sung thay vì lại in ra giấy rồi mới phát hiện. */
+function bareLatexLeftovers(text){
+  const xau=new Set();
+  for(const seg of mathSegments(text)){
+    const daVa=typeof repairLatex==='function'?repairLatex(seg):seg;
+    /* Sau khi vá mà vẫn còn cụm chữ cái dài từ 3 trở lên đứng ngay trước "{" hoặc "["
+       thì gần như chắc chắn là một lệnh LaTeX bị mất dấu gạch chéo. */
+    (daVa.replace(/\\[a-zA-Z]+/g,' ').match(/\b[a-zA-Z]{3,}(?=\s*[{[])/g)||[])
+      .forEach(t=>xau.add(t));
+  }
+  return [...xau];
+}
+
+/* 2) Ngoặc không cân đối trong công thức.
+   Bản in có "(-\infty; \dfrac{3-\sqrt3}{3} và (\dfrac{3+\sqrt3}{3}; +\infty;" và
+   "y\left(\pm\sqrt{\dfrac{3}{2}} = -\dfrac{5}{4}" — thiếu hẳn dấu đóng, đọc lên vô nghĩa. */
+function unbalancedMath(text){
+  const loi=[];
+  for(const seg of mathSegments(text)){
+    const s=seg.replace(/\\left|\\right/g,'').replace(/\\[{}]/g,'');
+    let tron=0,vuong=0,nhon=0;
+    for(const c of s){
+      if(c==='(')tron++;else if(c===')')tron--;
+      else if(c==='[')vuong++;else if(c===']')vuong--;
+      else if(c==='{')nhon++;else if(c==='}')nhon--;
+      if(tron<0||vuong<0||nhon<0)break;
+    }
+    if(tron||vuong||nhon)loi.push(seg.trim().slice(0,60));
+  }
+  return loi;
+}
+
+/* 3) Mã SP/TC đánh lại từ đầu ở mỗi hoạt động.
+   Bản in có SP1..SP9 ở Hoạt động 1, rồi SP1..SP8 khác hẳn ở Hoạt động 2, SP1..SP6 ở Hoạt
+   động 3... Ma trận liên kết ở đầu bài trỏ tới "SP1" thì không còn biết là SP1 nào. */
+function trungMaSanPham(flows){
+  const dem=new Map();
+  flows.forEach((f,i)=>{
+    if(!f||!Array.isArray(f.rows))return;
+    const ma=new Set();
+    f.rows.forEach(r=>(r.product||[]).concat(r.assessment||[])
+      .forEach(x=>{(String(x).match(/^\s*(SP|TC)\d+/)||[]).slice(1,2)
+        .forEach(()=>ma.add(String(x).match(/^\s*((?:SP|TC)\d+)/)[1]))}));
+    ma.forEach(m=>dem.set(m,(dem.get(m)||new Set()).add(i)));
+  });
+  return [...dem.entries()].filter(([,v])=>v.size>1).map(([k])=>k);
+}
+
 function validatePlan(md,v,aiGenerated=true){const blockers=[],warnings=[],text=String(md||''),plain=deaccent(text);if(text.length<900)blockers.push('Nội dung quá ngắn, có khả năng phản hồi bị thiếu hoặc bị cắt.');if(!balancedFences(text))blockers.push('Khối mã chưa đóng đầy đủ; phản hồi AI có thể đã bị cắt.');[['I. Mục tiêu','i. muc tieu'],['II. Thiết bị dạy học và học liệu','ii. thiet bi day hoc va hoc lieu'],['III. Tiến trình dạy học','iii. tien trinh day hoc']].forEach(([label,key])=>{if(!plain.includes(key))blockers.push(`Thiếu mục ${label}.`)});/* Khung mới đặt tên hoạt động theo giáo án mẫu của tổ chuyên môn (Khởi động / Hình thành kiến
    thức mới / Luyện tập / Vận dụng) thay cho cách đánh số Hoạt động 1-4, nên phải kiểm theo tên. */
 [['Hoạt động Khởi động (Mở đầu)',/khoi dong|mo dau/],['Hình thành kiến thức mới',/hinh thanh kien thuc/],
@@ -820,7 +983,39 @@ if(aiGenerated&&text.length<12000)warnings.push(`Bản kế hoạch chỉ dài $
 if(v.assessmentMode==='day-du'&&!/bảng kiểm|bang kiem|rubric/.test(plain))blockers.push('Đã chọn đánh giá đầy đủ nhưng chưa có bảng kiểm hoặc rubric.');if(aiGenerated&&!/dieu chinh sau bai day/.test(plain))warnings.push('Thiếu mục “Điều chỉnh sau bài dạy” — Phụ lục IV Công văn 5512 có mục này để giáo viên ghi sau khi dạy thực tế.');if($('traceSources').checked&&!/dau vet nguon va trach nhiem giai trinh/.test(plain))blockers.push('Thiếu mục Dấu vết nguồn và trách nhiệm giải trình.');/* Than phiền có thật: bật "khóa nguồn tuyệt đối" mà bản soạn vẫn ghi số trang sai. Nếu không đính
    kèm tài liệu nào thì mọi số trang đều là bịa, phải cảnh báo ngay. */
 if(!selectedFiles.length&&/\btr\.?\s*\d+|trang\s+\d+/i.test(text))blockers.push('Bản kế hoạch có trích dẫn số trang sách nhưng không có tài liệu nguồn nào được đính kèm — các số trang này không kiểm chứng được.');
-if(selectedFiles.length&&!/theo nguồn|theo nguon/.test(plain))warnings.push('Có tài liệu đính kèm nhưng chưa thấy nội dung được gắn nhãn “Theo nguồn”.');return {blockers:[...new Set(blockers)],warnings:[...new Set(warnings)],passed:!blockers.length,codes:[...nlsUsed,...aiUsed],totalMinutes,expectedMinutes:expected}}
+if(selectedFiles.length&&!/theo nguồn|theo nguon/.test(plain))warnings.push('Có tài liệu đính kèm nhưng chưa thấy nội dung được gắn nhãn “Theo nguồn”.');
+/* ===== b17: các lỗi lấy từ bản in giáo viên rà bút đỏ ===== */
+if(aiGenerated){
+  const sot=bareLatexLeftovers(text);
+  if(sot.length)warnings.push(`Có thể còn lệnh LaTeX viết trần trong công thức (${sot.slice(0,4).join(', ')}) — hãy xem lại các chỗ này trên màn hình trước khi in.`);
+  const lech=unbalancedMath(text);
+  if(lech.length)blockers.push(`${lech.length} công thức có dấu ngoặc không cân đối, in ra sẽ sai hoặc mất vế: “${lech[0]}...”.`);
+  const trung=trungMaSanPham(flows);
+  if(trung.length)blockers.push(`Mã ${trung.slice(0,5).join(', ')} được dùng lại ở nhiều hoạt động khác nhau — ma trận liên kết đầu bài sẽ không truy được về đúng sản phẩm. Hãy đánh mã liên tục cho cả bài.`);
+  /* Cột NLS/NLAI của bản in bị điền toàn năng lực đặc thù môn Toán ("Giao tiếp toán học",
+     "Tư duy và lập luận toán học") — đúng chỗ này phải là mã NLS/NLAI hoặc dấu "—". */
+  const saiCot=[];
+  flows.forEach((f,i)=>{if(!f||!Array.isArray(f.rows))return;f.rows.forEach(r=>{
+    (Array.isArray(r.competency)?r.competency:[r.competency]).forEach(c=>{
+      const t=String(c??'').trim();
+      if(!t||t==='—'||t==='-')return;
+      if(!/\b\d\.\d-B\d[a-h]\b|\b(?:10|11|12)\.[A-D]\d\.(?:MR)?\d+\b/.test(t))saiCot.push(`bảng ${i+1}: “${t.slice(0,40)}”`);
+    })})});
+  if(saiCot.length)blockers.push(`Cột NLS/NLAI phải ghi mã năng lực số hoặc mã năng lực AI, hoặc để dấu “—”. Đang ghi nhầm năng lực đặc thù môn học ở ${saiCot.length} ô (${saiCot[0]}).`);
+  /* Mã NLS nêu ở mục Mục tiêu nhưng không hoạt động nào dùng tới thì chỉ là trang trí. */
+  if($('includeDigital').checked&&nlsUsed.length){
+    const trongFlow=new Set();
+    flows.forEach(f=>{if(!f||!Array.isArray(f.rows))return;f.rows.forEach(r=>
+      (Array.isArray(r.competency)?r.competency:[r.competency]).forEach(c=>
+        (String(c??'').match(/\b\d\.\d-B\d[a-h]\b/g)||[]).forEach(m=>trongFlow.add(m))))});
+    const khongDung=nlsUsed.filter(m=>!trongFlow.has(m));
+    if(khongDung.length)warnings.push(`Mã NLS ${khongDung.join(', ')} có nêu ở mục Mục tiêu nhưng không hoạt động nào gắn vào — cần chỉ rõ học sinh thực hiện hành vi số đó ở bước nào.`);
+  }
+  /* Bản in bị giáo viên ghi "thiếu năng lực AI": bật NLAI mà đầu ra không có mục nào. */
+  if($('includeAI').checked&&clampGrade(v.grade)>=10&&!/nang luc ai|nlai/.test(plain))
+    blockers.push('Đã bật tích hợp NLAI nhưng cả bản kế hoạch không có mục Năng lực AI. Nếu bài này không phát sinh hành vi dùng/kiểm chứng AI thì vẫn phải ghi rõ một dòng "Năng lực AI (NLAI): không tích hợp trong bài này".');
+}
+return {blockers:[...new Set(blockers)],warnings:[...new Set(warnings)],passed:!blockers.length,codes:[...nlsUsed,...aiUsed],totalMinutes,expectedMinutes:expected}}
 function syncExportLock(){const approval=$('approveCompetencies'),blocked=!!lastValidation?.blockers?.length,needsApproval=!!lastValidation?.codes?.length;$('wordBtn').disabled=blocked||(needsApproval&&!approval?.checked);$('wordBtn').title=blocked?'Hãy tạo lại hoặc sửa các lỗi kiểm định trước khi xuất Word':needsApproval&&!approval?.checked?'Giáo viên cần duyệt mã NLS/NLAI trước khi xuất Word':''}
 function renderValidation(report){lastValidation=report;const el=$('validationReport');el.hidden=false;el.className=`validation-report ${report.blockers.length?'block':report.warnings.length?'warn':'ok'}`;const title=report.blockers.length?'KHÔNG ĐẠT KIỂM ĐỊNH – đã khóa xuất Word':report.warnings.length?'ĐẠT CÓ ĐIỀU KIỆN – giáo viên cần rà soát':'ĐẠT KIỂM ĐỊNH CHUYÊN MÔN TỰ ĐỘNG';const items=[...report.blockers,...report.warnings],time=report.expectedMinutes?`<p><b>Thời lượng:</b> ${report.totalMinutes}/${report.expectedMinutes} phút.</p>`:'';const approval=report.codes.length?`<label class="check competency-approval"><input id="approveCompetencies" type="checkbox"> Tôi đã đọc, đối chiếu và duyệt các mã NLS/NLAI: ${report.codes.map(esc).join(', ')}</label>`:'';el.innerHTML=`<strong>${esc(title)}</strong>${time}${items.length?`<ul>${items.map(x=>`<li>${esc(x)}</li>`).join('')}</ul>`:'<span>Đủ cấu trúc, liên kết mục tiêu, thời lượng, đánh giá và mã tham chiếu.</span>'}${approval}`;$('approveCompetencies')?.addEventListener('change',syncExportLock);syncExportLock()}
 function showResult(md,report){rawMarkdown=md;$('progress').hidden=true;$('emptyState').hidden=true;$('result').innerHTML=mdToHtml(md);renderMathViz();$('result').hidden=false;$('resultActions').hidden=false;$('draftNotice').hidden=false;renderValidation(report||validatePlan(md,values(),false));const typeset=()=>window.MathJax?.typesetPromise?window.MathJax.typesetPromise([$('result')]).catch(()=>{}):null;typeset()||setTimeout(typeset,800);$('validationReport').scrollIntoView({behavior:'smooth',block:'start'});saveDraft()}

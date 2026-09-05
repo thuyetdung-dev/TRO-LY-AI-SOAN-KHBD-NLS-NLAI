@@ -1,5 +1,5 @@
 TRỢ LÝ SOẠN KẾ HOẠCH BÀI DẠY 2026–2027
-BẢN CHUYÊN NGHIỆP – BƯỚC 4 · HIỆU CHỈNH b16
+BẢN CHUYÊN NGHIỆP – BƯỚC 4 · HIỆU CHỈNH b17
 
 ================================================================
 ĐIỀU KIỆN CẦN
@@ -137,7 +137,7 @@ XỬ LÝ SỰ CỐ THƯỜNG GẶP
 TỰ KIỂM TRA SAU KHI SỬA MÃ
 ================================================================
 Mở tệp test.html bằng Chrome hoặc Edge rồi bấm "Chạy kiểm tra". Trang
-này chạy 72 phép kiểm tra trên đúng các tệp đang nằm trong thư mục,
+này chạy 81 phép kiểm tra trên đúng các tệp đang nằm trong thư mục,
 không phải trên bản sao, nên kết quả phản ánh đúng tình trạng thật.
 
 - Toàn bộ xanh: phần mềm còn lành, dùng được.
@@ -197,3 +197,55 @@ NHỮNG THAY ĐỔI CỦA b16 (so với b15)
    dung, trình duyệt sẽ từ chối nạp thay vì chạy mã lạ.
 
 8. Đồng bộ cách xử lý chữ "đ" trong bộ kiểm định trước khi xuất Word.
+
+================================================================
+NHỮNG THAY ĐỔI CỦA b17 (so với b16)
+================================================================
+Toàn bộ đợt sửa này lấy từ MỘT BẢN IN THẬT do giáo viên rà bằng bút đỏ.
+Mỗi mục dưới đây là một chỗ đã bị khoanh trên giấy.
+
+1. "(- infty; 0)" in ra giữa bài. Nguyên nhân: bộ vá lệnh LaTeX cũ chỉ
+   chấp nhận dấu cách, ngoặc đơn, dấu cộng trừ bằng phẩy chấm đứng sau
+   tên lệnh — mà khoảng vô hạn tiếng Việt gần như luôn viết kèm DẤU CHẤM
+   PHẨY. Nên "(- infty)" thì vá được còn "(- infty; 0)" thì không. Nay
+   dùng đúng quy tắc của LaTeX: tên lệnh kết thúc ở ký tự không phải chữ
+   cái. Kèm theo đó, bảng lệnh được mở rộng gấp ba: setminus, backslash,
+   cup, cap, to, lim, ln, log, sqrt[3], Delta, varnothing...
+
+2. Tập xác định in ra "ℝ\{1\}". Nguyên nhân nằm ở BỘ XUẤT WORD: bảng ký
+   hiệu thiếu hai lệnh \{ và \}, nên bộ đọc rơi xuống nhánh "chưa dịch
+   được" và in nguyên văn dấu gạch chéo. Nay hiện đúng ℝ∖{1} như SGK.
+
+3. Cột NLS/NLAI bị điền toàn năng lực đặc thù môn Toán ("Giao tiếp toán
+   học", "Tư duy và lập luận toán học"). Cột này chỉ được ghi mã năng lực
+   số, mã năng lực AI, hoặc dấu "—". Nay phần mềm CHẶN xuất Word nếu ghi
+   sai, và cảnh báo nếu mã NLS nêu ở Mục tiêu mà không hoạt động nào dùng.
+
+4. Thiếu mục Năng lực AI. Bật tích hợp NLAI mà đầu ra không có mục nào
+   thì nay bị chặn; bài không phát sinh hành vi dùng AI vẫn phải giữ mục
+   đó và ghi rõ "không tích hợp trong bài này".
+
+5. Công thức thiếu dấu ngoặc đóng, ví dụ "(-∞; (3-√3)/3 và ((3+√3)/3; +∞;"
+   và "y(±√(3/2) = -5/4". Nay phần mềm tự rà từng cặp $...$ và chặn.
+
+6. Mã SP/TC đánh lại từ SP1 ở mỗi hoạt động, khiến ma trận liên kết đầu
+   bài trỏ tới "SP1" mà không biết là SP1 nào. Nay bị chặn.
+
+7. Nhãn tiệm cận xiên ghi "y=-1x+2.99998" và "y=1x+4.00024". Nay nắn về
+   số gọn và viết theo lối SGK: y=-x+3, y=x+4.
+
+8. Đồ thị y = x^4-3x^2+1 vẽ trên trục tung 0..55 làm hai cực tiểu bẹp dí.
+   Nguyên nhân kép: đệm trục hoành cộng cứng 2 đơn vị mỗi bên, và miền
+   tung độ đọc từ bảng biến thiên nhưng giá trị ghi dạng "-5/4" nên không
+   đọc được số. Nay tính thẳng giá trị hàm tại các điểm cực trị.
+
+9. Ô gián đoạn của bảng biến thiên trong Word nay xếp giá trị trái ở trên,
+   giá trị phải ở dưới trong cùng một ô như SGK, thay vì viết liền một
+   dòng. Vạch đôi viết kiểu nào (\|, ||, //) cũng đưa về ký hiệu ‖.
+
+10. Prompt được bổ sung năm quy tắc tương ứng, để lần sau AI viết đúng
+    ngay từ đầu chứ không chờ phần mềm vá.
+
+LƯU Ý: các mục 3, 4, 5, 6 là lỗi NỘI DUNG do AI sinh ra, phần mềm không
+tự sửa hộ được — nó chỉ chặn không cho xuất Word và nói rõ sai ở đâu để
+thầy cô bấm soạn lại. Các mục 1, 2, 7, 8, 9 thì phần mềm sửa tự động.

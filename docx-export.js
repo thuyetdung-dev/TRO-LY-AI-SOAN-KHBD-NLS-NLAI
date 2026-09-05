@@ -39,7 +39,13 @@
     leq:'≤', le:'≤', geq:'≥', ge:'≥', neq:'≠', ne:'≠', approx:'≈', equiv:'≡',
     sim:'∼', cong:'≅', propto:'∝',
     in:'∈', notin:'∉', ni:'∋', subset:'⊂', subseteq:'⊆', supset:'⊃', supseteq:'⊇',
-    cup:'∪', cap:'∩', setminus:'\\', emptyset:'∅', varnothing:'∅',
+    cup:'∪', cap:'∩', setminus:'∖', backslash:'∖', emptyset:'∅', varnothing:'∅',
+    /* b17 — ĐÂY LÀ NGUỒN CỦA LỖI "ℝ\\{1\\}" TRÊN BẢN IN GIÁO VIÊN KHOANH ĐỎ.
+       Trong LaTeX, dấu ngoặc nhọn HIỂN THỊ phải viết là \{ và \}. Bảng ký hiệu cũ không có
+       hai lệnh này, nên bộ đọc rơi xuống nhánh "chưa dịch được" và in ra NGUYÊN VĂN dấu
+       gạch chéo — tập xác định trong tệp Word hiện thành ℝ\\{1\\} thay vì ℝ∖{1}.
+       Các ký tự phải thoát khác cũng đưa vào đây cho đủ. */
+    '{':'{', '}':'}', '|':'|', '%':'%', '&':'&', '#':'#', '_':'_', '$':'$',
     infty:'∞', partial:'∂', nabla:'∇', forall:'∀', exists:'∃', nexists:'∄',
     neg:'¬', land:'∧', lor:'∨', therefore:'∴', because:'∵',
     to:'→', rightarrow:'→', longrightarrow:'⟶', leftarrow:'←', Rightarrow:'⇒',
@@ -716,8 +722,13 @@
       for (let j = 0; j < it.slots; j++) {
         if (j % 2 === 0) {
           const v = vals[j / 2];
-          const t = (v && typeof v === 'object') ? `${v.left ?? ''} ‖ ${v.right ?? ''}` : (String(v ?? '').trim() || '?');
-          rowY.push(cell(t, true));
+          /* b17: tại điểm gián đoạn, bảng biến thiên trong SGK xếp giá trị trái Ở TRÊN và giá
+             trị phải Ở DƯỚI trong cùng một ô, không viết liền một dòng ngăn bằng "‖" như
+             b16 — bản in của giáo viên bị ghi là bảng xấu đúng ở chỗ này. */
+          if (v && typeof v === 'object') {
+            rowY.push([v.left, v.right].map(x => para(runsFrom(wrapMath(String(x ?? '').trim() || '?'), { b: true }),
+              { align: 'center', spaceAfter: 0 })).join(''));
+          } else rowY.push(cell(String(v ?? '').trim() || '?', true));
         } else rowY.push(cell(dir((j - 1) / 2)));
       }
       const widths = [2].concat(Array(it.slots).fill(1).map((_, j) => j % 2 === 0 ? 1.4 : 1));
@@ -735,8 +746,11 @@
     }
     return para(runsFrom('*[Hình minh hoạ toán học — xem bản trên màn hình]*', { i: true }));
   }
+  /* b17: vạch đôi tại điểm không xác định được AI viết bằng đủ kiểu — "\\|", "||", "//".
+     Bản in của giáo viên hiện ra nguyên chữ "\\|" giữa hàng đạo hàm. Đưa hết về một ký hiệu
+     trước khi quyết định có bọc vào công thức hay không. */
   const wrapMath = v => {
-    const s = String(v ?? '').trim();
+    let s = String(v ?? '').trim().replace(/\\\||\|\||\/\//g, '‖');
     if (!s || /^[+\-0↗↘↑↓∞‖]+$/.test(s)) return s;
     return s.includes('$') ? s : `$${s}$`;
   };
