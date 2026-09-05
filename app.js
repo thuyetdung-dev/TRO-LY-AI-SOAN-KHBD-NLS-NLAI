@@ -1,3 +1,7 @@
+/* Mốc phiên bản — hiện ngay trên thanh tiêu đề. Sau nhiều vòng sửa, đã có lần trang web
+   chạy bản cũ mà cả hai bên đều tưởng là bản mới, mất công đi tìm lỗi đã sửa xong rồi.
+   Nhìn dòng chữ trên đầu trang là biết ngay đang chạy bản nào. */
+const APP_BUILD='2026-09-05 · b9';
 const $=id=>document.getElementById(id);let selectedFiles=[],rawMarkdown='',availableModels=[],scanTimer,draftTimer,lastValidation=null;
 const fields=['subject','grade','lesson','book','periods','students','classSize','equipment','notes','tableLayout','assessmentMode','lessonTemplate','sourceMode'];
 const toast=m=>{const t=$('toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2600)};
@@ -126,7 +130,26 @@ function buildStandardsBlock(v){
 /* Bản cũ chỉ khớp chữ "toán" đứng riêng nên bỏ sót "Đại số", "Hình học", "Giải tích",
    "Toán(nâng cao)" — giáo viên dạy các phân môn này mất luôn mô-đun bảng biến thiên/đồ thị. */
 function isMathSubject(v){return /toán|toan|đại\s*số|dai\s*so|hình\s*học|hinh\s*hoc|giải\s*tích|giai\s*tich|lượng\s*giác|luong\s*giac|mathematics|maths?\b/i.test(v.subject||'')}
-function mathRulesFor(v){if(!isMathSubject(v))return '6) Không áp dụng mô-đun biểu diễn Toán học vì môn đang soạn không phải môn Toán.';return `6) MÔ-ĐUN RIÊNG MÔN TOÁN: Khi bài học thực sự có nội dung xét dấu đạo hàm, đồng biến/nghịch biến, cực trị hoặc khảo sát hàm số, mọi ví dụ tương ứng phải kèm khối mathviz type "variation" theo schema {"type":"variation","title":"...","points":[...],"derivative":[...],"values":[...]}. Với N mốc x, derivative có đúng 2N-3 phần tử; điểm y'=0 ghi "0", điểm không xác định ghi ""; điểm gián đoạn dùng {"left":"...","right":"..."}. Khi cần bảng xét dấu dùng {"type":"sign","title":"...","columns":[...],"rows":[{"label":"...","cells":[...]}]}. Khi cần đồ thị dùng {"type":"graph","title":"...","xMin":-5,"xMax":5,"yMin":-5,"yMax":5,"functions":[{"expr":"x^2","label":"f(x)","color":"#176fa8"}]}. Chỉ dùng mathviz khi đúng nội dung bài, không ép dùng cho mọi bài Toán.`}
+function mathRulesFor(v){if(!isMathSubject(v))return '6) Không áp dụng mô-đun biểu diễn Toán học vì môn đang soạn không phải môn Toán.';return `6) MÔ-ĐUN RIÊNG MÔN TOÁN — ba loại hình vẽ, viết trong khối mã có nhãn mathviz.
+
+6a) BẢNG BIẾN THIÊN: {"type":"variation","title":"...","expr":"...","points":[...],"derivative":[...],"values":[...]}
+ - "points": các mốc x theo thứ tự tăng dần, luôn bắt đầu bằng "-\\\\infty" và kết thúc bằng "+\\\\infty". Gọi số mốc là N.
+ - "derivative": ĐÚNG 2N-3 phần tử, XEN KẼ theo thứ tự: dấu trên khoảng 1, giá trị tại mốc 2, dấu trên khoảng 2, giá trị tại mốc 3, ... Dấu chỉ dùng "+" hoặc "-". Tại mốc mà y'=0 ghi "0"; tại mốc hàm không xác định ghi "\\\\|".
+ - "values": ĐÚNG N phần tử, một giá trị y cho mỗi mốc. BẮT BUỘC TÍNH RA SỐ CỤ THỂ tại mọi điểm cực trị — để trống là lỗi, giáo viên sẽ phải tự tính lại. Tại điểm gián đoạn dùng {"left":"-\\\\infty","right":"+\\\\infty"}.
+ - "expr": BẮT BUỘC — công thức hàm số viết theo cú pháp máy tính (dùng * cho phép nhân, ^ cho luỹ thừa), ví dụ "x^3-3*x^2+2" hoặc "(-x^2+5*x-7)/(x-2)". Phần mềm dùng trường này để VẼ LUÔN ĐỒ THỊ ngay dưới bảng biến thiên, nên thiếu nó là mất hình trực quan của cả hoạt động.
+ - Ví dụ đúng cho y=x^3-3x^2+2 (N=4): points ["-\\\\infty","0","2","+\\\\infty"], derivative ["+","0","-","0","+"] (đúng 5 = 2·4-3), values ["-\\\\infty","2","-2","+\\\\infty"], expr "x^3-3*x^2+2".
+
+6b) BẢNG XÉT DẤU: {"type":"sign","title":"...","columns":[...],"rows":[{"label":"f'(x)","cells":[...]}]}
+ - "columns" là các mốc x, N mốc. "cells" của mỗi hàng có ĐÚNG 2N-3 phần tử, xen kẽ y hệt quy tắc 6a: dấu khoảng 1, giá trị tại mốc 2, dấu khoảng 2, ...
+ - Ví dụ đúng: columns ["-\\\\infty","1","3","+\\\\infty"], cells ["+","0","-","0","+"].
+ - Đếm sai số phần tử là bảng vẽ ra lệch cột, không dùng được.
+
+6c) ĐỒ THỊ HÀM SỐ: {"type":"graph","title":"...","xMin":-5,"xMax":5,"yMin":-5,"yMax":5,"functions":[{"expr":"x^3-3*x","label":"y=x^3-3x","color":"#176fa8"}]}
+ - "expr" viết theo cú pháp máy tính: dùng dấu * cho phép nhân (viết "3*x" chứ không phải "3x"), dùng ^ cho luỹ thừa. Dùng được sin, cos, tan, sqrt, abs, exp, log, ln, pi.
+ - Chọn xMin/xMax/yMin/yMax bao trọn các điểm cực trị và giao điểm cần quan sát.
+ - BẮT BUỘC có ít nhất một đồ thị khi bài học có bất kỳ nội dung nào sau đây: nhận biết tính đơn điệu hoặc cực trị QUA HÌNH ẢNH ĐỒ THỊ, khảo sát và vẽ đồ thị hàm số, tương giao đồ thị, hoặc khi sách giáo khoa có hình vẽ đồ thị ở phần tương ứng. Yêu cầu cần đạt "nhận biết qua hình ảnh đồ thị" mà bản soạn không có đồ thị nào thì chưa dạy được mục tiêu đó.
+
+QUY TẮC CHUNG: mỗi khối mathviz đặt ngay dưới dòng văn bản dẫn vào nó. Chỉ dùng khi đúng nội dung bài, không ép dùng cho mọi bài Toán. Nhưng với bài về tính đơn điệu, cực trị hay khảo sát hàm số thì bảng biến thiên và đồ thị là bắt buộc, không được thay bằng lời mô tả suông.`}
 function promptFor(v){const grade=clampGrade(v.grade);return `Bạn là chuyên gia hàng đầu về xây dựng Kế hoạch bài dạy tại Việt Nam. Hãy soạn KHBD năm học 2026–2027, tuyệt đối dựa trên tài liệu nguồn nếu có.
 THÔNG TIN: Môn ${v.subject}; lớp ${grade}; bài ${v.lesson}; bộ sách ${v.book}; số tiết ${v.periods||'hãy xác định từ SGV/tài liệu'}; học sinh ${v.students}; sĩ số ${v.classSize}; thiết bị ${v.equipment}. Ghi chú: ${v.notes||'không'}.
 YÊU CẦU BẮT BUỘC:
@@ -184,6 +207,70 @@ function svgLabel(cx,cy,content,anchor,w,h){w=w||100;h=h||24;const x=anchor==='s
 // values: N giá trị y tương ứng từng điểm trong "points"; một phần tử có thể là {left,right} để biểu diễn
 // điểm gián đoạn/tiệm cận (vd hàm phân thức) — khi đó vẽ dấu ngắt "‖" và tách 2 nhãn giá trị trái/phải.
 function coerceLen(arr,n,fill){arr=Array.isArray(arr)?arr.slice():[];while(arr.length<n)arr.push(fill);if(arr.length>n)arr.length=n;return arr}
+
+/* ===== Bảng xét dấu vẽ theo chuẩn SGK =====
+   LỖI ĐÃ SỬA: bảng xét dấu trước đây dựng bằng <table> thường, mỗi "cells" là một <td>.
+   Nhưng bảng xét dấu KHÔNG phải bảng thường: các dấu nằm XEN KẼ giữa và tại các mốc.
+   Với N mốc thì có N-1 khoảng và N-2 mốc trong, tổng cộng 2N-3 ô dấu — nhiều hơn số cột
+   tiêu đề. Hệ quả: thead có N ô còn tbody có 1+2N-3 ô, trình duyệt tự kéo giãn, bảng lệch
+   hẳn và các mốc phình to như trong ảnh giáo viên gửi. Nay vẽ bằng SVG với đúng hình học
+   xen kẽ: mốc nằm trên vạch dọc, dấu khoảng nằm giữa hai vạch. */
+
+/* Từ bảng biến thiên suy ra luôn đồ thị. Giáo viên phản ánh bản soạn "chỉ có công thức và lời
+   nói, không có hình ảnh trực quan": mô hình chịu viết bảng biến thiên nhưng gần như không bao
+   giờ tự thêm khối đồ thị. Nay chỉ cần nó khai báo thêm "expr" trong chính khối bảng biến thiên
+   là phần mềm vẽ luôn đồ thị bên dưới — bớt được một việc mà mô hình hay quên. */
+function graphFromVariation(spec){
+  const expr=String(spec.expr||'').trim();
+  if(!expr)return null;
+  const nums=(spec.points||[]).map(p=>Number(String(p).replace(/\\infty|∞|infty/gi,'NaN')))
+    .filter(Number.isFinite);
+  let xMin=-5,xMax=5;
+  if(nums.length){const lo=Math.min(...nums),hi=Math.max(...nums),pad=Math.max(2,(hi-lo)*0.6||3);
+    xMin=Math.floor(lo-pad);xMax=Math.ceil(hi+pad)}
+  const vals=(spec.values||[]).map(v=>Number(typeof v==='object'?NaN:v)).filter(Number.isFinite);
+  let yMin=-5,yMax=5;
+  if(vals.length){const lo=Math.min(...vals),hi=Math.max(...vals),pad=Math.max(2,(hi-lo)*0.6||3);
+    yMin=Math.floor(lo-pad);yMax=Math.ceil(hi+pad)}
+  return {type:'graph',title:'Đồ thị '+(spec.funcLabel||('y = '+expr)),
+    xMin,xMax,yMin,yMax,functions:[{expr,label:spec.funcLabel||('y='+expr)}]};
+}
+function buildSignSVG(spec){
+  const pts=(spec.columns||spec.points||[]).map(x=>String(x??''));
+  const N=pts.length;
+  if(N<2)return null;
+  const rows=(spec.rows||[]).map(r=>({label:r.label??'',cells:coerceLen(r.cells,2*N-3,'')}));
+  if(!rows.length)return null;
+  const W=760,leftLabel=54,rightPad=16,plotW=W-leftLabel-rightPad;
+  const xAt=i=>leftLabel+(N===1?0:i*(plotW/(N-1)));
+  const bandX=38,bandRow=44,padTop=8;
+  const H=padTop+bandX+bandRow*rows.length+8;
+  const rowTop=k=>padTop+bandX+bandRow*k;
+  let svg=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(spec.title||'Bảng xét dấu')}">`;
+  svg+=`<rect x="${leftLabel}" y="${padTop}" width="${plotW}" height="${bandX+bandRow*rows.length}" class="vt-frame"/>`;
+  // vạch ngang giữa các dòng
+  for(let k=0;k<=rows.length;k++){const y=rowTop(k);
+    svg+=`<line x1="${leftLabel}" y1="${y}" x2="${W-rightPad}" y2="${y}" class="vt-frame"/>`}
+  // vạch dọc tại từng mốc
+  pts.forEach((_,i)=>{const x=xAt(i);
+    svg+=`<line x1="${x}" y1="${padTop}" x2="${x}" y2="${H-8}" class="vt-grid"/>`});
+  // nhãn hàng bên trái
+  svg+=svgLabel(2,padTop+bandX/2,'$x$','start',48,20);
+  rows.forEach((r,k)=>{svg+=svgLabel(2,rowTop(k)+bandRow/2,wrapMathCell(r.label),'start',48,20)});
+  // các mốc trên hàng x
+  pts.forEach((p,i)=>{svg+=svgLabel(xAt(i),padTop+bandX/2,wrapMathCell(p),'middle',120,22)});
+  // dấu: chỉ số chẵn là dấu trên khoảng, chỉ số lẻ là giá trị tại mốc trong
+  rows.forEach((r,k)=>{
+    const cy=rowTop(k)+bandRow/2;
+    /* String(undefined) trả về chuỗi "undefined" chứ không phải chuỗi rỗng, nên nếu thiếu ô
+       thì bảng in ra chữ "undefined" giữa bài. Phải dùng ?? '' trước khi ép kiểu. */
+    for(let i=0;i<N-1;i++){const v=r.cells[2*i];
+      if(String(v??'').trim())svg+=svgLabel((xAt(i)+xAt(i+1))/2,cy,wrapMathCell(v),'middle',80,22)}
+    for(let i=1;i<=N-2;i++){const v=r.cells[2*i-1];
+      if(String(v??'').trim())svg+=svgLabel(xAt(i),cy,wrapMathCell(v),'middle',60,22)}
+  });
+  return svg+'</svg>';
+}
 function buildVariationSVG(spec){
   const points=Array.isArray(spec.points)?spec.points:[];
   const N=points.length;
@@ -192,18 +279,24 @@ function buildVariationSVG(spec){
   // bỏ cuộc và báo lỗi ngay, để vẫn dựng được một sơ đồ có ích (có thể thiếu 1 dấu, còn hơn trắng trang).
   const deriv=coerceLen(spec.derivative,2*N-3,'');
   const values=coerceLen(spec.values,N,'');
+  /* LỖI ĐÃ SỬA: bản cũ so sánh giá trị với đúng ký tự '+∞'. Nhưng mô hình trả về LaTeX
+     "+\\infty", nên phép so sánh LUÔN trượt: vô cực không được ghim lên đỉnh/đáy khung mà bị
+     tính như một mức bình thường, làm toàn bộ bảng lệch chiều — đúng hiện tượng trong ảnh. */
+  const INF_POS=/^\+?\s*(\\infty|∞|infty|inf)$/i, INF_NEG=/^-\s*(\\infty|∞|infty|inf)$/i;
+  const isPosInf=x=>INF_POS.test(String(x??'').trim());
+  const isNegInf=x=>INF_NEG.test(String(x??'').trim());
   const W=760,leftLabel=40,rightPad=16,plotW=W-leftLabel-rightPad;
   const xAt=i=>leftLabel+(N===1?0:i*(plotW/(N-1)));
   const bandX=36,bandDeriv=56,bandVal=204,padTop=10,padBot=10;
   const yTop=padTop,derivTopY=yTop+bandX,valTopY=derivTopY+bandDeriv,valBotY=valTopY+bandVal,H=valBotY+padBot;
   const intervalSign=i=>deriv[2*i];
   let arriveLevel=[0],departLevel=[0];
-  for(let i=0;i<N-1;i++){const s=intervalSign(i),d=s==='+'?1:s==='-'?-1:0,nextArrive=departLevel[i]+d;arriveLevel.push(nextArrive);const v=values[i+1];departLevel.push(v&&typeof v==='object'?(v.right==='+∞'?nextArrive+3:v.right==='-∞'?nextArrive-3:nextArrive):nextArrive)}
+  for(let i=0;i<N-1;i++){const s=intervalSign(i),d=s==='+'?1:s==='-'?-1:0,nextArrive=departLevel[i]+d;arriveLevel.push(nextArrive);const v=values[i+1];departLevel.push(v&&typeof v==='object'?(isPosInf(v.right)?nextArrive+3:isNegInf(v.right)?nextArrive-3:nextArrive):nextArrive)}
   const allLv=arriveLevel.concat(departLevel),minL=Math.min(...allLv),maxL=Math.max(...allLv),span=Math.max(1,maxL-minL);
   const yForLevel=lv=>valBotY-26-((lv-minL)/span)*(bandVal-52);
   const valLabel=i=>{const v=values[i];return (v&&typeof v==='object')?null:String(v)};
-  const yArrive=i=>{const v=valLabel(i);if(v==='+∞')return valTopY+16;if(v==='-∞')return valBotY-16;return yForLevel(arriveLevel[i])};
-  const yDepart=i=>{const v=valLabel(i);if(v==='+∞')return valTopY+16;if(v==='-∞')return valBotY-16;return yForLevel(departLevel[i])};
+  const yArrive=i=>{const v=valLabel(i);if(isPosInf(v))return valTopY+16;if(isNegInf(v))return valBotY-16;return yForLevel(arriveLevel[i])};
+  const yDepart=i=>{const v=valLabel(i);if(isPosInf(v))return valTopY+16;if(isNegInf(v))return valBotY-16;return yForLevel(departLevel[i])};
   let svg=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(spec.title||'Bảng biến thiên')}">`;
   svg+=`<rect x="${leftLabel}" y="${yTop}" width="${plotW}" height="${valBotY-yTop}" class="vt-frame" fill="none" stroke="#333" stroke-width="1.2"/>`;
   svg+=`<line x1="${leftLabel}" y1="${derivTopY}" x2="${W-rightPad}" y2="${derivTopY}" class="vt-frame" stroke="#333" stroke-width="1.2"/>`;
@@ -215,8 +308,20 @@ function buildVariationSVG(spec){
   points.forEach((p,i)=>{svg+=svgLabel(xAt(i),(yTop+derivTopY)/2,wrapMathCell(p),'middle',110,20)});
   for(let i=0;i<N-1;i++){const s=intervalSign(i);if(s)svg+=svgLabel((xAt(i)+xAt(i+1))/2,(derivTopY+valTopY)/2,wrapMathCell(s),'middle',60,20)}
   for(let i=1;i<N-1;i++){const v=deriv[2*i-1];if(v!==undefined)svg+=svgLabel(xAt(i),(derivTopY+valTopY)/2,wrapMathCell(v),'middle',60,20)}
-  for(let i=0;i<N-1;i++){const x1=xAt(i),x2=xAt(i+1),y1=yDepart(i),y2=yArrive(i+1);svg+=`<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" class="vt-path" fill="none" stroke="#164f75" stroke-width="1.8" stroke-linecap="round"/>`;const mx=(x1+x2)/2,my=(y1+y2)/2,ang=Math.atan2(y2-y1,x2-x1),ah=6,ax1=mx-ah*Math.cos(ang-0.4),ay1=my-ah*Math.sin(ang-0.4),ax2=mx-ah*Math.cos(ang+0.4),ay2=my-ah*Math.sin(ang+0.4);svg+=`<polygon points="${mx},${my} ${ax1},${ay1} ${ax2},${ay2}" class="vt-arrow" fill="#164f75"/>`}
-  points.forEach((p,i)=>{const v=values[i],anchor=i===0?'start':(i===N-1?'end':'middle');if(v&&typeof v==='object'){const yL=yArrive(i),yR=yDepart(i),midY=(yL+yR)/2;svg+=svgLabel(xAt(i)-8,yL-14,wrapMathCell(v.left),'end',80,20);svg+=svgLabel(xAt(i)+8,yR-14,wrapMathCell(v.right),'start',80,20);svg+=`<line x1="${xAt(i)-6}" y1="${midY+11}" x2="${xAt(i)+2}" y2="${midY-11}" class="vt-path" stroke="#164f75" stroke-width="1.4"/><line x1="${xAt(i)-1}" y1="${midY+11}" x2="${xAt(i)+7}" y2="${midY-11}" class="vt-path" stroke="#164f75" stroke-width="1.4"/>`}else{svg+=svgLabel(xAt(i)+(i===0?6:i===N-1?-6:0),yArrive(i)-14,wrapMathCell(v),anchor,90,20)}});
+  for(let i=0;i<N-1;i++){const x1=xAt(i),x2=xAt(i+1),y1=yDepart(i),y2=yArrive(i+1);svg+=`<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" class="vt-path" fill="none" stroke="#164f75" stroke-width="1.8" stroke-linecap="round"/>`;/* SGK vẽ đầu mũi tên ở CUỐI đoạn, ngay trước giá trị đích (xem bảng biến thiên trong SGK),
+   không phải ở giữa đoạn như bản cũ. Đặt ở khoảng 88% chiều dài đoạn cho khớp. */
+const t=0.88,mx=x1+(x2-x1)*t,my=y1+(y2-y1)*t,ang=Math.atan2(y2-y1,x2-x1),ah=8,
+  ax1=mx-ah*Math.cos(ang-0.42),ay1=my-ah*Math.sin(ang-0.42),
+  ax2=mx-ah*Math.cos(ang+0.42),ay2=my-ah*Math.sin(ang+0.42);
+svg+=`<polygon points="${mx.toFixed(1)},${my.toFixed(1)} ${ax1.toFixed(1)},${ay1.toFixed(1)} ${ax2.toFixed(1)},${ay2.toFixed(1)}" class="vt-arrow" fill="#164f75"/>`}
+  points.forEach((p,i)=>{const v=values[i],anchor=i===0?'start':(i===N-1?'end':'middle');if(v&&typeof v==='object'){const yL=isPosInf(v.left)?valTopY+16:isNegInf(v.left)?valBotY-16:yArrive(i),yR=isPosInf(v.right)?valTopY+16:isNegInf(v.right)?valBotY-16:yDepart(i),midY=(yL+yR)/2;svg+=svgLabel(xAt(i)-8,yL-14,wrapMathCell(v.left),'end',80,20);svg+=svgLabel(xAt(i)+8,yR-14,wrapMathCell(v.right),'start',80,20);/* Điểm gián đoạn: SGK vẽ hai vạch dọc song song chạy suốt hàng y (dấu ‖), không phải hai
+   gạch xiên ngắn ở giữa như bản cũ — nhìn vào không ra ký hiệu gián đoạn. */
+svg+=`<line x1="${xAt(i)-3}" y1="${valTopY+4}" x2="${xAt(i)-3}" y2="${valBotY-4}" class="vt-grid"/>`+
+     `<line x1="${xAt(i)+3}" y1="${valTopY+4}" x2="${xAt(i)+3}" y2="${valBotY-4}" class="vt-grid"/>`}else{
+    /* Nếu mô hình không tính ra giá trị cực trị, bản cũ để trống — người đọc tưởng bảng đã đủ.
+       SGK dùng dấu "?" cho ô chưa điền, nên hiện "?" để giáo viên biết còn phải bổ sung. */
+    const shown=String(v??'').trim()||'?';
+    svg+=svgLabel(xAt(i)+(i===0?6:i===N-1?-6:0),yArrive(i)-14,wrapMathCell(shown),anchor,90,20)}});
   svg+='</svg>';
   return svg;
 }
@@ -267,7 +372,7 @@ function buildGraphSVG(s,opt){
   return svg+'</svg>';
 }
 function renderMathViz(){document.querySelectorAll('.mathviz').forEach(el=>{try{const s=JSON.parse(decodeURIComponent(el.dataset.spec));if(s.type==='graph'){el.innerHTML=`<div class="mathviz-title">${esc(s.title||'Đồ thị')}</div>`+buildGraphSVG(s)+`<div class="mathviz-legend">${(s.functions||[]).map(f=>`<span style="--c:${esc(f.color||'#176fa8')}">$${esc(f.label||f.expr)}$</span>`).join('')}</div>`}
-  else if(s.type==='variation'&&Array.isArray(s.points)){const svg=buildVariationSVG(s);if(!svg)throw new Error('variation schema không hợp lệ');el.innerHTML=`<div class="mathviz-title">${esc(s.title||'Bảng biến thiên')}</div><div class="mathviz-scroll vt-scroll">${svg}</div>`}else{const cols=s.columns||[],rows=s.rows||[];el.innerHTML=`<div class="mathviz-title">${esc(s.title|| (s.type==='sign'?'Bảng xét dấu':'Bảng biến thiên'))}</div><div class="mathviz-scroll"><table class="variation-table"><thead><tr>${cols.map(c=>`<th>${wrapMathCell(c)}</th>`).join('')}</tr></thead><tbody>${rows.map(r=>`<tr><th>${wrapMathCell(r.label)}</th>${(r.cells||[]).map(c=>`<td class="variation-cell">${wrapMathCell(c)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`}}catch(e){el.innerHTML='<p class="mathviz-error">Không dựng được hình toán học này. Vui lòng tạo lại nội dung.</p>'}})}
+  else if(s.type==='variation'&&Array.isArray(s.points)){const svg=buildVariationSVG(s);if(!svg)throw new Error('variation schema không hợp lệ');const g=graphFromVariation(s);el.innerHTML=`<div class="mathviz-title">${esc(s.title||'Bảng biến thiên')}</div><div class="mathviz-scroll vt-scroll">${svg}</div>`+(g?`<div class="mathviz-title" style="margin-top:14px">${esc(g.title)}</div>${buildGraphSVG(g)}<div class="mathviz-legend"><span style="--c:#176fa8">$${esc(g.functions[0].label)}$</span></div>`:'')}else{const svg=buildSignSVG(s);if(!svg)throw new Error('sign schema không hợp lệ');el.innerHTML=`<div class="mathviz-title">${esc(s.title||(s.type==='sign'?'Bảng xét dấu':'Bảng biến thiên'))}</div><div class="mathviz-scroll vt-scroll">${svg}</div>`}}catch(e){el.innerHTML='<p class="mathviz-error">Không dựng được hình toán học này. Vui lòng tạo lại nội dung.</p>'}})}
 function balancedFences(s){return (String(s).match(/```/g)||[]).length%2===0}
 /* Vá dấu gạch chéo trong JSON do AI sinh ra.
    VÌ SAO PHẢI VIẾT LẠI: bản cũ dùng /\\(?!["\\/bfnrtu])/ — nghĩa là để nguyên dấu gạch
@@ -279,13 +384,22 @@ function balancedFences(s){return (String(s).match(/```/g)||[]).length%2===0}
    Cách phân biệt: một ký tự thoát JSON thật chỉ có ĐÚNG MỘT chữ cái (\n rồi hết);
    còn lệnh LaTeX luôn có từ hai chữ cái trở lên (\to, \frac). */
 function repairJsonEscapes(raw) {
+  /* Phân biệt "\\n xuống dòng thật" với "lệnh LaTeX bắt đầu bằng n" bằng danh sách lệnh có
+     thật, chứ không đoán theo ký tự liền sau. Bản trước giữ \\n chỉ khi KHÔNG có chữ cái theo
+     sau — nhưng mô hình viết "...trang 10:\\na) Ta có" và "\\nb) Bảng biến thiên", tức là có
+     chữ cái ngay sau, nên xuống dòng bị biến thành chữ "\\na)" hiện ra giữa ô sản phẩm. */
+  const CMDS = (typeof LATEX_CMDS !== 'undefined' ? LATEX_CMDS : [])
+    .concat(['frac','sqrt','text','times','to','ne','nabla','begin','end','tan','theta','tau','binom','rfloor','rceil']);
+  const startsWithCmd = run => CMDS.some(c => run === c || (run.startsWith(c) && c.length >= 2));
   return String(raw).replace(/\\(u[0-9a-fA-F]{4}|[a-zA-Z]+|[\s\S])/g, (m, g) => {
-    if (/^u[0-9a-fA-F]{4}$/.test(g)) return m;          // \uXXXX — mã Unicode hợp lệ
-    if (g === '"' || g === '\\' || g === '/') return m;  // ký tự thoát hợp lệ, giữ nguyên
-    if (/^[bfnrt]$/.test(g)) return m;                   // \n \t \r \b \f đứng một mình
-    return '\\' + m;                                     // còn lại là LaTeX, nhân đôi
+    if (/^u[0-9a-fA-F]{4}$/.test(g)) return m;              // \uXXXX — mã Unicode hợp lệ
+    if (g === '"' || g === '\\' || g === '/') return m;      // ký tự thoát JSON hợp lệ
+    if (/^[a-zA-Z]/.test(g) && startsWithCmd(g)) return '\\' + m;  // là lệnh LaTeX → nhân đôi
+    if (/^[bfnrt]/.test(g)) return m;                        // \n \t \r \b \f — xuống dòng/tab thật
+    return '\\' + m;                                         // còn lại coi như LaTeX
   });
 }
+
 
 /* Quét cả khối có dấu ``` lẫn JSON trần. Bản cũ chỉ đọc khối có dấu ```, nên khi mô hình
    trả JSON trần (rất hay xảy ra) thì flow.js vẫn dựng được bảng trên màn hình nhưng bộ
@@ -363,6 +477,14 @@ if(aiGenerated&&hasDuration&&expected){const gap=Math.abs(totalMinutes-expected)
   else if(gap)warnings.push(`Tổng thời lượng là ${totalMinutes}/${expected} phút (lệch ${gap} phút) — giáo viên cân đối lại khi lên lớp.`);}const nlsUsed=[...new Set(text.match(/\b\d\.\d-B\d[a-h]\b/g)||[])],nlsAllowed=allowedNLSTokens();nlsUsed.filter(x=>!nlsAllowed.has(x)).forEach(x=>blockers.push(`Mã NLS không được phép hoặc sai bậc: ${x}.`));const aiUsed=[...new Set(text.match(/\b(?:10|11|12)\.[A-D]\d\.(?:MR)?\d+\b/g)||[])],aiAllowed=allowedAITokens(v.grade);aiUsed.filter(x=>!aiAllowed.has(x)).forEach(x=>blockers.push(`Mã NLAI không thuộc lớp ${v.grade}: ${x}.`));aiUsed.filter(x=>/\.MR\d+$/.test(x)).forEach(x=>{const pos=text.indexOf(x),near=text.slice(pos,Math.min(text.length,pos+180)).toLowerCase();if(!/mở rộng|mo rong|không bắt buộc|khong bat buoc/.test(near))warnings.push(`Mã ${x} là nội dung mở rộng nhưng chưa ghi rõ “không bắt buộc”.`)});if(!$('includeDigital').checked&&nlsUsed.length)blockers.push('Đã tắt NLS nhưng đầu ra vẫn chứa mã NLS.');if(!$('includeAI').checked&&aiUsed.length)blockers.push('Đã tắt NLAI nhưng đầu ra vẫn chứa mã NLAI.');/* Với môn Toán, một kế hoạch bài dạy không có lấy một công thức nào thì chắc chắn là bản tóm tắt
    chứ không phải giáo án. Đây đúng là tình trạng của bản sinh ra trước khi sửa khung. */
 if(aiGenerated&&isMathSubject(v)&&!/\$[^$]+\$/.test(text))blockers.push('Môn Toán nhưng cả bản kế hoạch không có công thức nào — nội dung mới ở mức đề cương, chưa dạy được.');
+/* Giáo viên phản ánh: bản soạn "chỉ có công thức và lời nói, không có hình ảnh trực quan".
+   Yêu cầu cần đạt của các bài này ghi rõ "nhận biết qua hình ảnh đồ thị", nên thiếu đồ thị là
+   thiếu phương tiện dạy học chứ không phải thiếu trang trí. Chặn để buộc soạn lại. */
+if(aiGenerated&&isMathSubject(v)&&/don dieu|cuc tri|khao sat|do thi|bien thien/.test(deaccent(v.lesson||''))){
+  const coGraph=/["']type["']\s*:\s*["']graph["']/i.test(text),
+        coExpr=/["']expr["']\s*:/i.test(text);
+  if(!coGraph&&!coExpr)blockers.push('Bài về đồ thị/tính đơn điệu/cực trị nhưng không có đồ thị hàm số nào. Mỗi khối bảng biến thiên phải khai báo thêm "expr" để phần mềm vẽ đồ thị, hoặc thêm khối mathviz type "graph".');
+}
 if(aiGenerated&&text.length<12000)warnings.push(`Bản kế hoạch chỉ dài ${text.length} ký tự — giáo án đủ nội dung dạy thường dài hơn nhiều; hãy kiểm tra xem phần kiến thức và lời giải đã được viết ra đầy đủ chưa.`);
 if(v.assessmentMode==='day-du'&&!/bảng kiểm|bang kiem|rubric/.test(plain))blockers.push('Đã chọn đánh giá đầy đủ nhưng chưa có bảng kiểm hoặc rubric.');if(aiGenerated&&!/dieu chinh sau bai day/.test(plain))warnings.push('Thiếu mục “Điều chỉnh sau bài dạy” — Phụ lục IV Công văn 5512 có mục này để giáo viên ghi sau khi dạy thực tế.');if($('traceSources').checked&&!/dau vet nguon va trach nhiem giai trinh/.test(plain))blockers.push('Thiếu mục Dấu vết nguồn và trách nhiệm giải trình.');/* Than phiền có thật: bật "khóa nguồn tuyệt đối" mà bản soạn vẫn ghi số trang sai. Nếu không đính
    kèm tài liệu nào thì mọi số trang đều là bịa, phải cảnh báo ngay. */

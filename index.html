@@ -14,8 +14,8 @@
   <!-- Mở sẵn kết nối tới hai máy chủ ngoài để lần gọi đầu bớt chậm. -->
   <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
   <link rel="preconnect" href="https://generativelanguage.googleapis.com" crossorigin>
-  <link rel="stylesheet" href="styles.css">
-  <link rel="stylesheet" href="styles-plus.css">
+  <link rel="stylesheet" href="styles.css?v=b9">
+  <link rel="stylesheet" href="styles-plus.css?v=b9">
   <script>window.MathJax={tex:{inlineMath:[['$','$'],['\\(','\\)']],displayMath:[['$$','$$'],['\\[','\\]']],processEscapes:true},svg:{fontCache:'global'},options:{skipHtmlTags:['script','noscript','style','textarea','pre','code']}};</script>
   <script defer src="https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-svg.js" integrity="sha384-KKWa9jJ1MZvssLeOoXG6FiOAZfAgmzsIIfw8BXwI9+kYm0lPCbC6yTQPBC00F1/L" crossorigin="anonymous"></script>
 </head>
@@ -34,7 +34,7 @@
     <div class="brand-mark">K</div>
     <div>
       <strong>TRỢ LÝ SOẠN GIÁO ÁN</strong>
-      <span>CT GDPT 2018 · Năm học 2026–2027</span>
+      <span>CT GDPT 2018 · Năm học 2026–2027 · <b id="buildTag">—</b></span>
     </div>
     <button id="themeBtn" class="icon-btn" aria-label="Đổi giao diện" title="Đổi giao diện">◐</button>
   </header>
@@ -173,11 +173,17 @@
   <dialog id="historyDialog" class="history-dialog"><form method="dialog"><button class="dialog-close" aria-label="Đóng">×</button></form><h2>Lịch sử phiên bản</h2><div id="historyList"></div><div id="compareView" class="compare-view" hidden></div></dialog>
 
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
-  <script src="standards.js"></script>
-  <script src="app.js"></script>
-  <script src="flow.js"></script>
+  <script src="standards.js?v=b9"></script>
+  <script src="app.js?v=b9"></script>
+  <script src="flow.js?v=b9"></script>
   <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
-  <script src="professional.js"></script>
-  <script src="docx-export.js"></script>
+  <script src="professional.js?v=b9"></script>
+  <script src="docx-export.js?v=b9"></script>
+  <script>
+  /* Hiện mốc phiên bản của app.js đang thực sự chạy. Nếu con số này không khớp với bản vừa
+     tải lên thì trình duyệt còn giữ bản cũ trong bộ nhớ đệm — bấm Ctrl+Shift+R. */
+  (function(){var el=document.getElementById('buildTag');
+    if(el)el.textContent=(typeof APP_BUILD!=='undefined')?APP_BUILD:'không rõ';})();
+  </script>
 </body>
 </html>

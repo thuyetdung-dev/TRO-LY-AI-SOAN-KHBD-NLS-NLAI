@@ -115,12 +115,12 @@ h2{font-size:.82rem;letter-spacing:.09em;text-transform:uppercase;color:var(--mu
 })();
 </script>
 
-<script src="standards.js"></script>
-<script src="app.js"></script>
-<script src="flow.js"></script>
-<script src="professional.js"></script>
+<script src="standards.js?v=b9"></script>
+<script src="app.js?v=b9"></script>
+<script src="flow.js?v=b9"></script>
+<script src="professional.js?v=b9"></script>
 <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
-<script src="docx-export.js"></script>
+<script src="docx-export.js?v=b9"></script>
 
 <script>
 (function(){
@@ -189,8 +189,15 @@ async function runAll(){
   document.getElementById('assessmentMode').value='khong';
   document.getElementById('tableLayout').value='5';
 
-  /* ===== A. Bảng tổ chức thực hiện (flow.js) ===== */
-  group('A · Bảng tổ chức thực hiện');
+  group('A · Phiên bản đang chạy');
+  await T('Mốc phiên bản của mã nguồn: ' + (typeof APP_BUILD!=='undefined'?APP_BUILD:'KHÔNG RÕ'),function(){
+    if(typeof APP_BUILD==='undefined')
+      return 'app.js không khai báo mốc phiên bản — đây là bản cũ, hãy tải lại đủ tệp';
+    return true;
+  });
+
+  /* ===== B. Bảng tổ chức thực hiện (flow.js) ===== */
+  group('B · Bảng tổ chức thực hiện');
 
   await T('JSON có đối tượng lồng đứng trước "type" vẫn dựng được bảng',function(){
     var spec={meta:{n:1},type:'lessonflow',rows:JSON.parse(flowJson(1,5)).rows};
@@ -365,6 +372,146 @@ async function runAll(){
 
   /* ===== E. Đồ thị hàm số ===== */
   group('E · Đồ thị hàm số');
+
+  await T('Chuỗi \\n xuống dòng không bị biến thành chữ "\\na)"',function(){
+    var raw='{"type":"lessonflow","rows":[{"step":"B","teacherActions":["a"],"studentActions":["b"],'
+      +'"product":["SP1: Lời giải HĐ5:\\na) Ta có $f(x)$.\\nb) Bảng biến thiên."],'
+      +'"assessment":["TC1"],"competency":[]}]}';
+    var h=mdToHtml('```lessonflow\n'+raw+'\n```');
+    if(/\\na\)|\\nb\)/.test(h))return 'Vẫn hiện chữ \\na) giữa ô sản phẩm';
+    return h.indexOf('a) Ta có')>=0||'Mất nội dung sau dấu xuống dòng';
+  });
+
+  await T('Lệnh LaTeX bắt đầu bằng n vẫn được giữ nguyên',function(){
+    var hong=[];
+    [['neq','\\neq'],['nabla','\\nabla'],['frac','\\frac{a}{b}'],['times','\\times']].forEach(function(p){
+      var raw='{"type":"lessonflow","rows":[{"step":"B","teacherActions":["a"],"studentActions":["b"],'
+        +'"product":["SP1: $'+p[1].replace(/\\/g,'\\\\')+'$"],"assessment":["TC"],"competency":[]}]}';
+      var h=mdToHtml('```lessonflow\n'+raw+'\n```');
+      if(h.indexOf(p[0])<0)hong.push('\\'+p[0]);
+    });
+    return hong.length===0||'Mất lệnh: '+hong.join(', ');
+  });
+
+  await T('Vô cực viết bằng LaTeX được ghim đúng đỉnh và đáy khung',function(){
+    /* Dùng HAI ví dụ riêng. Với một ví dụ duy nhất, vị trí sai có khi chỉ lệch 10px so với vị
+       trí đúng nên phép kiểm không phân biệt được — đã thử và đúng là lọt một nửa. Mỗi ví dụ
+       dưới đây được chọn sao cho nếu mất phép ghim thì nhãn văng đi hơn 150px. */
+    function viTri(spec,tim){
+      var svg=buildVariationSVG(spec);
+      var d=new DOMParser().parseFromString(svg,'application/xml');
+      var all=[].slice.call(d.getElementsByTagName('*'));
+      var khung=all.filter(function(e){return e.localName==='line'&&/vt-frame/.test(e.getAttribute('class')||'')})
+                   .map(function(e){return parseFloat(e.getAttribute('y1'))});
+      var dinhY=Math.max.apply(null,khung);
+      var cao=parseFloat(d.documentElement.getAttribute('viewBox').split(' ')[3]);
+      var fo=all.filter(function(e){return e.localName==='foreignObject'&&parseFloat(e.getAttribute('y'))>46;});
+      var hit=fo.filter(function(e){return (e.textContent||'').replace(/\s/g,'').indexOf(tim)>=0});
+      return {y:hit.length?parseFloat(hit[0].getAttribute('y')):null,dinh:dinhY,cao:cao};
+    }
+    var P=viTri({points:['-\\infty','0','1','2','+\\infty'],
+      derivative:['+','0','-','0','+','0','-'],values:['-\\infty','3','1','5','+\\infty']},'+\\infty');
+    if(P.y===null)return 'Không thấy nhãn +∞ ở hàng y';
+    if(Math.abs(P.y-(P.dinh-8))>20)
+      return 'Nhãn +∞ ở y='+Math.round(P.y)+', phải sát đỉnh hàng y (y≈'+Math.round(P.dinh-8)+')';
+    var Nv=viTri({points:['-\\infty','0','1','2','+\\infty'],
+      derivative:['-','0','+','0','-','0','+'],values:['-\\infty','1','3','1','+\\infty']},'-\\infty');
+    if(Nv.y===null)return 'Không thấy nhãn −∞ ở hàng y';
+    if(Math.abs(Nv.y-(Nv.cao-50))>20)
+      return 'Nhãn −∞ ở y='+Math.round(Nv.y)+', phải sát đáy khung (y≈'+Math.round(Nv.cao-50)+')';
+    return true;
+  });
+
+  await T('Bảng biến thiên có expr thì tự vẽ kèm đồ thị',function(){
+    var g=graphFromVariation({expr:'x^3-3*x^2+2',points:['-\\infty','0','2','+\\infty'],
+      values:['-\\infty','2','-2','+\\infty']});
+    if(!g)return 'Không suy ra được đồ thị từ bảng biến thiên';
+    var svg=buildGraphSVG(g);
+    return svg.indexOf('plot-path')>=0||'Đồ thị không có đường cong nào';
+  });
+
+  await T('Bài về đồ thị mà thiếu hình thì bị chặn',function(){
+    var r=validatePlan(plan([4],11)+DIEUCHINH,
+      {subject:'Toán',lesson:'Tính đơn điệu và cực trị của hàm số',periods:'1',assessmentMode:'khong'},true);
+    return r.blockers.some(function(x){return x.indexOf('không có đồ thị hàm số nào')>=0})
+      ||'Không chặn — bản soạn không có hình trực quan vẫn xuất được Word';
+  });
+
+  await T('Bảng xét dấu vẽ xen kẽ đúng chuẩn (N mốc ↔ 2N-3 dấu)',function(){
+    var svg=buildSignSVG({title:"Bảng xét dấu f'(x)",
+      columns:['-\\infty','\\frac{3-\\sqrt3}{3}','\\frac{3+\\sqrt3}{3}','+\\infty'],
+      rows:[{label:"f'(x)",cells:['+','0','-','0','+']}]});
+    if(!svg)return 'Không dựng được bảng';
+    var d=new DOMParser().parseFromString(svg,'application/xml');
+    var all=[].slice.call(d.getElementsByTagName('*'));
+    var vach=all.filter(function(e){return e.localName==='line'&&/vt-grid/.test(e.getAttribute('class')||'')});
+    if(vach.length!==4)return 'Có '+vach.length+' vạch dọc, phải đúng 4 (một vạch mỗi mốc)';
+    /* Đếm nhãn: 1 nhãn "x" + 1 nhãn hàng + 4 mốc + 5 dấu = 11. Nếu chỉ đếm vạch dọc thì
+       một bản sửa hỏng làm rơi mất dấu vẫn lọt qua — đã thử và đúng là lọt. */
+    var nhan=all.filter(function(e){return e.localName==='foreignObject'||e.localName==='text'});
+    if(nhan.length!==11)return 'Vẽ ra '+nhan.length+' nhãn, phải đúng 11 (1 chữ x + 1 tên hàng + 4 mốc + 5 dấu) — đang rơi mất ô';
+    if(svg.indexOf('undefined')>=0)return 'Bảng in ra chữ "undefined" — ô thiếu dữ liệu chưa được xử lý';
+    /* Kiểm vị trí: dấu trên khoảng phải nằm GIỮA hai vạch, số 0 phải nằm ĐÚNG trên vạch. */
+    var xs=vach.map(function(l){return parseFloat(l.getAttribute('x1'))}).sort(function(a,b){return a-b});
+    var giua=(xs[0]+xs[1])/2, lech=nhan.filter(function(e){
+      var x=parseFloat(e.getAttribute('x')), w=parseFloat(e.getAttribute('width'))||0;
+      return Math.abs(x+w/2-giua)<2;});
+    return lech.length>=1||'Không có dấu nào nằm giữa hai mốc đầu — các dấu đang đặt sai vị trí';
+  });
+
+  await T('Bảng biến thiên có đủ mũi tên cho từng khoảng',function(){
+    var svg=buildVariationSVG({points:['-\\infty','1','3','+\\infty'],
+      derivative:['+','0','-','0','+'],values:['-\\infty','34','30','+\\infty']});
+    var n=(svg.match(/class="vt-arrow"/g)||[]).length;
+    if(n!==3)return 'Có '+n+' mũi tên, phải đúng 3 (một mũi mỗi khoảng)';
+    /* SGK đặt đầu mũi tên ở CUỐI đoạn, ngay trước giá trị đích. Chỉ đếm số mũi tên thì
+       một bản sửa đưa mũi tên về giữa đoạn vẫn lọt — đã thử và đúng là lọt. */
+    var d=new DOMParser().parseFromString(svg,'application/xml');
+    var vach=[].slice.call(d.getElementsByTagName('*'))
+      .filter(function(e){return e.localName==='line'&&/vt-grid/.test(e.getAttribute('class')||'')})
+      .map(function(l){return parseFloat(l.getAttribute('x1'))}).sort(function(a,b){return a-b});
+    var mui=[].slice.call(d.getElementsByTagName('*'))
+      .filter(function(e){return e.localName==='polygon'})
+      .map(function(p){return parseFloat(p.getAttribute('points').split(',')[0])}).sort(function(a,b){return a-b});
+    var ti=(mui[0]-vach[0])/(vach[1]-vach[0]);
+    return ti>0.7||'Mũi tên đầu tiên nằm ở '+Math.round(ti*100)+'% đoạn — SGK đặt ở cuối đoạn (khoảng 88%), không phải giữa';
+  });
+
+  await T('Ô giá trị cực trị bỏ trống thì hiện dấu ? thay vì để trắng',function(){
+    var svg=buildVariationSVG({points:['-\\infty','0','+\\infty'],
+      derivative:['+','0','-'],values:['-\\infty','','+\\infty']});
+    return svg.indexOf('?')>=0||'Để trắng — giáo viên tưởng bảng đã đủ';
+  });
+
+  await T('Điểm gián đoạn vẽ bằng hai vạch dọc song song',function(){
+    var svg=buildVariationSVG({points:['-\\infty','-1','+\\infty'],
+      derivative:['+','\\|','+'],values:['1',{left:'+\\infty',right:'-\\infty'},'1']});
+    var n=(svg.match(/class="vt-grid"/g)||[]).length;
+    return n>=5||'Chỉ có '+n+' vạch dọc — thiếu ký hiệu gián đoạn';
+  });
+
+  await T('Bảng xét dấu và biến thiên xuất sang Word không lệch cột',async function(){
+    var md='# X\n```mathviz\n'+JSON.stringify({type:'sign',columns:['-\\infty','1','3','+\\infty'],
+        rows:[{label:"f'(x)",cells:['+','0','-','0','+']}]})+'\n```\n'
+      +'```mathviz\n'+JSON.stringify({type:'variation',points:['-\\infty','1','3','+\\infty'],
+        derivative:['+','0','-','0','+'],values:['-\\infty','34','30','+\\infty']})+'\n```\n';
+    var parts=await buildDocxParts(md,'t');
+    var d=new DOMParser().parseFromString(parts['word/document.xml'],'application/xml');
+    var all=[].slice.call(d.getElementsByTagName('*'));
+    var tbls=all.filter(function(e){return e.localName==='tbl'}),lech=[];
+    tbls.forEach(function(t,n){
+      var grid=0,rows=[];
+      for(var i=0;i<t.children.length;i++){
+        if(t.children[i].localName==='tblGrid')grid=t.children[i].children.length;
+        if(t.children[i].localName==='tr'){
+          var c=0,tr=t.children[i];
+          for(var j=0;j<tr.children.length;j++)if(tr.children[j].localName==='tc')c++;
+          rows.push(c);}}
+      rows.forEach(function(c){if(c!==grid)lech.push('bảng '+(n+1)+': '+c+'≠'+grid)});
+    });
+    if(tbls.length<2)return 'Chỉ dựng được '+tbls.length+'/2 bảng';
+    return lech.length===0||'Lệch cột: '+lech.join(', ');
+  });
 
   await T('xMin bằng 0 không bị hiểu nhầm thành -5',function(){
     var s=buildGraphSVG({xMin:0,xMax:4,yMin:0,yMax:16,functions:[{expr:'x^2'}]});
