@@ -1,5 +1,5 @@
 TRỢ LÝ SOẠN KẾ HOẠCH BÀI DẠY 2026–2027
-BẢN CHUYÊN NGHIỆP – BƯỚC 4
+BẢN CHUYÊN NGHIỆP – BƯỚC 4 · HIỆU CHỈNH b11
 
 ================================================================
 ĐIỀU KIỆN CẦN
@@ -52,11 +52,11 @@ LƯU Ý KHI SỬ DỤNG
   xuất Word. Các dòng "cảnh báo" (nền vàng) thì không chặn, chỉ nhắc
   thầy cô rà lại.
 - Chọn bảng hoạt động 3 cột hoặc 5 cột TRƯỚC khi soạn.
-- Tổng thời lượng nên khớp số tiết × 45 phút. Lệch trong khoảng 10%
-  (tối thiểu 5 phút) chỉ là cảnh báo; lệch nhiều hơn mới bị chặn.
-- Hoạt động 1, 2, 3 phải đủ 4 bước. Riêng Hoạt động 4 (Vận dụng), nếu
-  giao ngoài giờ lên lớp thì chấp nhận 2–3 bước theo đúng tinh thần
-  Phụ lục IV Công văn 5512.
+- Tổng thời lượng nên khớp số tiết × 45 phút. Phần mềm cộng tự động
+  thời lượng trong các bảng Hình thành kiến thức mới và nhắc giáo viên
+  đối chiếu thêm Khởi động, Luyện tập, Vận dụng được trình bày văn xuôi.
+- Mỗi bảng Hình thành kiến thức mới phải đủ 4 bước theo Phụ lục IV
+  Công văn 5512. Hoạt động Vận dụng có thể giao ngoài giờ học trên lớp.
 - Nếu KHBD có mã NLS/NLAI, giáo viên phải tích ô duyệt mã trước khi
   xuất Word.
 - Nhãn "Theo nguồn" và "AI đề xuất" giúp xác định trách nhiệm giải trình.
@@ -129,7 +129,7 @@ XỬ LÝ SỰ CỐ THƯỜNG GẶP
 TỰ KIỂM TRA SAU KHI SỬA MÃ
 ================================================================
 Mở tệp test.html bằng Chrome hoặc Edge rồi bấm "Chạy kiểm tra". Trang
-này chạy 38 phép kiểm tra trên đúng các tệp đang nằm trong thư mục,
+này chạy 58 phép kiểm tra trên đúng các tệp đang nằm trong thư mục,
 không phải trên bản sao, nên kết quả phản ánh đúng tình trạng thật.
 
 - Toàn bộ xanh: phần mềm còn lành, dùng được.

@@ -1,7 +1,7 @@
 /* Mốc phiên bản — hiện ngay trên thanh tiêu đề. Sau nhiều vòng sửa, đã có lần trang web
    chạy bản cũ mà cả hai bên đều tưởng là bản mới, mất công đi tìm lỗi đã sửa xong rồi.
    Nhìn dòng chữ trên đầu trang là biết ngay đang chạy bản nào. */
-const APP_BUILD='2026-09-05 · b9';
+const APP_BUILD='2026-09-05 · b11';
 const $=id=>document.getElementById(id);let selectedFiles=[],rawMarkdown='',availableModels=[],scanTimer,draftTimer,lastValidation=null;
 const fields=['subject','grade','lesson','book','periods','students','classSize','equipment','notes','tableLayout','assessmentMode','lessonTemplate','sourceMode'];
 const toast=m=>{const t=$('toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2600)};
@@ -60,7 +60,9 @@ async function uploadToFilesApi(file,key,onProgress){
      được thì không thể tải kiểu này từ trình duyệt — báo rõ để còn quay về cách gửi kèm. */
   if(!uploadUrl)throw new Error('Trình duyệt không đọc được đường dẫn tải lên do Google trả về');
   const up=await fetch(uploadUrl,{method:'POST',
-    headers:{'Content-Length':String(file.size),'X-Goog-Upload-Offset':'0','X-Goog-Upload-Command':'upload, finalize'},
+    /* Content-Length là "forbidden request header" trong trình duyệt: Chrome/Edge tự đặt
+       từ Blob. Tự khai báo làm một số máy chặn ngay trước khi gửi tệp. */
+    headers:{'X-Goog-Upload-Offset':'0','X-Goog-Upload-Command':'upload, finalize'},
     body:file});
   if(!up.ok)throw new Error(`Tải tệp lên thất bại (HTTP ${up.status})`);
   let info=(await up.json())?.file;
@@ -455,26 +457,20 @@ if(aiGenerated&&Number(v.periods)>1){const tiet=new Set((text.match(/TIẾT\s*\d
 /* Đủ bốn phần a) b) c) d) cho mỗi hoạt động. */
 if(aiGenerated){const abcd=(text.match(/d\)\s*Tổ chức thực hiện/gi)||[]).length;
   if(abcd<4)blockers.push(`Mới có ${abcd} hoạt động ghi đủ "a) Mục tiêu – b) Nội dung – c) Sản phẩm – d) Tổ chức thực hiện" (cần ít nhất 4).`);}const mt=[...new Set(text.match(/\bMT\d+\b/g)||[])],sp=[...new Set(text.match(/\bSP\d+\b/g)||[])],tc=[...new Set(text.match(/\bTC\d+\b/g)||[])];if(aiGenerated&&!mt.length)blockers.push('Chưa đánh mã mục tiêu MT1, MT2...');if(aiGenerated&&!/ma tran lien ket muc tieu/.test(plain))blockers.push('Thiếu ma trận liên kết mục tiêu – hoạt động – sản phẩm – đánh giá.');mt.forEach(x=>{if((text.match(new RegExp(`\\b${x}\\b`,'g'))||[]).length<2)warnings.push(`${x} chưa được liên kết rõ với hoạt động/sản phẩm.`)});if(aiGenerated&&!sp.length)blockers.push('Chưa đánh mã sản phẩm SP1, SP2...');if(aiGenerated&&!tc.length)blockers.push('Chưa đánh mã tiêu chí TC1, TC2...');const flows=parseLessonFlows(text);if(aiGenerated&&!flows.length)blockers.push('Không tìm thấy bảng lessonflow của các hoạt động.');let totalMinutes=0,hasDuration=true;flows.forEach((f,i)=>{if(f.__error){blockers.push(`JSON lessonflow ${i+1} không hợp lệ.`);return}if(!Array.isArray(f.rows)||!f.rows.length){blockers.push(`Lessonflow ${i+1} không có bước nào.`);return}
-/* Phụ lục IV Công văn 5512 quy định "Tổ chức thực hiện" theo 4 bước, nhưng cũng ghi rõ
-   Hoạt động 4 (Vận dụng) THƯỜNG GIAO NGOÀI GIỜ HỌC TRÊN LỚP, nộp báo cáo vào thời điểm
-   phù hợp. Với hoạt động giao về nhà, ba bước Thực hiện – Báo cáo – Kết luận diễn ra ở
-   buổi sau chứ không nằm trong tiết đang soạn, nên ép đủ 4 bước sẽ buộc AI bịa ra hoạt
-   động trên lớp không có thật. Vì vậy: các hoạt động 1–3 vẫn phải đủ 4 bước; riêng hoạt
-   động cuối cùng chấp nhận 2–4 bước và chỉ nhắc nhở nếu ít hơn 4. */
-const isLast=i===flows.length-1&&flows.length>=4;
-if(isLast){if(f.rows.length<2||f.rows.length>4){blockers.push(`Lessonflow ${i+1} (Vận dụng) phải có từ 2 đến 4 bước.`);return}
-  if(f.rows.length<4)warnings.push(`Hoạt động 4 chỉ có ${f.rows.length} bước — phù hợp nếu giao ngoài giờ lên lớp; hãy kiểm tra lại phần nộp và nhận xét sản phẩm.`);}
-else if(f.rows.length!==4){blockers.push(`Lessonflow ${i+1} phải có đúng 4 bước.`);return}f.rows.forEach((r,j)=>{if(!r.step||!Array.isArray(r.product))blockers.push(`Lessonflow ${i+1}, bước ${j+1} thiếu tên bước hoặc sản phẩm.`);if(!Array.isArray(r.teacherActions)||!r.teacherActions.length)blockers.push(`Lessonflow ${i+1}, bước ${j+1} thiếu hoạt động của GV.`);if(!Array.isArray(r.studentActions)||!r.studentActions.length)blockers.push(`Lessonflow ${i+1}, bước ${j+1} thiếu hoạt động của HS.`);if(!Array.isArray(r.assessment)||!r.assessment.length)blockers.push(`Lessonflow ${i+1}, bước ${j+1} thiếu cách/tiêu chí đánh giá.`);
+/* Theo prompt, lessonflow chỉ dùng cho các hoạt động Hình thành kiến thức mới; Khởi động,
+   Luyện tập và Vận dụng viết văn xuôi. Vì vậy không được coi lessonflow cuối là Hoạt động 4. */
+if(f.rows.length!==4){blockers.push(`Lessonflow ${i+1} phải có đúng 4 bước.`);return}f.rows.forEach((r,j)=>{if(!r.step||!Array.isArray(r.product))blockers.push(`Lessonflow ${i+1}, bước ${j+1} thiếu tên bước hoặc sản phẩm.`);if(!Array.isArray(r.teacherActions)||!r.teacherActions.length)blockers.push(`Lessonflow ${i+1}, bước ${j+1} thiếu hoạt động của GV.`);if(!Array.isArray(r.studentActions)||!r.studentActions.length)blockers.push(`Lessonflow ${i+1}, bước ${j+1} thiếu hoạt động của HS.`);if(!Array.isArray(r.assessment)||!r.assessment.length)blockers.push(`Lessonflow ${i+1}, bước ${j+1} thiếu cách/tiêu chí đánh giá.`);
 /* Cột "Sản phẩm dự kiến" là phần giáo viên thực sự cầm lên lớp dạy. Bản trước hay trả về nhãn rỗng
    kiểu "SP1: Kết luận về tính đơn điệu" — đọc lên không dạy được gì. Đếm độ dài để bắt lỗi này. */
 const spText=(r.product||[]).map(x=>typeof x==='string'?x:'').join(' ');
-if(spText&&spText.length<80)warnings.push(`Lessonflow ${i+1}, bước ${j+1}: sản phẩm dự kiến quá sơ sài (${spText.length} ký tự) — cần viết ra nội dung kiến thức hoặc lời giải, không chỉ ghi nhãn.`);if(!Array.isArray(r.goalIds)||!r.goalIds.length)warnings.push(`Lessonflow ${i+1}, bước ${j+1} chưa liên kết goalIds.`);const d=Number(r.duration);if(!Number.isFinite(d)||d<=0){hasDuration=false;blockers.push(`Lessonflow ${i+1}, bước ${j+1} thiếu thời lượng hợp lệ.`)}else totalMinutes+=d})});if(aiGenerated&&flows.length<4)warnings.push(`Chỉ nhận diện ${flows.length}/4 bảng tổ chức hoạt động.`);/* Thời lượng: bản cũ bắt khớp TUYỆT ĐỐI nên gần như lần nào cũng chặn xuất Word chỉ vì
-   lệch 2-3 phút — trong khi giáo viên đứng lớp vẫn luôn co giãn vài phút giữa các hoạt động.
-   Nay lệch trong khoảng 10% (tối thiểu 5 phút) chỉ là cảnh báo để rà lại; lệch lớn mới chặn. */
+if(spText&&spText.length<80)warnings.push(`Lessonflow ${i+1}, bước ${j+1}: sản phẩm dự kiến quá sơ sài (${spText.length} ký tự) — cần viết ra nội dung kiến thức hoặc lời giải, không chỉ ghi nhãn.`);if(!Array.isArray(r.goalIds)||!r.goalIds.length)warnings.push(`Lessonflow ${i+1}, bước ${j+1} chưa liên kết goalIds.`);const d=Number(r.duration);if(!Number.isFinite(d)||d<=0){hasDuration=false;blockers.push(`Lessonflow ${i+1}, bước ${j+1} thiếu thời lượng hợp lệ.`)}else totalMinutes+=d})});/* Thời lượng trong lessonflow chỉ là phần Hình thành kiến thức mới; ba hoạt động còn lại
+   được viết văn xuôi nên không thể cộng tự động mà vẫn bảo đảm đúng. Chỉ chặn khi riêng
+   phần đã cấu trúc đã vượt toàn bộ quỹ thời gian; nếu thấp hơn thì báo rõ đây là số phút
+   đã nhận diện, tránh kết luận sai rằng cả KHBD thiếu thời lượng. */
 const expected=Number(v.periods)*45;
-if(aiGenerated&&hasDuration&&expected){const gap=Math.abs(totalMinutes-expected),tol=Math.max(5,Math.round(expected*0.1));
-  if(gap>tol)blockers.push(`Tổng thời lượng các bước là ${totalMinutes} phút, lệch ${gap} phút so với ${expected} phút (${v.periods} tiết) — vượt dung sai ${tol} phút.`);
-  else if(gap)warnings.push(`Tổng thời lượng là ${totalMinutes}/${expected} phút (lệch ${gap} phút) — giáo viên cân đối lại khi lên lớp.`);}const nlsUsed=[...new Set(text.match(/\b\d\.\d-B\d[a-h]\b/g)||[])],nlsAllowed=allowedNLSTokens();nlsUsed.filter(x=>!nlsAllowed.has(x)).forEach(x=>blockers.push(`Mã NLS không được phép hoặc sai bậc: ${x}.`));const aiUsed=[...new Set(text.match(/\b(?:10|11|12)\.[A-D]\d\.(?:MR)?\d+\b/g)||[])],aiAllowed=allowedAITokens(v.grade);aiUsed.filter(x=>!aiAllowed.has(x)).forEach(x=>blockers.push(`Mã NLAI không thuộc lớp ${v.grade}: ${x}.`));aiUsed.filter(x=>/\.MR\d+$/.test(x)).forEach(x=>{const pos=text.indexOf(x),near=text.slice(pos,Math.min(text.length,pos+180)).toLowerCase();if(!/mở rộng|mo rong|không bắt buộc|khong bat buoc/.test(near))warnings.push(`Mã ${x} là nội dung mở rộng nhưng chưa ghi rõ “không bắt buộc”.`)});if(!$('includeDigital').checked&&nlsUsed.length)blockers.push('Đã tắt NLS nhưng đầu ra vẫn chứa mã NLS.');if(!$('includeAI').checked&&aiUsed.length)blockers.push('Đã tắt NLAI nhưng đầu ra vẫn chứa mã NLAI.');/* Với môn Toán, một kế hoạch bài dạy không có lấy một công thức nào thì chắc chắn là bản tóm tắt
+if(aiGenerated&&hasDuration&&expected){const tol=Math.max(5,Math.round(expected*0.1));
+  if(totalMinutes>expected+tol)blockers.push(`Riêng các bước Hình thành kiến thức mới đã có ${totalMinutes} phút, vượt quỹ ${expected} phút (${v.periods} tiết).`);
+  else warnings.push(`Đã nhận diện ${totalMinutes} phút ở các bảng Hình thành kiến thức mới; hãy đối chiếu thêm thời lượng Khởi động, Luyện tập và Vận dụng để đủ ${expected} phút.`);}const nlsUsed=[...new Set(text.match(/\b\d\.\d-B\d[a-h]\b/g)||[])],nlsAllowed=allowedNLSTokens(v.grade);nlsUsed.filter(x=>!nlsAllowed.has(x)).forEach(x=>blockers.push(`Mã NLS không được phép hoặc sai bậc: ${x}.`));const aiUsed=[...new Set(text.match(/\b(?:10|11|12)\.[A-D]\d\.(?:MR)?\d+\b/g)||[])],aiAllowed=allowedAITokens(v.grade);aiUsed.filter(x=>!aiAllowed.has(x)).forEach(x=>blockers.push(`Mã NLAI không thuộc lớp ${v.grade}: ${x}.`));aiUsed.filter(x=>/\.MR\d+$/.test(x)).forEach(x=>{const pos=text.indexOf(x),near=text.slice(pos,Math.min(text.length,pos+180)).toLowerCase();if(!/mở rộng|mo rong|không bắt buộc|khong bat buoc/.test(near))warnings.push(`Mã ${x} là nội dung mở rộng nhưng chưa ghi rõ “không bắt buộc”.`)});if(!$('includeDigital').checked&&nlsUsed.length)blockers.push('Đã tắt NLS nhưng đầu ra vẫn chứa mã NLS.');if(!$('includeAI').checked&&aiUsed.length)blockers.push('Đã tắt NLAI nhưng đầu ra vẫn chứa mã NLAI.');/* Với môn Toán, một kế hoạch bài dạy không có lấy một công thức nào thì chắc chắn là bản tóm tắt
    chứ không phải giáo án. Đây đúng là tình trạng của bản sinh ra trước khi sửa khung. */
 if(aiGenerated&&isMathSubject(v)&&!/\$[^$]+\$/.test(text))blockers.push('Môn Toán nhưng cả bản kế hoạch không có công thức nào — nội dung mới ở mức đề cương, chưa dạy được.');
 /* Giáo viên phản ánh: bản soạn "chỉ có công thức và lời nói, không có hình ảnh trực quan".

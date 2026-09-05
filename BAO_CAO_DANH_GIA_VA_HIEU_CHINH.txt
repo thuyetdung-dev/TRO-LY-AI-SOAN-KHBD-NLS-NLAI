@@ -1,0 +1,79 @@
+BÁO CÁO ĐÁNH GIÁ VÀ HIỆU CHỈNH TRỢ LÝ KHBD
+Phiên bản rà soát: 2026-09-05 · b11
+
+I. KẾT LUẬN NGẮN
+
+Ứng dụng có nền tảng tốt và đã vượt mức một biểu mẫu tạo giáo án thông thường:
+có kiểm soát nguồn, kiểm định cấu trúc, đối chiếu mã NLS/NLAI, dựng công thức
+Toán và xuất DOCX. Sau hiệu chỉnh b11, ứng dụng phù hợp để tiếp tục chạy thử
+nghiệp vụ với giáo viên; chưa nên xem kết quả AI là văn bản đã được phê duyệt.
+
+II. ĐIỂM MẠNH
+
+1. Bám cấu trúc Phụ lục IV Công văn 5512: mục tiêu, thiết bị/học liệu, tiến
+   trình gồm Khởi động – Hình thành kiến thức – Luyện tập – Vận dụng, và mục
+   Điều chỉnh sau bài dạy.
+2. NLS được đối chiếu theo Thông tư 02/2025/TT-BGDĐT, có phân bậc theo lớp và
+   không ép gắn mã khi không có hành vi số quan sát được.
+3. NLAI tách riêng khỏi miền 6 của Khung NLS; có cảnh báo nội dung mở rộng và
+   yêu cầu giáo viên duyệt mã trước khi xuất Word.
+4. Có chế độ khóa nguồn, nhãn “Theo nguồn/AI đề xuất”, cảnh báo dữ liệu cá nhân
+   và không lưu API key.
+5. Phân hệ Toán hỗ trợ công thức Word, bảng xét dấu, bảng biến thiên và đồ thị.
+6. Có lịch sử phiên bản, kiểm tra đầu ra và bộ 58 phép tự kiểm tra.
+
+III. LỖI ĐÃ SỬA TRONG b10–b11
+
+1. Sửa kiểm định thời lượng: trước đây chỉ cộng thời lượng của lessonflow nhưng
+   so với toàn bộ số tiết × 45 phút, dễ khóa xuất Word sai. Nay phần mềm ghi rõ
+   số phút đã nhận diện và chỉ chặn nếu riêng phần này đã vượt quỹ thời gian.
+2. Sửa nhận diện hoạt động: lessonflow chỉ thuộc Hình thành kiến thức mới, nên
+   bảng cuối không còn bị hiểu nhầm là Hoạt động Vận dụng.
+3. Mọi lessonflow Hình thành kiến thức phải đủ đúng 4 bước theo cấu trúc tổ chức
+   thực hiện; Vận dụng vẫn có thể giao ngoài giờ và trình bày bằng văn xuôi.
+4. Sửa tải tệp lớn: bỏ việc tự đặt Content-Length ở lượt tải dữ liệu, vì đây là
+   tiêu đề do Chrome/Edge quản lý và có thể khiến yêu cầu bị chặn trước khi gửi.
+5. Truyền đúng lớp đang kiểm định vào bộ đối chiếu mã NLS, tránh phụ thuộc ngầm
+   vào trạng thái ô nhập.
+6. Đồng bộ mã bộ nhớ đệm b11 và sửa hướng dẫn thành đúng 58 phép kiểm tra.
+7. Đồng bộ hai phép thử thời lượng với cơ chế kiểm định mới, loại bỏ 2 cảnh báo
+   đỏ giả xuất hiện trong test.html của bản b10.
+
+IV. GÓP Ý CHUYÊN MÔN
+
+1. Mã NLS/NLAI chỉ được coi là gợi ý hỗ trợ lập kế hoạch, không phải một đầu
+   điểm độc lập và không thay thế yêu cầu cần đạt của môn học.
+2. “Sản phẩm” cần là kết quả học tập quan sát được; không nên chỉ ghi “HS hiểu”
+   hoặc một nhãn kiến thức rỗng.
+3. Với chế độ khóa nguồn, giáo viên cần cung cấp SGV/phân phối chương trình hoặc
+   trích đoạn có số tiết và yêu cầu cần đạt; nếu thiếu, ứng dụng phải để giáo
+   viên bổ sung thay vì suy đoán.
+4. Khung NLAI nhúng trong bản này chỉ bao phủ lớp 10–12. Với lớp 6–9, phần mềm
+   chủ động tắt NLAI và vẫn cho tích hợp NLS đúng bậc; không nên tự tạo mã NLAI.
+5. Công văn 5512 là khung tham chiếu. Khi đơn vị có mẫu riêng đã được phê duyệt,
+   cần ưu tiên mẫu của nhà trường nhưng không làm mất logic mục tiêu – nhiệm vụ –
+   sản phẩm – tổ chức – đánh giá.
+
+V. GIỚI HẠN CÒN LẠI VÀ KHUYẾN NGHỊ TRIỂN KHAI
+
+1. Ứng dụng phụ thuộc Internet, Gemini, MathJax và JSZip; nên thử trên mạng và
+   thiết bị thực tế của trường trước khi dùng đại trà.
+2. Nội dung sửa trực tiếp trên vùng xem trước chưa được chuyển ngược hoàn hảo
+   thành Markdown có cấu trúc. Khi đã sửa nhiều, nên lưu bản và kiểm tra kỹ tệp
+   DOCX; tốt nhất chỉnh lần cuối trong Word.
+3. Không đưa khóa API dùng chung vào mã nguồn hoặc gửi kèm gói ZIP. Mỗi giáo viên
+   nên dùng khóa riêng và đặt giới hạn/quản lý khóa trên tài khoản Google.
+4. Cần chạy test.html và mở tệp Word thử sau mỗi lần thay mã, nhất là với công
+   thức, bảng biến thiên và đồ thị.
+5. Trước công bố toàn trường, nên chạy thử tối thiểu theo ma trận: lớp 6/9/10/12,
+   môn Toán và một môn không phải Toán, có/không tệp nguồn, NLS bật/tắt, NLAI
+   bật/tắt, bảng 3/5 cột, và xuất DOCX trên Chrome lẫn Edge.
+
+VI. CĂN CỨ ĐÃ ĐỐI CHIẾU
+
+- Công văn 5512/BGDĐT-GDTrH, Phụ lục IV – Khung kế hoạch bài dạy.
+- Thông tư 02/2025/TT-BGDĐT ngày 24/01/2025 – Khung năng lực số cho người học.
+- Quyết định 2422/QĐ-BGDĐT ngày 18/08/2026 – Khung nội dung giáo dục trí tuệ
+  nhân tạo cho học sinh phổ thông.
+
+Đánh giá sau hiệu chỉnh: ĐẠT ĐỂ CHẠY THỬ CÓ KIỂM SOÁT.

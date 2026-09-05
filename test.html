@@ -115,12 +115,12 @@ h2{font-size:.82rem;letter-spacing:.09em;text-transform:uppercase;color:var(--mu
 })();
 </script>
 
-<script src="standards.js?v=b9"></script>
-<script src="app.js?v=b9"></script>
-<script src="flow.js?v=b9"></script>
-<script src="professional.js?v=b9"></script>
+<script src="standards.js?v=b11"></script>
+<script src="app.js?v=b11"></script>
+<script src="flow.js?v=b11"></script>
+<script src="professional.js?v=b11"></script>
 <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
-<script src="docx-export.js?v=b9"></script>
+<script src="docx-export.js?v=b11"></script>
 
 <script>
 (function(){
@@ -286,21 +286,21 @@ async function runAll(){
     return r.passed||'Bị chặn bởi: '+r.blockers.join(' | ');
   });
 
-  await T('Thời lượng lệch ít (44/45 phút) chỉ cảnh báo, không chặn',function(){
+  await T('Nhận diện 44 phút Hình thành kiến thức thì cảnh báo đối chiếu, không chặn',function(){
     var r=validatePlan(plan([4],11)+DIEUCHINH,V,true);
-    if(r.blockers.some(function(x){return /vượt dung sai/.test(x)}))return 'Vẫn bị chặn vì lệch 1 phút';
-    return r.warnings.some(function(x){return x.indexOf('lệch')>=0})||'Không thấy cảnh báo thời lượng';
+    if(r.blockers.some(function(x){return /vượt quỹ/.test(x)}))return 'Bị chặn dù phần nhận diện chưa vượt quỹ 45 phút';
+    return r.warnings.some(function(x){return x.indexOf('Đã nhận diện 44 phút')>=0})||'Không thấy cảnh báo đối chiếu thời lượng';
   });
 
-  await T('Thời lượng lệch nhiều (20/45 phút) thì vẫn chặn',function(){
+  await T('Mới nhận diện 20/45 phút thì cảnh báo bổ sung, không chặn oan',function(){
     var r=validatePlan(plan([4],5)+DIEUCHINH,V,true);
-    return r.blockers.some(function(x){return /vượt dung sai/.test(x)})||'Không chặn — dung sai đang quá rộng';
+    if(r.blockers.some(function(x){return /vượt quỹ/.test(x)}))return 'Bị chặn dù 20 phút chỉ là phần Hình thành kiến thức';
+    return r.warnings.some(function(x){return x.indexOf('Đã nhận diện 20 phút')>=0})||'Không nhắc đối chiếu các hoạt động viết văn xuôi';
   });
 
-  await T('Hoạt động 4 có 2 bước (giao ngoài giờ) chỉ cảnh báo',function(){
+  await T('Mọi lessonflow Hình thành kiến thức mới phải đủ 4 bước',function(){
     var r=validatePlan(plan([4,4,4,2],11)+DIEUCHINH,{subject:'Toán',periods:'3',assessmentMode:'khong'},true);
-    if(r.blockers.some(function(x){return /(đúng 4|từ 2 đến 4) bước/.test(x)}))return 'Vẫn chặn Hoạt động 4';
-    return r.warnings.some(function(x){return x.indexOf('Hoạt động 4')>=0})||'Không nhắc gì về Hoạt động 4';
+    return r.blockers.some(function(x){return /đúng 4 bước/.test(x)})||'Không chặn lessonflow thiếu bước';
   });
 
   await T('Hoạt động giữa thiếu bước thì vẫn chặn',function(){
@@ -308,9 +308,9 @@ async function runAll(){
     return r.blockers.some(function(x){return x.indexOf('đúng 4 bước')>=0})||'Không chặn — đã nới nhầm cho cả hoạt động giữa';
   });
 
-  await T('Hoạt động 4 chỉ 1 bước thì vẫn chặn',function(){
+  await T('Lessonflow cuối chỉ 1 bước thì vẫn chặn',function(){
     var r=validatePlan(plan([4,4,4,1],11)+DIEUCHINH,{subject:'Toán',periods:'3',assessmentMode:'khong'},true);
-    return r.blockers.some(function(x){return x.indexOf('2 đến 4 bước')>=0})||'Không chặn';
+    return r.blockers.some(function(x){return x.indexOf('đúng 4 bước')>=0})||'Không chặn';
   });
 
   await T('Thiếu mục "Điều chỉnh sau bài dạy" thì nhắc nhở',function(){
