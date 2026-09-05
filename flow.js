@@ -209,8 +209,10 @@
   if (typeof window.fetch !== 'function' || typeof AbortController !== 'function') return;
   window.__aiTimeoutPatched = true;
 
-  // app.js thử tối đa 3 mô hình dự phòng tuần tự. 120s cho một lượt là đủ rộng
-  // để đọc tài liệu đính kèm, đồng thời chặn trần tổng thời gian chờ ở 6 phút.
+  // Từ b16, đường soạn bài chính dùng :streamGenerateContent và tự quản lý đồng hồ riêng
+  // (đặt lại mỗi lần có dữ liệu mới). Bản vá này chỉ còn phủ đường dự phòng
+  // :generateContent, và app.js đặt window.AI_TIMEOUT_MS = 600000 cho khớp. Giữ 120s làm
+  // mặc định cho trường hợp app.js không nạp được.
   const DEFAULT_TIMEOUT = 120000;
   const nativeFetch = window.fetch.bind(window);
 

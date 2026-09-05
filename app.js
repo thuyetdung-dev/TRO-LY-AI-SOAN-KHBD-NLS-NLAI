@@ -1,7 +1,7 @@
 /* Mốc phiên bản — hiện ngay trên thanh tiêu đề. Sau nhiều vòng sửa, đã có lần trang web
    chạy bản cũ mà cả hai bên đều tưởng là bản mới, mất công đi tìm lỗi đã sửa xong rồi.
    Nhìn dòng chữ trên đầu trang là biết ngay đang chạy bản nào. */
-const APP_BUILD='2026-09-05 · b15';
+const APP_BUILD='2026-09-05 · b16';
 const $=id=>document.getElementById(id);let selectedFiles=[],rawMarkdown='',availableModels=[],scanTimer,draftTimer,lastValidation=null;
 const fields=['subject','grade','lesson','book','periods','students','classSize','equipment','notes','tableLayout','assessmentMode','lessonTemplate','sourceMode'];
 const toast=m=>{const t=$('toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2600)};
@@ -175,16 +175,165 @@ ${mathRulesFor(v)}
 12) ĐỘ DÀI: một kế hoạch bài dạy đạt yêu cầu cho ${v.periods||"số tiết đề xuất"} tiết thường dài hàng chục nghìn ký tự vì phải chép đủ kiến thức và lời giải. Không rút gọn, không viết tắt nội dung bằng nhãn, không dùng dấu ba chấm để lược bỏ. Nếu buộc phải chọn giữa ngắn gọn và đầy đủ nội dung dạy học, luôn chọn đầy đủ.
 13) Câu hỏi phải chính xác; tự giải và kiểm tra đáp án hai lần. Không sao chép máy móc giáo án tham khảo; không bịa dữ kiện từ nguồn. Đầu ra bằng Markdown, không mở đầu xã giao, phong cách ${$('style').value}.`}
 const MAX_MODEL_ATTEMPTS=3; // Giới hạn số mô hình thử tuần tự, tránh giáo viên phải chờ hàng chục phút nếu key có nhiều model nhưng đều lỗi.
-async function callGemini(v,key){const parts=[{text:promptFor(v)},...(await buildFileParts(key))];if(!availableModels.length)await scanModels(false);const selected=$('model').value,allCandidates=selected!=='auto'?[selected,...availableModels.map(m=>m.name).filter(n=>n!==selected)]:availableModels.map(m=>m.name);if(!allCandidates.length)throw new Error('Không tìm thấy mô hình Gemini đang hoạt động cho API key này');const candidates=allCandidates.slice(0,MAX_MODEL_ATTEMPTS),skipped=allCandidates.length-candidates.length;const errors=[];for(let i=0;i<candidates.length;i++){const fullName=candidates[i],model=fullName.replace(/^models\//,'');setProgress(48+Math.min(i,4)*5,'Đang chọn mô hình AI...',`Đang thử ${model}${i?` (dự phòng ${i}/${candidates.length-1})`:''}`);try{const url=`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`;const res=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':key},body:JSON.stringify({contents:[{role:'user',parts}],generationConfig:{temperature:.25,maxOutputTokens:maxTokensFor(fullName)}})}),data=await res.json();if(!res.ok)throw new Error(data?.error?.message||`Lỗi HTTP ${res.status}`);const candidate=data.candidates?.[0],finish=candidate?.finishReason||'',text=candidate?.content?.parts?.map(x=>x.text||'').join('\n')||'';if(!text)throw new Error('Mô hình không trả về nội dung');
-/* MAX_TOKENS nghĩa là mô hình đã viết hết hạn mức chứ không phải mô hình lỗi — thử mô hình
-   dự phòng khác cũng sẽ bị cắt y hệt, chỉ tốn thêm vài phút chờ. Dừng ngay và nói rõ cách xử lý. */
-if(finish==='MAX_TOKENS')throw new Error(`Bài soạn dài hơn hạn mức của ${model} (${maxTokensFor(fullName)} token) nên bị cắt giữa chừng. Hãy giảm số tiết, chọn phong cách “Gọn, dễ triển khai”, hoặc tách bài thành 2 lần soạn.`);
-if(['SAFETY','RECITATION','BLOCKLIST','PROHIBITED_CONTENT','SPII'].includes(finish))throw new Error(`Phản hồi bị chặn (${finish}). Hãy giảm số tài liệu hoặc tạo lại.`);setModelStatus(`Đang dùng ${model}`,'ok');if([...$('model').options].some(o=>o.value===fullName))$('model').value=fullName;return text}catch(err){
-/* Có những lỗi mà thử mô hình dự phòng chắc chắn cũng hỏng y hệt: bài quá dài so với hạn
-   mức, khóa API sai/hết hạn, hoặc nội dung bị chặn. Bản cũ vẫn thử tiếp cả 3 mô hình,
-   bắt giáo viên chờ thêm vài phút rồi mới báo một thông báo gộp khó hiểu. Dừng ngay. */
-if(/hạn mức|API key not valid|API_KEY_INVALID|PERMISSION_DENIED|bị chặn/i.test(err.message||''))throw err;
-errors.push(`${model}: ${err.message}`)}}throw new Error(`Đã thử ${candidates.length} mô hình nhưng đều chưa phản hồi${skipped?` (còn ${skipped} mô hình chưa thử, hãy chọn thủ công ở mục nâng cao)`:''}. ${errors.slice(0,2).join(' · ')}`)}
+
+/* ===== Gọi Gemini theo lối truyền dòng (viết lại ở b16) =====
+
+   MÂU THUẪN CỦA BẢN b15: prompt bắt mô hình viết "hàng chục nghìn ký tự" và hạn mức
+   token đã nới tới 65536 (≈ 25–30 nghìn token), trong khi lượt gọi lại dùng
+   :generateContent — phải chờ VIẾT XONG TOÀN BỘ mới trả về — và flow.js cắt ngang ở
+   đúng 120 giây. Một bài dài như thế thường mất 2–5 phút. Nghĩa là ở chính cấu hình mà
+   phần mềm tự đặt ra, lỗi "AI phản hồi quá 120 giây" là chuyện THƯỜNG TRỰC dù mọi thứ
+   đều đang chạy đúng.
+
+   NAY: dùng :streamGenerateContent?alt=sse. Nội dung về tới đâu nhận tới đó, nên:
+   - Đồng hồ đếm ngược được đặt lại mỗi lần có dữ liệu mới. Chỉ ngắt khi mô hình IM LẶNG
+     quá lâu — tức là hỏng thật — chứ không ngắt vì bài dài.
+   - Giáo viên nhìn thấy số ký tự tăng dần, biết máy đang chạy chứ không treo.
+   Bản vá fetch trong flow.js bắt theo chuỗi ':generateContent' nên không chạm vào
+   ':streamGenerateContent' — hai cơ chế không giẫm chân nhau.
+
+   Vẫn giữ đường không truyền dòng làm dự phòng cho trình duyệt không đọc được luồng. */
+const STREAM_IDLE_MS=90000;   // im lặng quá 90 giây mới coi là hỏng
+const STREAM_TOTAL_MS=600000; // trần tuyệt đối 10 phút cho một lượt
+/* Đường dự phòng không truyền dòng vẫn đi qua bản vá fetch của flow.js. Trần 120 giây cũ
+   quá chật cho một KHBD dài, nên nới đúng bằng trần của đường truyền dòng. */
+window.AI_TIMEOUT_MS=STREAM_TOTAL_MS;
+
+/* Token suy nghĩ của Gemini 2.5 trở lên ĐƯỢC TÍNH VÀO maxOutputTokens. Không đặt trần thì
+   mô hình có thể tiêu một phần lớn hạn mức vào suy nghĩ rồi bị cắt giữa bài, báo MAX_TOKENS,
+   và thông báo lỗi lại khuyên giáo viên "giảm số tiết" — quy sai nguyên nhân. Mô hình đời
+   cũ không biết trường này nên chỉ gửi khi tên mô hình cho thấy có suy luận, và nếu vẫn bị
+   từ chối thì thử lại đúng mô hình đó mà bỏ trường đi. */
+function thinkingFor(model){return /gemini-(?:2\.5|[3-9])/i.test(model)?{thinkingBudget:4096}:null}
+
+function requestBody(fullName,model,parts,withThinking){
+  const cfg={temperature:.25,maxOutputTokens:maxTokensFor(fullName)};
+  const th=withThinking?thinkingFor(model):null;
+  if(th)cfg.thinkingConfig=th;
+  return JSON.stringify({contents:[{role:'user',parts}],generationConfig:cfg});
+}
+
+/* Đọc luồng SSE. Trả về {text, finish}. */
+async function readSSE(res,onGrow){
+  const reader=res.body.getReader(),dec=new TextDecoder();
+  let buf='',text='',finish='';
+  for(;;){
+    const {done,value}=await reader.read();
+    if(done)break;
+    onGrow&&onGrow(0);
+    buf+=dec.decode(value,{stream:true});
+    let nl;
+    while((nl=buf.indexOf('\n'))>=0){
+      const line=buf.slice(0,nl).trim();buf=buf.slice(nl+1);
+      if(!line.startsWith('data:'))continue;
+      const payload=line.slice(5).trim();
+      if(!payload||payload==='[DONE]')continue;
+      let obj;try{obj=JSON.parse(payload)}catch(_){continue}
+      if(obj.error)throw new Error(obj.error.message||'Google trả về lỗi giữa luồng');
+      const c=obj.candidates?.[0];
+      if(c?.finishReason)finish=c.finishReason;
+      /* Bỏ các phần "thought": đó là ghi chép suy luận của mô hình, không phải giáo án. */
+      const t=(c?.content?.parts||[]).filter(x=>!x.thought).map(x=>x.text||'').join('');
+      if(t){text+=t;onGrow&&onGrow(text.length)}
+    }
+  }
+  return {text,finish};
+}
+
+async function generateOnce(fullName,model,parts,key,withThinking,onGrow){
+  const ctrl=new AbortController();
+  let idle=null;
+  const hard=setTimeout(()=>ctrl.abort(),STREAM_TOTAL_MS);
+  const arm=()=>{clearTimeout(idle);idle=setTimeout(()=>ctrl.abort(),STREAM_IDLE_MS)};
+  arm();
+  try{
+    const base=`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}`;
+    const res=await fetch(`${base}:streamGenerateContent?alt=sse`,{
+      method:'POST',signal:ctrl.signal,
+      headers:{'Content-Type':'application/json','x-goog-api-key':key},
+      body:requestBody(fullName,model,parts,withThinking)});
+    if(!res.ok){
+      const data=await res.json().catch(()=>({}));
+      const e=new Error(data?.error?.message||`Lỗi HTTP ${res.status}`);e.status=res.status;throw e;
+    }
+    if(!res.body||typeof res.body.getReader!=='function'){
+      /* Trình duyệt không đọc được luồng: quay về cách cũ, vẫn có ích hơn là báo hỏng. */
+      const r2=await fetch(`${base}:generateContent`,{method:'POST',signal:ctrl.signal,
+        headers:{'Content-Type':'application/json','x-goog-api-key':key},
+        body:requestBody(fullName,model,parts,withThinking)});
+      const d2=await r2.json();
+      if(!r2.ok){const e=new Error(d2?.error?.message||`Lỗi HTTP ${r2.status}`);e.status=r2.status;throw e}
+      const c=d2.candidates?.[0];
+      return {text:(c?.content?.parts||[]).filter(x=>!x.thought).map(x=>x.text||'').join('\n'),
+              finish:c?.finishReason||''};
+    }
+    return await readSSE(res,n=>{arm();if(n)onGrow&&onGrow(n)});
+  }catch(err){
+    if(err.name==='AbortError')
+      throw new Error(`AI ngừng phản hồi quá ${Math.round(STREAM_IDLE_MS/1000)} giây. Hãy bớt tài liệu đính kèm, giảm số tiết hoặc chọn mô hình khác ở mục nâng cao.`);
+    if(err instanceof TypeError)throw new Error('Không kết nối được tới Google. Kiểm tra Internet rồi thử lại.');
+    throw err;
+  }finally{clearTimeout(idle);clearTimeout(hard)}
+}
+
+/* 429 là hết hạn ngạch, 500/503 là Google quá tải — cả hai đều là trạng thái NHẤT THỜI.
+   Bản b15 gặp hai lỗi này liền chuyển sang mô hình dự phòng, nhưng các mô hình dùng CHUNG
+   một hạn ngạch nên cũng 429 nốt, rồi báo một thông báo gộp khó hiểu. Chờ rồi thử lại
+   đúng mô hình đó có ích hơn nhiều, nhất là với khoá miễn phí. */
+const RETRY_DELAYS=[4000,12000];
+const wait=ms=>new Promise(r=>setTimeout(r,ms));
+
+async function callGemini(v,key){
+  const parts=[{text:promptFor(v)},...(await buildFileParts(key))];
+  if(!availableModels.length)await scanModels(false);
+  const selected=$('model').value;
+  const allCandidates=selected!=='auto'
+    ?[selected,...availableModels.map(m=>m.name).filter(n=>n!==selected)]
+    :availableModels.map(m=>m.name);
+  if(!allCandidates.length)throw new Error('Không tìm thấy mô hình Gemini đang hoạt động cho API key này');
+  const candidates=allCandidates.slice(0,MAX_MODEL_ATTEMPTS),skipped=allCandidates.length-candidates.length;
+  const errors=[];
+  for(let i=0;i<candidates.length;i++){
+    const fullName=candidates[i],model=fullName.replace(/^models\//,'');
+    setProgress(48+Math.min(i,4)*5,'Đang soạn bài...',`Mô hình ${model}${i?` (dự phòng ${i}/${candidates.length-1})`:''}`);
+    let withThinking=true;
+    for(let attempt=0;attempt<=RETRY_DELAYS.length;attempt++){
+      try{
+        const onGrow=n=>setProgress(Math.min(92,55+Math.floor(n/1200)),'Đang soạn bài...',
+          `${model} · đã nhận ${n.toLocaleString('vi-VN')} ký tự`);
+        const {text,finish}=await generateOnce(fullName,model,parts,key,withThinking,onGrow);
+        if(!text)throw new Error('Mô hình không trả về nội dung');
+        /* MAX_TOKENS nghĩa là mô hình đã viết hết hạn mức chứ không phải mô hình lỗi — thử mô
+           hình dự phòng khác cũng sẽ bị cắt y hệt, chỉ tốn thêm vài phút chờ. Dừng ngay. */
+        if(finish==='MAX_TOKENS')throw new Error(`Bài soạn dài hơn hạn mức của ${model} (${maxTokensFor(fullName)} token) nên bị cắt giữa chừng. Hãy giảm số tiết, chọn phong cách “Gọn, dễ triển khai”, hoặc tách bài thành 2 lần soạn.`);
+        if(['SAFETY','RECITATION','BLOCKLIST','PROHIBITED_CONTENT','SPII'].includes(finish))
+          throw new Error(`Phản hồi bị chặn (${finish}). Hãy giảm số tài liệu hoặc tạo lại.`);
+        setModelStatus(`Đang dùng ${model}`,'ok');
+        if([...$('model').options].some(o=>o.value===fullName))$('model').value=fullName;
+        return text;
+      }catch(err){
+        const msg=err.message||'';
+        /* Mô hình đời cũ không biết thinkingConfig: thử lại ngay, cùng mô hình, bỏ trường đó. */
+        if(withThinking&&err.status===400&&/thinking|Unknown name|Invalid JSON payload/i.test(msg)){
+          withThinking=false;attempt--;continue;
+        }
+        const transient=err.status===429||err.status===500||err.status===503||/quota|rate limit|overloaded|try again/i.test(msg);
+        if(transient&&attempt<RETRY_DELAYS.length){
+          const s=Math.round(RETRY_DELAYS[attempt]/1000);
+          setProgress(50,'Google đang bận...',`${model} · chờ ${s} giây rồi thử lại (lần ${attempt+1}/${RETRY_DELAYS.length})`);
+          await wait(RETRY_DELAYS[attempt]);
+          continue;
+        }
+        /* Có những lỗi mà thử mô hình dự phòng chắc chắn cũng hỏng y hệt: bài quá dài so với
+           hạn mức, khóa API sai/hết hạn, hoặc nội dung bị chặn. Dừng ngay, đừng bắt chờ thêm. */
+        if(/hạn mức|API key not valid|API_KEY_INVALID|PERMISSION_DENIED|bị chặn/i.test(msg))throw err;
+        errors.push(`${model}: ${msg}`);
+        break;
+      }
+    }
+  }
+  throw new Error(`Đã thử ${candidates.length} mô hình nhưng đều chưa phản hồi${skipped?` (còn ${skipped} mô hình chưa thử, hãy chọn thủ công ở mục nâng cao)`:''}. ${errors.slice(0,2).join(' · ')}`);
+}
 function fallback(v){const p=v.periods||'…',g=clampGrade(v.grade);return `# KẾ HOẠCH BÀI DẠY\n## ${v.subject.toUpperCase()} ${g} — ${v.lesson}\n**Bộ sách:** ${v.book}  \n**Thời lượng:** ${p} tiết ${v.periods?'':'(cần xác định từ SGV)'}  \n**Đối tượng:** ${v.students}; **Sĩ số:** ${v.classSize}  \n**Thiết bị:** ${v.equipment}\n\n> Đây là khung dự thảo tạo không dùng AI (chưa gắn mã NLS/NLAI vì không tra được bảng mã ở chế độ này). Hãy bổ sung API key miễn phí để hệ thống đọc sâu tài liệu, tạo nội dung đặc thù và gắn đúng mã NLS/NLAI theo lớp ${g}.\n\n## I. MỤC TIÊU\n### 1. Về kiến thức\n- Nội dung kiến thức cốt lõi của bài ${v.lesson} theo đúng yêu cầu cần đạt của chương trình môn học.\n### 2. Về năng lực\n- Năng lực chung: tự chủ và tự học; giao tiếp và hợp tác; giải quyết vấn đề và sáng tạo.\n- Năng lực đặc thù môn học cần phát triển qua bài học.\n### 3. Về phẩm chất\n- Chăm chỉ, trung thực, trách nhiệm trong học tập và hợp tác.\n\n## II. THIẾT BỊ DẠY HỌC VÀ HỌC LIỆU\n- Giáo viên: SGK, SGV, phiếu học tập, ${v.equipment}.\n- Học sinh: SGK, vở ghi, dụng cụ học tập.\n\n## III. TIẾN TRÌNH DẠY HỌC\n### 1. Hoạt động 1: Xác định vấn đề/nhiệm vụ học tập/Mở đầu\na) Mục tiêu — b) Nội dung — c) Sản phẩm — d) Tổ chức thực hiện (Giao nhiệm vụ → Thực hiện nhiệm vụ → Báo cáo, thảo luận → Kết luận, nhận định).\n\n### 2. Hoạt động 2: Hình thành kiến thức mới\na) Mục tiêu — b) Nội dung — c) Sản phẩm — d) Tổ chức thực hiện (4 bước như trên).\n\n### 3. Hoạt động 3: Luyện tập\na) Mục tiêu — b) Nội dung: hệ thống câu hỏi/bài tập phân hoá cho học sinh ${v.students} — c) Sản phẩm: đáp án, lời giải — d) Tổ chức thực hiện (4 bước như trên).\n\n### 4. Hoạt động 4: Vận dụng\na) Mục tiêu — b) Nội dung: vận dụng kiến thức vào tình huống thực tiễn — c) Sản phẩm: báo cáo — d) Tổ chức thực hiện: thường giao ngoài giờ học trên lớp, nộp báo cáo vào thời điểm phù hợp.\n\n*(Đánh giá thường xuyên được lồng ngay trong mục d) Tổ chức thực hiện của từng hoạt động — hỏi–đáp, viết, thực hành, sản phẩm học tập — theo đúng Phụ lục IV, Công văn 5512/BGDĐT-GDTrH; không lập cột điểm/đầu điểm riêng cho NLS/NLAI.)*\n\n## ĐIỀU CHỈNH SAU BÀI DẠY\n........................................................................`}
 // Phòng hờ: model đôi khi làm mất dấu "\" của lệnh LaTeX khi viết văn xuôi (mục a/b/c ngoài
 // bảng tổ chức thực hiện) — ví dụ "$\vec{a}=k\vec{b}$" bị trả về thành "$veca=kvecb$". Bên trong
@@ -202,19 +351,131 @@ const latexCmdRe=new RegExp('(^|[^\\\\a-zA-Z])('+LATEX_CMDS.join('|')+')(?=\\{|\
 const repairLatex=s=>repairVecBare(s).replace(latexCmdRe,(m,pre,cmd)=>pre+'\\'+cmd);
 function inline(s){return esc(s).replace(/&lt;br\s*\/?&gt;/gi,'<br>').replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>').replace(/\*(.+?)\*/g,'<em>$1</em>').replace(/`(.+?)`/g,'<code>$1</code>').replace(/\$\$([^$]+)\$\$/g,(m,g1)=>`<span class="math-display">\\[${repairLatex(g1)}\\]</span>`).replace(/\$([^$]+)\$/g,(m,g1)=>`<span class="math">\\(${repairLatex(g1)}\\)</span>`)}
 function mdToHtml(md){const specs=[];md=md.replace(/```mathviz\s*([\s\S]*?)```/gi,(_,json)=>{const id=specs.push(json.trim())-1;return `\n@@MATHVIZ_${id}@@\n`});const lines=md.replace(/```[a-z]*\n?/g,'').replace(/```/g,'').split('\n');let out='',list=false;for(let i=0;i<lines.length;i++){let l=lines[i].trimEnd(),mv=l.trim().match(/^@@MATHVIZ_(\d+)@@$/);if(mv){if(list){out+='</ul>';list=false}out+=`<div class="mathviz" data-spec="${encodeURIComponent(specs[+mv[1]])}"></div>`;continue}if(l.startsWith('|')&&i+1<lines.length&&/^\|?[\s:|-]+\|?$/.test(lines[i+1].trim())){if(list){out+='</ul>';list=false}const rows=[];rows.push(l);i+=2;while(i<lines.length&&lines[i].trim().startsWith('|')){rows.push(lines[i].trim());i++}i--;out+='<table>';rows.forEach((r,ri)=>{const cells=r.replace(/^\||\|$/g,'').split('|');out+=`<tr>${cells.map(c=>`<${ri?'td':'th'}>${inline(c.trim())}</${ri?'td':'th'}>`).join('')}</tr>`});out+='</table>';continue}if(/^#{1,3} /.test(l)){if(list){out+='</ul>';list=false}const n=l.match(/^#+/)[0].length;out+=`<h${n}>${inline(l.slice(n+1))}</h${n}>`}else if(/^[-*] /.test(l)){if(!list){out+='<ul>';list=true}out+=`<li>${inline(l.slice(2))}</li>`}else if(/^\d+\. /.test(l)){if(list){out+='</ul>';list=false}out+=`<p>${inline(l)}</p>`}else if(l.startsWith('> ')){if(list){out+='</ul>';list=false}out+=`<blockquote>${inline(l.slice(2))}</blockquote>`}else if(!l){if(list){out+='</ul>';list=false}}else{if(list){out+='</ul>';list=false}out+=`<p>${inline(l)}</p>`}}if(list)out+='</ul>';return out}
+/* ===== Bộ đọc biểu thức (viết lại ở b16) =====
+   LỖI CỦA BẢN b15: hàm cũ thay "pi" thành "Math.PI" RỒI mới kiểm tra chuỗi bằng một biểu
+   thức chính quy chỉ chấp nhận chữ thường, nên mọi hàm có số pi đều bị loại ngay tại cửa —
+   sin(pi*x), cos(2pi x) không vẽ được một nét nào. Bản cũ cũng không biết ln, log cơ số,
+   e^x, cot và |x|, tức là gần như toàn bộ chương Hàm số mũ – lôgarit và chương Lượng giác
+   đều không có đồ thị.
+   NAY: đọc biểu thức bằng bộ phân tích cú pháp đệ quy, tự dựng chuỗi JavaScript từ những
+   mảnh do chính nó sinh ra, nên vừa đúng vừa không thể bị chèn mã. Quy ước Việt Nam:
+   log là lôgarit thập phân, ln là lôgarit tự nhiên, log_2(x) hoặc log(2,x) là cơ số 2. */
+const EXPR_FUNCS={sin:'Math.sin',cos:'Math.cos',tan:'Math.tan',sinh:'Math.sinh',cosh:'Math.cosh',
+  tanh:'Math.tanh',asin:'Math.asin',arcsin:'Math.asin',acos:'Math.acos',arccos:'Math.acos',
+  atan:'Math.atan',arctan:'Math.atan',sqrt:'Math.sqrt',abs:'Math.abs',exp:'Math.exp',
+  ln:'Math.log',log:'Math.log10',lg:'Math.log10',floor:'Math.floor',ceil:'Math.ceil',
+  round:'Math.round',sign:'Math.sign',cbrt:'Math.cbrt'};
+const EXPR_CONSTS={pi:'Math.PI',e:'Math.E'};
+
 function compileExpr(expr){
-  let s=String(expr||'').toLowerCase().replace(/[−–]/g,'-').replace(/\bt\b/g,'x')
-    .replace(/\bpi\b/g,'Math.PI').replace(/\^/g,'**');
-  /* JavaScript không chấp nhận -x**2 dù biểu thức Toán -x^2 hoàn toàn đúng.
-     Đưa lũy thừa vào ngoặc trước khi áp dấu âm. */
-  s=s.replace(/(^|[,(+*/-])\s*-\s*x\s*\*\*\s*([0-9.]+)/g,'$1-(x**$2)');
-  /* Vá phép nhân ngầm thường gặp khi AI viết 2x hoặc x(x+1). */
-  s=s.replace(/(\d|\))\s*x\b/g,'$1*x').replace(/\bx\s*\(/g,'x*(').replace(/\)\s*\(/g,')*(');
-  if(!/^[0-9x+\-*/().,\s*a-z]+$/.test(s))throw Error('Biểu thức không hợp lệ');
-  for(const f of ['sin','cos','tan','sqrt','abs','exp','log'])s=s.replace(new RegExp(`\\b${f}\\b`,'g'),`Math.${f}`);
-  const check=s.replace(/Math\.(?:PI|sin|cos|tan|sqrt|abs|exp|log)/g,'').replace(/x/g,'');
-  if(/[a-z]/i.test(check))throw Error('Hàm chưa được hỗ trợ');
-  return new Function('x',`"use strict";return (${s})`)
+  let src=String(expr||'').toLowerCase()
+    .replace(/[−–—]/g,'-').replace(/[×⋅·]/g,'*').replace(/[÷]/g,'/')
+    .replace(/\\left|\\right|\\,|\\;|\\!/g,'')
+    .replace(/\\(dfrac|frac|tfrac)\s*\{([^{}]*)\}\s*\{([^{}]*)\}/g,'(($2)/($3))')
+    .replace(/\\sqrt\s*\[([^\]]*)\]\s*\{([^{}]*)\}/g,'(($2)^(1/($1)))')
+    .replace(/\\sqrt\s*\{([^{}]*)\}/g,'sqrt($1)')
+    .replace(/\\/g,'')
+    .replace(/\s+/g,'');
+  src=src.replace(/^y=|^f\(x\)=|^y\(x\)=/,'');
+  src=src.replace(/\bt\b/g,'x');
+  if(!src)throw Error('Biểu thức rỗng');
+
+  /* --- Tách token --- */
+  const toks=[];
+  for(let i=0;i<src.length;){
+    const c=src[i];
+    if(/[0-9.]/.test(c)){let j=i;while(j<src.length&&/[0-9.]/.test(src[j]))j++;toks.push({t:'num',v:src.slice(i,j)});i=j;continue}
+    if(/[a-z]/.test(c)){let j=i;while(j<src.length&&/[a-z0-9_]/.test(src[j]))j++;toks.push({t:'id',v:src.slice(i,j)});i=j;continue}
+    if('+-*/^(),|'.includes(c)){toks.push({t:c});i++;continue}
+    if(c==='{'){toks.push({t:'('});i++;continue}
+    if(c==='}'){toks.push({t:')'});i++;continue}
+    throw Error('Ký tự không hợp lệ: '+c);
+  }
+
+  let p=0,barDepth=0;
+  const peek=()=>toks[p];
+  const eat=t=>{if(!toks[p]||toks[p].t!==t)throw Error('Thiếu "'+t+'"');return toks[p++]};
+  /* Dấu "|" đang đóng một cặp trị tuyệt đối thì KHÔNG được hiểu là mở một atom mới,
+     nếu không "|x|" bị đọc thành "|x| * |…" rồi báo thiếu vế. */
+  const startsAtom=k=>!!k&&(k.t==='num'||k.t==='id'||k.t==='('||(k.t==='|'&&barDepth===0));
+
+  function parseExpr(){
+    let s=parseTerm();
+    while(peek()&&(peek().t==='+'||peek().t==='-')){const op=toks[p++].t;s+=op+parseTerm()}
+    return s;
+  }
+  function parseTerm(){
+    let s=parseUnary();
+    for(;;){
+      const k=peek();
+      if(!k)break;
+      if(k.t==='*'||k.t==='/'){p++;s+=k.t+parseUnary();continue}
+      /* Nhân ngầm: 2x, 2sin(x), x(x+1), (x+1)(x-1), 2pi */
+      if(startsAtom(k)){s+='*'+parseUnary();continue}
+      break;
+    }
+    return s;
+  }
+  function parseUnary(){
+    const k=peek();
+    if(k&&(k.t==='-'||k.t==='+')){p++;return (k.t==='-'?'-':'')+parseUnary()}
+    return parsePower();
+  }
+  function parsePower(){
+    const base=parseAtom();
+    if(peek()&&peek().t==='^'){p++;return 'Math.pow('+base+','+parseUnary()+')'}
+    return base;
+  }
+  function parseAtom(){
+    const k=peek();
+    if(!k)throw Error('Biểu thức thiếu vế');
+    if(k.t==='num'){p++;if(!/^\d*\.?\d+$/.test(k.v))throw Error('Số không hợp lệ: '+k.v);return '('+k.v+')'}
+    if(k.t==='('){p++;const inner=parseExpr();eat(')');return '('+inner+')'}
+    if(k.t==='|'){p++;barDepth++;const inner=parseExpr();barDepth--;eat('|');return 'Math.abs('+inner+')'}
+    if(k.t==='id'){
+      p++;
+      let name=k.v,base=null;
+      const m=/^log_?(\d+(?:\.\d+)?)$/.exec(name);
+      if(m){name='log';base=m[1]}
+      if(name==='x')return 'x';
+      if(EXPR_CONSTS[name])return EXPR_CONSTS[name];
+      if(name==='log'&&peek()&&peek().t==='id'&&/^\d+$/.test(peek().v)){/* không xảy ra */}
+      if(EXPR_FUNCS[name]||base!==null){
+        /* sin^2(x): mũ đặt ngay sau tên hàm */
+        let expo=null;
+        if(peek()&&peek().t==='^'){p++;expo=parseAtom()}
+        let arg;
+        if(peek()&&peek().t==='('){p++;arg=parseExpr();
+          if(peek()&&peek().t===','){p++;const second=parseExpr();eat(')');
+            if(name==='log')return 'Math.log('+second+')/Math.log('+arg+')';
+            throw Error('Hàm '+name+' không nhận hai đối số')}
+          eat(')');
+        } else arg=parsePower();
+        let out;
+        if(base!==null)out='Math.log('+arg+')/Math.log('+base+')';
+        else out=EXPR_FUNCS[name]+'('+arg+')';
+        if(name==='cot')out='(1/Math.tan('+arg+'))';
+        return expo?'Math.pow('+out+','+expo+')':out;
+      }
+      if(name==='cot'||name==='sec'||name==='csc'){
+        let arg;
+        if(peek()&&peek().t==='('){p++;arg=parseExpr();eat(')')}else arg=parsePower();
+        return name==='cot'?'(1/Math.tan('+arg+'))':name==='sec'?'(1/Math.cos('+arg+'))':'(1/Math.sin('+arg+'))';
+      }
+      throw Error('Chưa hỗ trợ ký hiệu "'+k.v+'"');
+    }
+    throw Error('Ký hiệu bất ngờ');
+  }
+
+  const js=parseExpr();
+  if(p<toks.length)throw Error('Thừa ký tự ở cuối biểu thức');
+  /* Chốt an toàn: chuỗi dựng ra chỉ gồm các mảnh do chính bộ đọc sinh. */
+  if(!/^[0-9x+\-*/(),.\sMath.a-z0-9_]*$/.test(js.replace(/Math\.[A-Za-z0-9]+/g,'')))
+    throw Error('Biểu thức không an toàn');
+  const f=new Function('x','"use strict";return ('+js+')');
+  if(!Number.isFinite(f(0.37))&&!Number.isFinite(f(1.7))&&!Number.isFinite(f(-1.3))&&!Number.isFinite(f(2.9)))
+    throw Error('Biểu thức không cho giá trị số');
+  return f;
 }
 const wrapMathCell=v=>{const s=String(v??'').trim();if(!s)return '';if(/^[+\-0↗↘↑↓∞]+$/.test(s))return esc(s);return s.includes('$')?inline(s):`$${esc(s)}$`};
 // Nhãn đặt trong foreignObject để MathJax vẫn xử lý được $...$ bên trong SVG (phân số, chỉ số dưới...).

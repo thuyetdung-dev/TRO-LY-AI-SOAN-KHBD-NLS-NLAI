@@ -252,13 +252,87 @@
         if (s) out.push(mr(s, true));
         continue;
       }
-      if (name === 'begin' || name === 'end') { readRaw(tokens, state); continue; }
+      /* MÔI TRƯỜNG LaTeX (b16).
+         LỖI CỦA b15: \begin{...} và \end{...} bị đọc rồi VỨT BỎ, còn "\\" chỉ thành một
+         dấu cách. Hệ quả: $\begin{cases}x>0\\y<1\end{cases}$ xuất ra Word thành "x>0 y<1"
+         — mất dấu ngoặc nhọn, mất xuống dòng, mà không một lời cảnh báo. Hệ phương trình và
+         hệ bất phương trình là nội dung rất phổ biến từ lớp 9 trở lên, nên đây là mất nội
+         dung âm thầm đúng vào chỗ quan trọng. Nay dựng thành bảng công thức thật của Word
+         (m:eqArr / m:m) kèm dấu ngoặc đúng loại. */
+      if (name === 'begin') { out.push(readEnvironment(tokens, state)); continue; }
+      if (name === 'end') { readRaw(tokens, state); continue; }
       if (name === '\\') { out.push(mr(' ')); continue; }
 
       // CHƯA DỊCH ĐƯỢC: in nguyên văn để giáo viên thấy và sửa, không âm thầm bỏ.
       out.push(mr('\\' + name, true));
     }
     return out;
+  }
+
+  /* Dấu mở/đóng của từng môi trường. Chuỗi rỗng nghĩa là không vẽ dấu bên đó. */
+  const ENV_DELIM = {
+    cases: ['{', ''], dcases: ['{', ''],
+    pmatrix: ['(', ')'], bmatrix: ['[', ']'], Bmatrix: ['{', '}'],
+    vmatrix: ['|', '|'], Vmatrix: ['\u2016', '\u2016'],
+    matrix: ['', ''], smallmatrix: ['', ''], array: ['', ''], tabular: ['', ''],
+    aligned: ['', ''], align: ['', ''], alignedat: ['', ''],
+    gathered: ['', ''], gather: ['', ''], split: ['', ''], eqnarray: ['', '']
+  };
+
+  /* Đọc trọn một môi trường và dựng OMML. Con trỏ đang ở ngay sau lệnh \begin. */
+  function readEnvironment(tokens, state) {
+    const env = String(readRaw(tokens, state) || '').replace(/\*$/, '');
+    /* \begin{array}{cc} và \begin{tabular}{|c|c|} còn một tham số mô tả cột — bỏ qua. */
+    if ((env === 'array' || env === 'tabular' || env === 'alignedat') && tokens[state.i]?.t === '{')
+      readRaw(tokens, state);
+
+    const rows = [[[]]];
+    let r = 0, c = 0, brace = 0, nested = 0;
+    while (state.i < tokens.length) {
+      const t = tokens[state.i];
+      if (t.t === 'cmd' && t.v === 'begin') { nested++; }
+      if (t.t === 'cmd' && t.v === 'end') {
+        if (!nested) { state.i++; readRaw(tokens, state); break; }
+        nested--;
+      }
+      if (t.t === '{') brace++;
+      else if (t.t === '}') brace--;
+      if (!brace && !nested && t.t === 'cmd' && t.v === '\\') {
+        state.i++;
+        /* \\[6pt] — tham số giãn dòng, không phải nội dung. */
+        if (tokens[state.i]?.t === 'ch' && tokens[state.i].v === '[') {
+          while (state.i < tokens.length && !(tokens[state.i].t === 'ch' && tokens[state.i].v === ']')) state.i++;
+          state.i++;
+        }
+        r++; c = 0; rows[r] = [[]];
+        continue;
+      }
+      if (!brace && !nested && t.t === '&') { state.i++; c++; rows[r][c] = []; continue; }
+      rows[r][c].push(t);
+      state.i++;
+    }
+
+    const cells = rows
+      .map(row => row.map(toks => wrap(parse(toks, { i: 0 }))))
+      .filter(row => row.length > 1 || row[0] !== wrap([]));
+    if (!cells.length) return mr('');
+
+    const cols = Math.max(...cells.map(x => x.length));
+    let body;
+    if (cols > 1) {
+      body = `<m:m><m:mPr><m:mcs><m:mc><m:mcPr><m:count m:val="${cols}"/>` +
+        `<m:mcJc m:val="left"/></m:mcPr></m:mc></m:mcs></m:mPr>` +
+        cells.map(row => `<m:mr>${Array.from({ length: cols },
+          (_, j) => `<m:e>${row[j] || wrap([])}</m:e>`).join('')}</m:mr>`).join('') + '</m:m>';
+    } else {
+      body = '<m:eqArr><m:eqArrPr><m:ctrlPr/></m:eqArrPr>' +
+        cells.map(row => `<m:e>${row[0]}</m:e>`).join('') + '</m:eqArr>';
+    }
+
+    const [open, close] = ENV_DELIM[env] || ['', ''];
+    if (!open && !close) return body;
+    return `<m:d><m:dPr><m:begChr m:val="${xml(open)}"/><m:endChr m:val="${xml(close)}"/>` +
+      `<m:ctrlPr/></m:dPr><m:e>${body}</m:e></m:d>`;
   }
 
   function parse1(tokens, state) {
@@ -829,7 +903,12 @@
     if (!String(md || '').trim()) errors.push('Bản kế hoạch đang trống.');
     if ($('validationReport')?.classList.contains('block'))
       errors.push('Bản kế hoạch còn lỗi kiểm định chuyên môn chưa xử lý.');
-    const plain = String(md || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+    /* PHẢI đổi đ/Đ thành d/D TRƯỚC khi normalize('NFD'): chữ đ (U+0111) là một ký tự
+       riêng, không phải d + dấu, nên NFD không tách nó ra. Ba từ khoá hiện tại tình cờ
+       không chứa đ nên chưa lộ lỗi, nhưng chỉ cần thêm một từ khoá như "dieu chinh" là
+       bộ kiểm định khoá nhầm — đúng kiểu lỗi đã từng xảy ra một lần với app.js. */
+    const plain = String(md || '').replace(/đ/g, 'd').replace(/Đ/g, 'D')
+      .normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
     [['I. Mục tiêu', 'muc tieu'], ['II. Thiết bị dạy học', 'thiet bi day hoc'], ['III. Tiến trình dạy học', 'tien trinh day hoc']]
       .forEach(([label, key]) => { if (!plain.includes(key)) errors.push(`Thiếu mục ${label}.`); });
     const ap = $('approveCompetencies');

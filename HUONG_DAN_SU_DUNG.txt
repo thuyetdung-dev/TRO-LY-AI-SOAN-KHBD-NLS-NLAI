@@ -1,5 +1,5 @@
 TRỢ LÝ SOẠN KẾ HOẠCH BÀI DẠY 2026–2027
-BẢN CHUYÊN NGHIỆP – BƯỚC 4 · HIỆU CHỈNH b15
+BẢN CHUYÊN NGHIỆP – BƯỚC 4 · HIỆU CHỈNH b16
 
 ================================================================
 ĐIỀU KIỆN CẦN
@@ -64,7 +64,9 @@ LƯU Ý KHI SỬ DỤNG
 - "Khóa nguồn tuyệt đối" chỉ cho phép AI dùng dữ liệu thầy cô cung cấp,
   và bắt buộc phải có ít nhất một tài liệu hoặc nội dung nguồn.
 - Có thể chỉnh trực tiếp bản kế hoạch, lưu tối đa 10 phiên bản, so sánh
-  và khôi phục.
+  và khôi phục. Từ b16, cả khôi phục lẫn so sánh đều dựng lại từ bản
+  markdown gốc, nên bài dài không còn làm bảng so sánh hiện ra trắng
+  trơn, và bộ nhớ trình duyệt cũng đỡ đầy hơn nhiều.
 
 ================================================================
 VỀ TỆP WORD XUẤT RA
@@ -91,9 +93,15 @@ VỀ TỆP WORD XUẤT RA
 ================================================================
 XỬ LÝ SỰ CỐ THƯỜNG GẶP
 ================================================================
-- "AI phản hồi quá 120 giây": một lượt gọi chờ tối đa 2 phút. Tài liệu
-  đính kèm càng nặng càng dễ quá giờ. Hãy bớt tệp, hoặc mở "Tuỳ chọn
-  nâng cao" chọn một mô hình khác rồi thử lại.
+- "AI ngừng phản hồi quá 90 giây": từ b16 phần mềm nhận bài theo từng
+  đoạn, khung tiến trình hiện số ký tự đã nhận và tăng dần. Đồng hồ chỉ
+  chạy khi AI IM LẶNG, nên bài dài không còn bị cắt oan. Nếu vẫn báo lỗi
+  này thì lượt gọi hỏng thật: bớt tệp đính kèm, hoặc mở "Tuỳ chọn nâng
+  cao" chọn một mô hình khác rồi thử lại.
+
+- "Google đang bận... chờ N giây rồi thử lại": đây KHÔNG phải lỗi. Khóa
+  API miễn phí hay chạm hạn ngạch; phần mềm tự chờ và thử lại tối đa hai
+  lần trên cùng một mô hình trước khi chuyển sang mô hình khác.
 
 - "Bài soạn dài hơn hạn mức của <mô hình>": mô hình đã viết hết dung
   lượng cho phép và bị cắt giữa chừng. Cách xử lý: giảm số tiết, chọn
@@ -129,7 +137,7 @@ XỬ LÝ SỰ CỐ THƯỜNG GẶP
 TỰ KIỂM TRA SAU KHI SỬA MÃ
 ================================================================
 Mở tệp test.html bằng Chrome hoặc Edge rồi bấm "Chạy kiểm tra". Trang
-này chạy 62 phép kiểm tra trên đúng các tệp đang nằm trong thư mục,
+này chạy 72 phép kiểm tra trên đúng các tệp đang nằm trong thư mục,
 không phải trên bản sao, nên kết quả phản ánh đúng tình trạng thật.
 
 - Toàn bộ xanh: phần mềm còn lành, dùng được.
@@ -152,3 +160,40 @@ CHIA SẺ CHO NGƯỜI KHÁC
 Muốn gửi cho đồng nghiệp dùng qua Internet, phải đưa CẢ THƯ MỤC lên
 dịch vụ lưu trữ website; không gửi riêng tệp index.html. Mỗi người dùng
 tự nhập khóa API riêng của mình.
+
+================================================================
+NHỮNG THAY ĐỔI CỦA b16 (so với b15)
+================================================================
+1. Đồ thị: bộ đọc biểu thức được viết lại. Bản b15 KHÔNG vẽ được bất kỳ
+   hàm nào chứa số pi, hàm mũ, lôgarit, cotang hay trị tuyệt đối — khung
+   có, trục có, đường cong không. Đo trên cùng bảy biểu thức mẫu: b15 vẽ
+   được 0/7, b16 vẽ được 7/7. Quy ước dùng đúng như SGK Việt Nam: log là
+   lôgarit thập phân, ln là lôgarit tự nhiên, log_2(x) là cơ số 2.
+
+2. Tệp Word: hệ phương trình và hệ bất phương trình viết bằng
+   \begin{cases}...\end{cases} nay giữ nguyên dấu ngoặc nhọn và xuống
+   dòng, dựng thành bảng công thức thật của Word. Bản b15 làm phẳng
+   thành một dòng, mất dấu ngoặc, mà không báo gì. Ma trận, \begin{array}
+   và \begin{aligned} cũng đã dựng đúng.
+
+3. Soạn bài theo lối truyền dòng. Trước đây phần mềm bắt AI viết "hàng
+   chục nghìn ký tự" nhưng chỉ cho tối đa 120 giây, nên lỗi hết giờ xảy
+   ra thường xuyên ngay cả khi mọi thứ đều đúng. Nay nội dung về tới đâu
+   nhận tới đó, giáo viên nhìn thấy số ký tự tăng dần.
+
+4. Đặt trần cho phần "suy nghĩ" của các mô hình Gemini 2.5 trở lên. Phần
+   suy nghĩ này tính chung vào hạn mức viết, không giới hạn thì bài dễ bị
+   cắt giữa chừng rồi báo nhầm là bài quá dài.
+
+5. Gặp lỗi hết hạn ngạch (429) hoặc Google quá tải (503) thì chờ rồi thử
+   lại đúng mô hình đó, thay vì nhảy sang mô hình khác dùng chung hạn
+   ngạch và cũng hỏng y hệt.
+
+6. Nút "So sánh 2 phiên bản" của b15 hiện ra hai ô trắng với mọi bài dài
+   (do chỉ đọc bản HTML mà bản HTML dài quá thì không được lưu). Đã sửa.
+
+7. Bộ tạo tệp nén JSZip tải từ mạng nay có mã kiểm tra toàn vẹn
+   (integrity), giống MathJax. Nếu tệp trên máy chủ ngoài bị đổi nội
+   dung, trình duyệt sẽ từ chối nạp thay vì chạy mã lạ.
+
+8. Đồng bộ cách xử lý chữ "đ" trong bộ kiểm định trước khi xuất Word.

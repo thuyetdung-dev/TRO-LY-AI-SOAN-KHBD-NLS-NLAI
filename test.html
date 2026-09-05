@@ -115,12 +115,12 @@ h2{font-size:.82rem;letter-spacing:.09em;text-transform:uppercase;color:var(--mu
 })();
 </script>
 
-<script src="standards.js?v=b15"></script>
-<script src="app.js?v=b15"></script>
-<script src="flow.js?v=b15"></script>
-<script src="professional.js?v=b15"></script>
+<script src="standards.js?v=b16"></script>
+<script src="app.js?v=b16"></script>
+<script src="flow.js?v=b16"></script>
+<script src="professional.js?v=b16"></script>
 <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
-<script src="docx-export.js?v=b15"></script>
+<script src="docx-export.js?v=b16"></script>
 
 <script>
 (function(){
@@ -698,6 +698,91 @@ async function runAll(){
       'themeBtn','sampleBtn','clearDraftBtn','resultActions','lessonForm'];
     var thieu=ids.filter(function(i){return !document.getElementById(i)});
     return thieu.length===0||'Thiếu: '+thieu.join(', ');
+  });
+
+  /* ---------- Các phép kiểm tra thêm ở b16 ---------- */
+  group('b16 — Bộ đọc biểu thức, môi trường LaTeX, gọi AI');
+
+  await T('Vẽ được hàm có số pi (lỗi khoá cứng của b15)',function(){
+    var f=compileExpr('sin(pi*x)');
+    return Math.abs(f(0.5)-1)<1e-9||'sin(pi*x) tại x=0,5 cho '+f(0.5)+' thay vì 1';
+  });
+
+  await T('Vẽ được hàm mũ và lôgarit (chương lớp 11–12)',function(){
+    var sai=[];
+    if(Math.abs(compileExpr('e^x')(1)-Math.E)>1e-9)sai.push('e^x');
+    if(Math.abs(compileExpr('ln(x)')(Math.E)-1)>1e-9)sai.push('ln(x)');
+    if(Math.abs(compileExpr('log(x)')(100)-2)>1e-9)sai.push('log(x) phải là lôgarit thập phân');
+    if(Math.abs(compileExpr('log_2(x)')(8)-3)>1e-9)sai.push('log_2(x)');
+    if(Math.abs(compileExpr('2^x')(10)-1024)>1e-9)sai.push('2^x');
+    return sai.length===0||'Sai: '+sai.join(', ');
+  });
+
+  await T('Đọc được nhân ngầm, trị tuyệt đối và cotang',function(){
+    var sai=[];
+    if(Math.abs(compileExpr('2sin(x)')(Math.PI/2)-2)>1e-9)sai.push('2sin(x)');
+    if(Math.abs(compileExpr('|x|')(-3)-3)>1e-9)sai.push('|x|');
+    if(Math.abs(compileExpr('(x+1)(x-1)')(3)-8)>1e-9)sai.push('(x+1)(x-1)');
+    if(Math.abs(compileExpr('cot(x)')(Math.PI/4)-1)>1e-6)sai.push('cot(x)');
+    return sai.length===0||'Sai: '+sai.join(', ');
+  });
+
+  await T('Từ chối biểu thức lạ thay vì chạy bừa',function(){
+    var chan=0;
+    ['constructor(x)','window.alert(1)','x;alert(1)','foo(x)'].forEach(function(e){
+      try{compileExpr(e)}catch(_){chan++}
+    });
+    return chan===4||'Mới chặn '+chan+'/4 biểu thức nguy hiểm';
+  });
+
+  await T('Hệ phương trình giữ được dấu ngoặc nhọn khi xuất Word',async function(){
+    var md=BASE+'\nHệ: $\\begin{cases}2x+y=3\\\\x-y=0\\end{cases}$\n';
+    var parts=await buildDocxParts(md,'kiểm tra');
+    var d=parts['word/document.xml'];
+    if(!/m:eqArr/.test(d))return 'Không dựng được bảng công thức (m:eqArr) — hệ bị làm phẳng như b15';
+    if(!/begChr m:val="\{"/.test(d))return 'Mất dấu ngoặc nhọn mở của hệ';
+    return true;
+  });
+
+  await T('Ma trận xuất ra bảng công thức thật của Word',async function(){
+    var md=BASE+'\n$\\begin{pmatrix}1&2\\\\3&4\\end{pmatrix}$\n';
+    var d=(await buildDocxParts(md,'kiểm tra'))['word/document.xml'];
+    return (/<m:m>/.test(d)&&/begChr m:val="\("/.test(d))||'Chưa dựng được m:m hoặc mất dấu ngoặc';
+  });
+
+  await T('Soạn bài gọi điểm cuối truyền dòng, không phải lối chờ trọn gói',function(){
+    var src=String(generateOnce);
+    if(!/streamGenerateContent/.test(src))
+      return 'Vẫn dùng :generateContent — bài dài sẽ chạm trần thời gian chờ như b15';
+    return /alt=sse/.test(src)||'Thiếu alt=sse nên không đọc được từng mảnh';
+  });
+
+  await T('Có đặt trần cho token suy nghĩ của Gemini 2.5 trở lên',function(){
+    if(typeof thinkingFor!=='function')return 'Thiếu hàm thinkingFor';
+    var moi=thinkingFor('gemini-2.5-flash'),cu=thinkingFor('gemini-1.5-flash');
+    if(!moi||!(moi.thinkingBudget>0))return 'Không đặt ngân sách suy nghĩ cho mô hình 2.5';
+    return cu===null||'Gửi thinkingConfig cho mô hình đời cũ sẽ bị từ chối 400';
+  });
+
+  await T('Lỗi nhất thời 429/503 được chờ rồi thử lại',function(){
+    var src=String(callGemini);
+    if(!/429/.test(src)||!/503/.test(src))
+      return 'Chưa nhận diện 429/503 — khoá miễn phí gặp hết hạn ngạch sẽ hỏng ngay';
+    return /RETRY_DELAYS|attempt</.test(src)||'Nhận diện được nhưng không thử lại';
+  });
+
+  await T('Phiên bản lưu lại giữ được markdown gốc để so sánh và khôi phục',function(){
+    if(typeof khbdSaveVersion!=='function')return 'Thiếu khbdSaveVersion';
+    var giu=rawMarkdown, cu=document.getElementById('result').innerHTML;
+    try{
+      rawMarkdown='# NỘI DUNG MỐC ĐỂ SO SÁNH';
+      document.getElementById('result').innerHTML='<p>x</p>';
+      khbdSaveVersion(true);
+      var v=JSON.parse(localStorage.getItem('khbd_versions_v3')||'[]');
+      if(!v.length)return 'Không lưu được phiên bản nào';
+      return (v[0].md||'').indexOf('MỐC ĐỂ SO SÁNH')>=0
+        ||'Phiên bản lưu ra không có markdown gốc — bảng so sánh sẽ trắng như b15';
+    }finally{rawMarkdown=giu;document.getElementById('result').innerHTML=cu}
   });
 
   await T('Nạp lại flow.js hai lần không bọc chồng mdToHtml',function(){

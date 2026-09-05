@@ -1,94 +1,170 @@
 BÁO CÁO ĐÁNH GIÁ VÀ HIỆU CHỈNH TRỢ LÝ KHBD
-Phiên bản rà soát: 2026-09-05 · b15
+Phiên bản rà soát: 2026-09-05 · b16 (soát lại toàn bộ b15)
 
 I. KẾT LUẬN NGẮN
 
-Ứng dụng có nền tảng tốt và đã vượt mức một biểu mẫu tạo giáo án thông thường:
-có kiểm soát nguồn, kiểm định cấu trúc, đối chiếu mã NLS/NLAI, dựng công thức
-Toán và xuất DOCX. Sau hiệu chỉnh b15, ứng dụng phù hợp để tiếp tục chạy thử
-nghiệp vụ với giáo viên; chưa nên xem kết quả AI là văn bản đã được phê duyệt.
+Nền tảng của b15 tốt và vượt xa một biểu mẫu tạo giáo án thông thường. Tuy nhiên
+đợt rà soát này KHÔNG chỉ đọc mã: toàn bộ 5 tệp JavaScript đã được nạp và THI HÀNH
+thật trong một môi trường chạy thử ngoài trình duyệt, rồi đối chiếu kết quả trước và
+sau khi sửa. Cách làm đó phát hiện ba lỗi mà đọc bằng mắt không thấy được, trong đó
+có hai lỗi làm MẤT NỘI DUNG mà không báo gì.
 
-II. ĐIỂM MẠNH
+Sau hiệu chỉnh b16: ĐẠT ĐỂ CHẠY THỬ CÓ KIỂM SOÁT. Kết quả AI vẫn là bản dự thảo,
+chưa phải văn bản đã được phê duyệt.
 
-1. Bám cấu trúc Phụ lục IV Công văn 5512: mục tiêu, thiết bị/học liệu, tiến
-   trình gồm Khởi động – Hình thành kiến thức – Luyện tập – Vận dụng, và mục
-   Điều chỉnh sau bài dạy.
-2. NLS được đối chiếu theo Thông tư 02/2025/TT-BGDĐT, có phân bậc theo lớp và
-   không ép gắn mã khi không có hành vi số quan sát được.
-3. NLAI tách riêng khỏi miền 6 của Khung NLS; có cảnh báo nội dung mở rộng và
-   yêu cầu giáo viên duyệt mã trước khi xuất Word.
-4. Có chế độ khóa nguồn, nhãn “Theo nguồn/AI đề xuất”, cảnh báo dữ liệu cá nhân
-   và không lưu API key.
-5. Phân hệ Toán hỗ trợ công thức Word, bảng xét dấu, bảng biến thiên và đồ thị.
-6. Có lịch sử phiên bản, kiểm tra đầu ra và bộ 62 phép tự kiểm tra.
+II. ĐIỂM MẠNH ĐÃ KIỂM CHỨNG (không phải nhận xét cảm tính)
 
-III. LỖI ĐÃ SỬA TRONG b10–b15
+1. Bộ chuyển LaTeX sang công thức gốc của Word (OMML) trong docx-export.js là phần
+   xuất sắc nhất của sản phẩm. Thử 27 biểu thức thường gặp trong SGK Toán THPT
+   (\dfrac, \sqrt[3]{}, \overrightarrow, \widehat, \lim_{x\to0}, \int_0^1, \binom,
+   \mathop{\lim}\limits, 30^\circ...): 26/27 dựng ra OMML thật, đúng thứ tự thẻ
+   w:rPr, chữ số và toán tử đứng thẳng, biến nghiêng. Trường hợp còn lại là lỗi số 2
+   ở mục III.
 
-1. Sửa kiểm định thời lượng: trước đây chỉ cộng thời lượng của lessonflow nhưng
-   so với toàn bộ số tiết × 45 phút, dễ khóa xuất Word sai. Nay phần mềm ghi rõ
-   số phút đã nhận diện và chỉ chặn nếu riêng phần này đã vượt quỹ thời gian.
-2. Sửa nhận diện hoạt động: lessonflow chỉ thuộc Hình thành kiến thức mới, nên
-   bảng cuối không còn bị hiểu nhầm là Hoạt động Vận dụng.
-3. Mọi lessonflow Hình thành kiến thức phải đủ đúng 4 bước theo cấu trúc tổ chức
-   thực hiện; Vận dụng vẫn có thể giao ngoài giờ và trình bày bằng văn xuôi.
-4. Sửa tải tệp lớn: bỏ việc tự đặt Content-Length ở lượt tải dữ liệu, vì đây là
-   tiêu đề do Chrome/Edge quản lý và có thể khiến yêu cầu bị chặn trước khi gửi.
-5. Truyền đúng lớp đang kiểm định vào bộ đối chiếu mã NLS, tránh phụ thuộc ngầm
-   vào trạng thái ô nhập.
-6. Đồng bộ mã bộ nhớ đệm b11 và sửa hướng dẫn thành đúng 58 phép kiểm tra.
-7. Đồng bộ hai phép thử thời lượng với cơ chế kiểm định mới, loại bỏ 2 cảnh báo
-   đỏ giả xuất hiện trong test.html của bản b10.
-8. Dựng lại bảng biến thiên theo mẫu SGK: bỏ khung/lưới dọc thừa, thu gọn chiều
-   cao, dùng nét đen, đặt đúng mũi tên và hai vạch tại điểm gián đoạn; bổ sung
-   quy tắc giữ mốc và giá trị ở dạng phân số/căn thức chính xác.
-9. Thay đầu mũi tên rời bằng marker SVG gắn trực tiếp vào đường biến thiên; bổ
-   sung tiệm cận đứng, ngang, xiên và tự nhận dạng trường hợp phân thức bậc hai
-   trên bậc nhất thường gặp.
-10. Dựng lại bảng xét dấu theo mẫu SGK: bỏ khung ngoài và các vạch dọc tại
-    nghiệm; chỉ giữ vạch phân cách cột nhãn, đường ngang phân hàng, đồng thời
-    giữ đúng hai vạch song song tại điểm không xác định.
-11. Sửa bộ đọc biểu thức để dựng đúng hàm chứa số hạng dạng -x^2 và chấp nhận
-    biến thời gian t; đây là nguyên nhân một số khung trong PDF chỉ có trục mà
-    không có đường cong.
-12. Tự động nới miền tung độ theo các giá trị mẫu bền vững, tránh cắt mất đồ thị
-    khi yMin/yMax do AI khai báo quá hẹp nhưng không để điểm sát tiệm cận làm
-    bẹt toàn bộ đường cong. Nếu vẫn không dựng được, khung hiện cảnh báo rõ.
+2. Cấu trúc tệp .docx xuất ra hợp lệ: kiểm 6 phần XML bằng bộ phân tích độc lập,
+   không phần nào sai cú pháp. Ảnh đồ thị được đánh số quan hệ khớp đúng thứ tự khối,
+   kể cả khi một bảng biến thiên tự sinh thêm một đồ thị.
 
-IV. GÓP Ý CHUYÊN MÔN
+3. Bộ kiểm định đầu ra thực sự có răng: bắt lessonflow đủ 4 bước, bắt "sản phẩm dự
+   kiến" dưới 80 ký tự là sơ sài, chặn môn Toán không có lấy một công thức, chặn
+   trích số trang khi không đính kèm tài liệu, đối chiếu mã NLS/NLAI theo đúng bậc lớp.
 
-1. Mã NLS/NLAI chỉ được coi là gợi ý hỗ trợ lập kế hoạch, không phải một đầu
-   điểm độc lập và không thay thế yêu cầu cần đạt của môn học.
-2. “Sản phẩm” cần là kết quả học tập quan sát được; không nên chỉ ghi “HS hiểu”
-   hoặc một nhãn kiến thức rỗng.
-3. Với chế độ khóa nguồn, giáo viên cần cung cấp SGV/phân phối chương trình hoặc
-   trích đoạn có số tiết và yêu cầu cần đạt; nếu thiếu, ứng dụng phải để giáo
-   viên bổ sung thay vì suy đoán.
-4. Khung NLAI nhúng trong bản này chỉ bao phủ lớp 10–12. Với lớp 6–9, phần mềm
-   chủ động tắt NLAI và vẫn cho tích hợp NLS đúng bậc; không nên tự tạo mã NLAI.
-5. Công văn 5512 là khung tham chiếu. Khi đơn vị có mẫu riêng đã được phê duyệt,
-   cần ưu tiên mẫu của nhà trường nhưng không làm mất logic mục tiêu – nhiệm vụ –
-   sản phẩm – tổ chức – đánh giá.
+4. Chú thích trong mã ghi rõ VÌ SAO sửa chứ không chỉ SỬA GÌ. Đoạn giải thích tại sao
+   phải vá escape JSON trước khi JSON.parse (vì \f và \b là escape hợp lệ nên
+   "$\frac{a}{b}$" đọc thành công mà nội dung biến mất) cho thấy người viết hiểu đúng
+   một lớp lỗi rất khó truy.
 
-V. GIỚI HẠN CÒN LẠI VÀ KHUYẾN NGHỊ TRIỂN KHAI
+III. LỖI PHÁT HIỆN Ở b15 VÀ ĐÃ SỬA Ở b16
 
-1. Ứng dụng phụ thuộc Internet, Gemini, MathJax và JSZip; nên thử trên mạng và
-   thiết bị thực tế của trường trước khi dùng đại trà.
-2. Nội dung sửa trực tiếp trên vùng xem trước chưa được chuyển ngược hoàn hảo
-   thành Markdown có cấu trúc. Khi đã sửa nhiều, nên lưu bản và kiểm tra kỹ tệp
-   DOCX; tốt nhất chỉnh lần cuối trong Word.
-3. Không đưa khóa API dùng chung vào mã nguồn hoặc gửi kèm gói ZIP. Mỗi giáo viên
-   nên dùng khóa riêng và đặt giới hạn/quản lý khóa trên tài khoản Google.
-4. Cần chạy test.html và mở tệp Word thử sau mỗi lần thay mã, nhất là với công
-   thức, bảng biến thiên và đồ thị.
-5. Trước công bố toàn trường, nên chạy thử tối thiểu theo ma trận: lớp 6/9/10/12,
-   môn Toán và một môn không phải Toán, có/không tệp nguồn, NLS bật/tắt, NLAI
-   bật/tắt, bảng 3/5 cột, và xuất DOCX trên Chrome lẫn Edge.
+1. BỘ ĐỌC BIỂU THỨC LOẠI BỎ GẦN HẾT CHƯƠNG MŨ – LÔGARIT VÀ LƯỢNG GIÁC (nghiêm trọng)
+   compileExpr thay "pi" thành "Math.PI" RỒI MỚI kiểm tra chuỗi bằng một biểu thức
+   chính quy chỉ chấp nhận chữ thường. Chữ M và P viết hoa làm mọi biểu thức có số pi
+   bị loại ngay tại cửa. Hàm cũng không biết ln, log cơ số, e^x, cot, |x| và phép nhân
+   ngầm trước tên hàm.
+   Đo trên bảy biểu thức mẫu — sin(pi*x), e^x, ln(x), |x|, log_2(x), cot(x), 2sin(x):
+      b15 vẽ được 0/7  ·  b16 vẽ được 7/7.
+   Hệ quả thật ở b15: bài "Hàm số mũ và hàm số lôgarit" và "Hàm số lượng giác" cho ra
+   khung có, trục có, không một nét đường cong. Đây đúng là triệu chứng mà mục III.11
+   của báo cáo b15 tưởng đã xử lý xong.
+   Cách sửa: viết lại bằng bộ phân tích cú pháp đệ quy, tự dựng chuỗi JavaScript từ
+   những mảnh do chính nó sinh ra, nên vừa đúng vừa không thể bị chèn mã. Đã thử 39
+   biểu thức: đúng cả 39. Quy ước theo SGK Việt Nam: log là lôgarit thập phân, ln là
+   lôgarit tự nhiên, log_2(x) hoặc log(2,x) là cơ số 2.
 
-VI. CĂN CỨ ĐÃ ĐỐI CHIẾU
+2. HỆ PHƯƠNG TRÌNH MẤT DẤU NGOẶC NHỌN KHI XUẤT WORD (nghiêm trọng, mất nội dung âm thầm)
+   \begin{...} và \end{...} bị đọc rồi vứt bỏ, "\\" chỉ thành một dấu cách. Kiểm chứng:
+   $\begin{cases}x>0\\y<1\end{cases}$ xuất ra Word thành "x>0 y<1" — mất dấu ngoặc, mất
+   xuống dòng. Vi phạm đúng nguyên tắc mà chính tệp đó tự đặt ra ở đầu ("không bao giờ
+   âm thầm đánh rơi nội dung"). Ảnh hưởng cases, array, aligned, matrix — hệ phương
+   trình và hệ bất phương trình là nội dung phổ biến từ lớp 9 trở lên.
+   Đã sửa: dựng thành m:eqArr (một cột) hoặc m:m (nhiều cột) kèm dấu ngoặc đúng loại.
+
+3. NÚT "SO SÁNH 2 PHIÊN BẢN" HIỆN RA HAI Ô TRẮNG
+   saveVersion chỉ lưu bản HTML khi nó ngắn hơn 120 000 ký tự, còn compare() lại chỉ
+   đọc bản HTML đó. Một KHBD thật đã dựng kèm hàng chục SVG MathJax vượt mốc này rất
+   dễ, nên phần lớn lần so sánh cho ra hai khung rỗng, không báo lỗi. restore() đã ưu
+   tiên markdown gốc từ trước, chỉ compare() bị bỏ sót.
+   Đã sửa, đồng thời thôi lưu trùng bản HTML — giảm hẳn nguyên nhân của thông báo
+   "Bộ nhớ trình duyệt đã đầy".
+
+4. XỬ LÝ CHỮ "đ" KHÔNG ĐỒNG BỘ GIỮA HAI TỆP
+   app.js đổi đ thành d trước khi bỏ dấu; docx-export.js thì không. Hiện chưa lộ lỗi vì
+   ba từ khoá đang tra tình cờ không chứa "đ", nhưng chỉ cần thêm một từ khoá như
+   "dieu chinh" là bộ kiểm định khoá nhầm — đúng lớp lỗi mà hướng dẫn đã cảnh báo.
+   Đã đồng bộ.
+
+5. SỐ PHÉP KIỂM TRA GHI SAI TRONG CHÍNH BÁO CÁO b15
+   Mục III.6 của bản cũ ghi "sửa hướng dẫn thành đúng 58 phép kiểm tra". Chạy thật
+   test.html cho kết quả 61 đạt + 1 bỏ qua = 62 — tức HƯỚNG DẪN đúng, BÁO CÁO sai.
+   b16 nâng lên 72 phép kiểm tra (71 đạt + 1 bỏ qua trong môi trường không có trình duyệt).
+
+IV. RỦI RO KIẾN TRÚC ĐÃ XỬ LÝ Ở b16
+
+1. MÂU THUẪN TỰ THÂN GIỮA ĐỘ DÀI VÀ THỜI GIAN CHỜ (rủi ro lớn nhất của b15)
+   promptFor bắt mô hình viết "hàng chục nghìn ký tự"; maxTokensFor nới tới 65536 token;
+   nhưng lượt gọi dùng :generateContent phải chờ viết xong toàn bộ, còn flow.js cắt
+   ngang ở đúng 120 giây. Một phản hồi 25–30 nghìn token thường mất 2–5 phút. Nghĩa là
+   ở chính cấu hình mà phần mềm tự đặt ra, lỗi "AI phản hồi quá 120 giây" là chuyện
+   THƯỜNG TRỰC dù mọi thứ đều đang chạy đúng.
+   Đã chuyển sang :streamGenerateContent?alt=sse. Đồng hồ được đặt lại mỗi lần có dữ
+   liệu mới, chỉ ngắt khi AI im lặng quá 90 giây. Khung tiến trình hiện số ký tự đã
+   nhận. Vẫn giữ đường không truyền dòng làm dự phòng cho trình duyệt không đọc được luồng.
+
+2. KHÔNG ĐẶT TRẦN CHO TOKEN SUY NGHĨ
+   Gemini 2.5 trở lên tính token suy nghĩ vào maxOutputTokens. Không đặt trần thì mô
+   hình có thể tiêu phần lớn hạn mức vào suy nghĩ rồi bị cắt giữa bài, báo MAX_TOKENS,
+   và thông báo lỗi lại khuyên giáo viên "giảm số tiết" — quy sai nguyên nhân.
+   Đã đặt ngân sách suy nghĩ cho các mô hình 2.5 trở lên, và tự thử lại không kèm
+   trường này nếu mô hình đời cũ từ chối.
+
+3. KHÔNG THỬ LẠI KHI GOOGLE TRẢ 429 / 503
+   Khoá miễn phí chạm hạn ngạch rất thường xuyên. b15 gặp 429 là chuyển sang mô hình
+   dự phòng, nhưng các mô hình dùng CHUNG một hạn ngạch nên cũng 429 nốt, rồi báo một
+   thông báo gộp khó hiểu. b16 chờ 4 giây rồi 12 giây, thử lại đúng mô hình đó trước
+   khi mới chuyển sang mô hình khác.
+
+4. JSZip TẢI TỪ CDN KHÔNG CÓ MÃ KIỂM TRA TOÀN VẸN, trong khi MathJax thì có — không
+   nhất quán, nhất là khi hướng dẫn khuyên đưa cả thư mục lên dịch vụ lưu trữ web.
+   Đã bổ sung integrity SHA-384.
+
+V. GIỚI HẠN CÒN LẠI — CHƯA SỬA, CẦN CÂN NHẮC
+
+1. Nội dung sửa tay trên màn hình vẫn KHÔNG vào được tệp DOCX. Tài liệu đã ghi trung
+   thực, nhưng đây là điều giáo viên sẽ vấp ngay lần dùng thứ hai. Hướng xử lý: chuyển
+   ngược HTML thành Markdown, hoặc khoá nút "Chỉnh sửa" kèm lời nhắc chỉnh lần cuối
+   trong Word.
+
+2. Tệp nguồn được tải lên lại từ đầu mỗi lần bấm "Soạn". Đính kèm SGV 25 MB rồi soạn
+   lại lần thứ ba là chờ tải lên lần thứ ba. Files API của Google giữ tệp 48 giờ, nên
+   có thể nhớ đường dẫn theo tên + kích thước và dùng lại.
+
+3. Khoá API được gửi đi theo từng lần gõ phím (có trễ 700 ms) để dò mô hình, tức là
+   khoá còn dở cũng đã rời máy. Không nguy hiểm nhưng đi ngược tinh thần "bảo vệ khoá"
+   mà giao diện tuyên bố. Nên chờ rời ô nhập hoặc đặt độ dài tối thiểu.
+
+4. validatePlan vẫn đọc thẳng trạng thái ô nhập (includeDigital, traceSources,
+   selectedFiles) thay vì nhận qua tham số. Khi khôi phục một phiên bản cũ, việc kiểm
+   định lại sẽ chấm theo trạng thái HIỆN TẠI chứ không phải trạng thái lúc soạn. Bản
+   b15 đã sửa đúng điểm này cho biến lớp; nên làm nốt cho ba biến còn lại.
+
+5. Kiểm định thời lượng vẫn chưa khép kín: chỉ cộng được phút của phần Hình thành kiến
+   thức mới. Trong khi đó prompt đã bắt ghi "Tổng thời lượng: ... phút" ở cuối tiến
+   trình — nên đọc luôn con số đó và đối chiếu, thay vì để cảnh báo mãi.
+
+6. Nhãn "Theo nguồn" và "AI đề xuất" do chính AI tự gán. Phần mềm chỉ kiểm được CÓ NHÃN
+   hay không, không kiểm được nhãn ĐÚNG hay SAI. Cần nói thẳng điều này với giáo viên,
+   vì đây là giới hạn của cả cơ chế trách nhiệm giải trình.
+
+VI. GÓP Ý CHUYÊN MÔN (giữ nguyên từ b15, vẫn còn giá trị)
+
+1. Mã NLS/NLAI chỉ là gợi ý hỗ trợ lập kế hoạch, không phải một đầu điểm độc lập và
+   không thay thế yêu cầu cần đạt của môn học.
+2. "Sản phẩm" phải là kết quả học tập quan sát được, không nên chỉ ghi "HS hiểu".
+3. Ở chế độ khóa nguồn, giáo viên cần cung cấp SGV/phân phối chương trình có số tiết và
+   yêu cầu cần đạt; thiếu thì phần mềm phải để giáo viên bổ sung, không suy đoán.
+4. Khung NLAI nhúng trong bản này chỉ bao phủ lớp 10–12; lớp 6–9 chủ động tắt NLAI và
+   vẫn tích hợp NLS đúng bậc.
+5. Công văn 5512 là khung tham chiếu. Khi đơn vị có mẫu riêng đã phê duyệt thì ưu tiên
+   mẫu của nhà trường, nhưng không làm mất logic mục tiêu – nhiệm vụ – sản phẩm –
+   tổ chức – đánh giá.
+
+VII. KHUYẾN NGHỊ TRƯỚC KHI DÙNG ĐẠI TRÀ
+
+1. Chạy test.html sau mỗi lần sửa mã, kể cả sửa một dòng. Sau đó bấm "Tải tệp Word thử"
+   và mở bằng Word để mắt thường xác nhận công thức, bảng và đồ thị. Máy chỉ kiểm được
+   cấu trúc tệp, không thay được việc thầy cô nhìn tận mắt.
+2. Chạy thử tối thiểu theo ma trận: lớp 6/9/10/12, môn Toán và một môn không phải Toán,
+   có/không tệp nguồn, NLS bật/tắt, NLAI bật/tắt, bảng 3/5 cột, xuất DOCX trên cả Chrome
+   lẫn Edge. Riêng b16 cần thử thêm hai việc: một bài 3–4 tiết để kiểm chứng đường
+   truyền dòng, và một bài có hệ phương trình để kiểm chứng dấu ngoặc nhọn trong Word.
+3. Không đưa khóa API dùng chung vào mã nguồn hay gói ZIP. Mỗi giáo viên dùng khóa riêng
+   và đặt giới hạn trên tài khoản Google.
+
+VIII. CĂN CỨ ĐÃ ĐỐI CHIẾU
 
 - Công văn 5512/BGDĐT-GDTrH, Phụ lục IV – Khung kế hoạch bài dạy.
 - Thông tư 02/2025/TT-BGDĐT ngày 24/01/2025 – Khung năng lực số cho người học.
-- Quyết định 2422/QĐ-BGDĐT ngày 18/08/2026 – Khung nội dung giáo dục trí tuệ
-  nhân tạo cho học sinh phổ thông.
+- Quyết định 2422/QĐ-BGDĐT ngày 18/08/2026 – Khung nội dung giáo dục trí tuệ nhân tạo
+  cho học sinh phổ thông.
 
 Đánh giá sau hiệu chỉnh: ĐẠT ĐỂ CHẠY THỬ CÓ KIỂM SOÁT.
