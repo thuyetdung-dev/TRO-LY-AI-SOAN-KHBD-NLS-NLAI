@@ -1,7 +1,7 @@
 /* Mốc phiên bản — hiện ngay trên thanh tiêu đề. Sau nhiều vòng sửa, đã có lần trang web
    chạy bản cũ mà cả hai bên đều tưởng là bản mới, mất công đi tìm lỗi đã sửa xong rồi.
    Nhìn dòng chữ trên đầu trang là biết ngay đang chạy bản nào. */
-const APP_BUILD='2026-09-05 · b17';
+const APP_BUILD='2026-09-05 · b18';
 const $=id=>document.getElementById(id);let selectedFiles=[],rawMarkdown='',availableModels=[],scanTimer,draftTimer,lastValidation=null;
 const fields=['subject','grade','lesson','book','periods','students','classSize','equipment','notes','tableLayout','assessmentMode','lessonTemplate','sourceMode'];
 const toast=m=>{const t=$('toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2600)};
@@ -180,6 +180,8 @@ ${mathRulesFor(v)}
  - Tập xác định viết $D = \\mathbb{R} \\setminus \\{2\\}$ (có dấu gạch chéo ngược ở cả \\setminus lẫn hai ngoặc nhọn). KHÔNG viết R\\{2\\}, không viết mathbbR.
  - Khoảng vô hạn viết $(-\\infty; 0)$ và $(2; +\\infty)$ — nhớ giữ dấu gạch chéo ngược của \\infty ngay cả khi sau nó là dấu chấm phẩy.
  - Căn bậc ba viết $\\sqrt[3]{x}$; hàm mũ viết $e^{-t}$ với mũ đặt trong ngoặc nhọn.
+12.6) NĂNG LỰC AI LÀ BẮT BUỘC khi được yêu cầu tích hợp: mục "Năng lực AI (NLAI)" phải nêu ít nhất một mã theo Quyết định 2422 kèm hành vi quan sát được (học sinh dùng, kiểm chứng hoặc phản biện kết quả của một công cụ AI), và mã đó phải gắn vào ít nhất một bước trong tiến trình. TUYỆT ĐỐI KHÔNG ghi "không tích hợp trong bài này" — đó không phải một phương án hợp lệ.
+12.7) BẢNG BIẾN THIÊN: trường points và values ghi bằng LaTeX bình thường ($\\dfrac{3-\\sqrt3}{3}$), phần mềm tự tính ra số để dựng đồ thị. Trường expr phải là biểu thức thuần, KHÔNG có dấu nhân "*" và không có "y=" ở đầu.
 12.5) MỌI CÔNG THỨC PHẢI CÂN ĐỐI DẤU NGOẶC. Trước khi trả lời, tự rà lại từng cặp $...$: số dấu "(" phải bằng số dấu ")", "{" bằng "}", "[" bằng "]". Một công thức thiếu dấu đóng là một dòng vô nghĩa trên bản in mà giáo viên phải sửa tay.
 13) Câu hỏi phải chính xác; tự giải và kiểm tra đáp án hai lần. Không sao chép máy móc giáo án tham khảo; không bịa dữ kiện từ nguồn. Đầu ra bằng Markdown, không mở đầu xã giao, phong cách ${$('style').value}.`}
 const MAX_MODEL_ATTEMPTS=3; // Giới hạn số mô hình thử tuần tự, tránh giáo viên phải chờ hàng chục phút nếu key có nhiều model nhưng đều lỗi.
@@ -423,6 +425,8 @@ function compileExpr(expr){
     .replace(/\\(dfrac|frac|tfrac)\s*\{([^{}]*)\}\s*\{([^{}]*)\}/g,'(($2)/($3))')
     .replace(/\\sqrt\s*\[([^\]]*)\]\s*\{([^{}]*)\}/g,'(($2)^(1/($1)))')
     .replace(/\\sqrt\s*\{([^{}]*)\}/g,'sqrt($1)')
+    /* \sqrt3 viết tắt không ngoặc — bảng biến thiên do AI sinh dùng rất nhiều. */
+    .replace(/\\sqrt\s*([0-9]+(?:\.[0-9]+)?)/g,'sqrt($1)')
     .replace(/\\/g,'')
     .replace(/\s+/g,'');
   src=src.replace(/^y=|^f\(x\)=|^y\(x\)=/,'');
@@ -549,11 +553,26 @@ function coerceLen(arr,n,fill){arr=Array.isArray(arr)?arr.slice():[];while(arr.l
    nói, không có hình ảnh trực quan": mô hình chịu viết bảng biến thiên nhưng gần như không bao
    giờ tự thêm khối đồ thị. Nay chỉ cần nó khai báo thêm "expr" trong chính khối bảng biến thiên
    là phần mềm vẽ luôn đồ thị bên dưới — bớt được một việc mà mô hình hay quên. */
+/* Nhãn hiển thị: bỏ dấu * mà AI hay chèn ("x^3-3*x^2+2*x+1"), vì SGK không viết dấu nhân
+   giữa hệ số và biến. */
+const nhanGon=t=>String(t||'').replace(/([0-9a-zA-Z)\}])\s*\*\s*(?=[0-9a-zA-Z(\\])/g,'$1');
 function graphFromVariation(spec){
   const expr=String(spec.expr||'').trim();
   if(!expr)return null;
-  const nums=(spec.points||[]).map(p=>Number(String(p).replace(/\\infty|∞|infty/gi,'NaN')))
-    .filter(Number.isFinite);
+  /* b18 — GỐC CỦA ĐỒ THỊ VẼ TRÊN TRỤC TUNG -160..60 MÀ GIÁO VIÊN CHỤP LẠI.
+     Mốc trong bảng biến thiên hầu như luôn là biểu thức LaTeX: \dfrac{3-\sqrt3}{3},
+     1-\dfrac{2\sqrt3}{9}... Number() của mấy chuỗi đó là NaN, nên b17 coi như KHÔNG CÓ mốc
+     nào, rơi về khung mặc định [-5; 5] rồi lấy phân vị mẫu — với hàm bậc ba thì tại x=-5
+     giá trị đã là -209, thế là cả đường cong bẹp thành một nét ngang sát trục hoành.
+     Nay dùng chính bộ đọc biểu thức của phần mềm để tính mốc ra số. */
+  const soTuLatex=p=>{
+    const t=String(p??'').trim();
+    if(!t||/infty|∞/i.test(t))return NaN;
+    const n=Number(t.replace(',','.'));
+    if(Number.isFinite(n))return n;
+    try{const v=compileExpr(t)(0);return Number.isFinite(v)?v:NaN}catch(_){return NaN}
+  };
+  const nums=(spec.points||[]).map(soTuLatex).filter(Number.isFinite);
   /* b17: bản in của giáo viên có đồ thị y = x^4-3x^2+1 vẽ trên trục tung 0..55, hai cực tiểu
      -5/4 bị bẹp dí sát trục hoành, nhìn không ra hình. Nguyên nhân kép:
      1) Đệm trục hoành cũ cộng thêm HẲN 2 đơn vị mỗi bên. Với ba nghiệm nằm gọn trong
@@ -591,9 +610,9 @@ function graphFromVariation(spec){
     }
   }
   const r=v=>Math.round(v*100)/100;
-  return {type:'graph',title:'Đồ thị '+(spec.funcLabel||('y = '+expr)),
+  return {type:'graph',title:'Đồ thị '+nhanGon(spec.funcLabel||('y = '+expr)),
     xMin:r(xMin),xMax:r(xMax),yMin:r(yMin),yMax:r(yMax),autoFit:false,
-    asymptotes:spec.asymptotes||[],functions:[{expr,label:spec.funcLabel||('y='+expr)}]};
+    asymptotes:spec.asymptotes||[],functions:[{expr,label:nhanGon(spec.funcLabel||('y='+expr))}]};
 }
 function buildSignSVG(spec){
   const pts=(spec.columns||spec.points||[]).map(x=>String(x??''));
@@ -765,39 +784,54 @@ function fitGraphYRange(s,x0,x1,y0,y1){
 function buildGraphSVG(s,opt){
   opt=opt||{};
   const num=(v,d)=>{const n=Number(v);return Number.isFinite(n)?n:d};
-  const W=760,H=390,p=38;
+  /* b18 — MỘT Ô LƯỚI PHẢI LÀ MỘT HÌNH VUÔNG, ĐÚNG NHƯ SGK.
+     Bản cũ ép khung vẽ vào một khung ảnh cố định 760×390 rồi kéo giãn hai trục ĐỘC LẬP.
+     Hệ quả: đồ thị y=x² có trục hoành chia 0,5 một ô còn trục tung chia 1 một ô, parabol
+     bị bẹp ngang và trông không giống Hình 1.2 SGK — đúng chỗ giáo viên khoanh đỏ và ghi
+     "quy ước 1 ô = 1 đơn vị cả trục tung và trục hoành".
+     Nay chọn MỘT hệ số quy đổi k (pixel trên một đơn vị) dùng chung cho cả hai trục, rồi
+     để chiều cao khung ảnh tự co giãn theo. Ô lưới luôn vuông, hình dạng đường cong luôn
+     đúng, và một bước chia dùng chung cho cả hai trục. */
+  const W=760,p=38,PLOT_H_MAX=430,PLOT_H_MIN=180;
   let x0=num(s.xMin,-5),x1=num(s.xMax,5),y0=num(s.yMin,-5),y1=num(s.yMax,5);
   if(x1<=x0){x0=-5;x1=5}
   if(y1<=y0){y0=-5;y1=5}
   ({y0,y1}=fitGraphYRange(s,x0,x1,y0,y1));
-  const X=x=>p+(x-x0)/(x1-x0)*(W-2*p),Y=y=>H-p-(y-y0)/(y1-y0)*(H-2*p);
+  const k=Math.min((W-2*p)/(x1-x0),PLOT_H_MAX/(y1-y0));
+  /* Hàm rất "phẳng" thì nới thêm miền tung độ cho khung đỡ dẹt — vẫn giữ ô vuông vì chỉ
+     nới miền giá trị chứ không đụng tới hệ số quy đổi. */
+  if((y1-y0)*k<PLOT_H_MIN){const bu=(PLOT_H_MIN/k-(y1-y0))/2;y0-=bu;y1+=bu}
+  const plotW=(x1-x0)*k,plotH=(y1-y0)*k;
+  const H=Math.round(plotH)+2*p,L=p+((W-2*p)-plotW)/2,R=L+plotW,B=p+plotH;
+  const X=x=>L+(x-x0)*k,Y=y=>B-(y-y0)*k;
   const uid='plotClip'+(++GRAPH_UID);
   const step=r=>{const raw=(r)/10,pow=Math.pow(10,Math.floor(Math.log10(raw)||0));const m=raw/pow;return (m<1.5?1:m<3.5?2:m<7.5?5:10)*pow};
-  const sx=step(x1-x0),sy=step(y1-y0);
+  /* Một bước chia duy nhất cho cả hai trục, lấy theo miền rộng hơn. */
+  const sx=step(Math.max(x1-x0,y1-y0)),sy=sx;
   let svg=`<svg ${opt.standalone?'xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" '.replace('${W}',W).replace('${H}',H):''}viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(s.title||'Đồ thị hàm số')}">`;
   if(opt.standalone)svg+=`<style>${GRAPH_CSS}</style><rect width="${W}" height="${H}" fill="#ffffff"/>`;
-  svg+=`<defs><clipPath id="${uid}"><rect x="${p}" y="${p}" width="${W-2*p}" height="${H-2*p}"/></clipPath></defs>`;
-  svg+=`<rect x="${p}" y="${p}" width="${W-2*p}" height="${H-2*p}" class="plot-bg"/>`;
-  for(let k=Math.ceil(x0/sx)*sx;k<=x1+1e-9;k+=sx)svg+=`<line x1="${X(k).toFixed(2)}" y1="${p}" x2="${X(k).toFixed(2)}" y2="${H-p}" class="grid-line"/>`;
-  for(let k=Math.ceil(y0/sy)*sy;k<=y1+1e-9;k+=sy)svg+=`<line x1="${p}" y1="${Y(k).toFixed(2)}" x2="${W-p}" y2="${Y(k).toFixed(2)}" class="grid-line"/>`;
-  if(y0<=0&&y1>=0)svg+=`<line x1="${p}" y1="${Y(0).toFixed(2)}" x2="${W-p}" y2="${Y(0).toFixed(2)}" class="axis"/>`;
-  if(x0<=0&&x1>=0)svg+=`<line x1="${X(0).toFixed(2)}" y1="${p}" x2="${X(0).toFixed(2)}" y2="${H-p}" class="axis"/>`;
+  svg+=`<defs><clipPath id="${uid}"><rect x="${L}" y="${p}" width="${plotW}" height="${plotH}"/></clipPath></defs>`;
+  svg+=`<rect x="${L}" y="${p}" width="${plotW}" height="${plotH}" class="plot-bg"/>`;
+  for(let k=Math.ceil(x0/sx)*sx;k<=x1+1e-9;k+=sx)svg+=`<line x1="${X(k).toFixed(2)}" y1="${p}" x2="${X(k).toFixed(2)}" y2="${B}" class="grid-line"/>`;
+  for(let k=Math.ceil(y0/sy)*sy;k<=y1+1e-9;k+=sy)svg+=`<line x1="${L}" y1="${Y(k).toFixed(2)}" x2="${R}" y2="${Y(k).toFixed(2)}" class="grid-line"/>`;
+  if(y0<=0&&y1>=0)svg+=`<line x1="${L}" y1="${Y(0).toFixed(2)}" x2="${R}" y2="${Y(0).toFixed(2)}" class="axis"/>`;
+  if(x0<=0&&x1>=0)svg+=`<line x1="${X(0).toFixed(2)}" y1="${p}" x2="${X(0).toFixed(2)}" y2="${B}" class="axis"/>`;
   const fmtTick=v=>Math.abs(v)<1e-9?'0':(Math.round(v*100)/100).toString();
-  const baseY=(y0<=0&&y1>=0)?Y(0):H-p, baseX=(x0<=0&&x1>=0)?X(0):p;
+  const baseY=(y0<=0&&y1>=0)?Y(0):B, baseX=(x0<=0&&x1>=0)?X(0):L;
   for(let k=Math.ceil(x0/sx)*sx;k<=x1+1e-9;k+=sx){if(Math.abs(k)<1e-9)continue;
     svg+=`<text x="${X(k).toFixed(2)}" y="${Math.min(H-6,baseY+14).toFixed(2)}" text-anchor="middle" class="tick">${fmtTick(k)}</text>`}
   for(let k=Math.ceil(y0/sy)*sy;k<=y1+1e-9;k+=sy){if(Math.abs(k)<1e-9)continue;
-    svg+=`<text x="${Math.max(4,baseX-6).toFixed(2)}" y="${(Y(k)+4).toFixed(2)}" text-anchor="end" class="tick">${fmtTick(k)}</text>`}
+    svg+=`<text x="${Math.max(4,baseX-7).toFixed(2)}" y="${(Y(k)+4).toFixed(2)}" text-anchor="end" class="tick">${fmtTick(k)}</text>`}
   for(const a of inferAsymptotes(s)){
     if(a.type==='vertical'&&Number.isFinite(Number(a.value))&&a.value>=x0&&a.value<=x1){const xx=X(Number(a.value));
-      svg+=`<line x1="${xx.toFixed(2)}" y1="${p}" x2="${xx.toFixed(2)}" y2="${H-p}" class="asymptote" clip-path="url(#${uid})"/>`+
+      svg+=`<line x1="${xx.toFixed(2)}" y1="${p}" x2="${xx.toFixed(2)}" y2="${B}" class="asymptote" clip-path="url(#${uid})"/>`+
            `<text x="${(xx+5).toFixed(2)}" y="${p+14}" class="asymptote-label">x=${esc(a.value)}</text>`}
     else if(a.type==='horizontal'&&Number.isFinite(Number(a.value))&&a.value>=y0&&a.value<=y1){const yy=Y(Number(a.value));
-      svg+=`<line x1="${p}" y1="${yy.toFixed(2)}" x2="${W-p}" y2="${yy.toFixed(2)}" class="asymptote" clip-path="url(#${uid})"/>`+
-           `<text x="${W-p-5}" y="${(yy-6).toFixed(2)}" text-anchor="end" class="asymptote-label">y=${esc(snapNice(Number(a.value)))}</text>`}
+      svg+=`<line x1="${L}" y1="${yy.toFixed(2)}" x2="${R}" y2="${yy.toFixed(2)}" class="asymptote" clip-path="url(#${uid})"/>`+
+           `<text x="${R-5}" y="${(yy-6).toFixed(2)}" text-anchor="end" class="asymptote-label">y=${esc(snapNice(Number(a.value)))}</text>`}
     else if(a.type==='oblique') {const slope=Number(a.slope),intercept=Number(a.intercept);if(Number.isFinite(slope)&&Number.isFinite(intercept)){
       svg+=`<line x1="${X(x0).toFixed(2)}" y1="${Y(slope*x0+intercept).toFixed(2)}" x2="${X(x1).toFixed(2)}" y2="${Y(slope*x1+intercept).toFixed(2)}" class="asymptote" clip-path="url(#${uid})"/>`+
-           `<text x="${X(x1).toFixed(2)}" y="${Math.max(p+14,Math.min(H-p-4,Y(slope*x1+intercept)-6)).toFixed(2)}" text-anchor="end" class="asymptote-label">${esc(nhanDuongThang(slope,intercept))}</text>`}}
+           `<text x="${X(x1).toFixed(2)}" y="${Math.max(p+14,Math.min(B-4,Y(slope*x1+intercept)-6)).toFixed(2)}" text-anchor="end" class="asymptote-label">${esc(nhanDuongThang(slope,intercept))}</text>`}}
   }
   let plotted=0;
   for(const fn of s.functions||[]){
@@ -810,7 +844,19 @@ function buildGraphSVG(s,opt){
   return svg+'</svg>';
 }
 function renderMathViz(){document.querySelectorAll('.mathviz').forEach(el=>{try{const s=JSON.parse(decodeURIComponent(el.dataset.spec));if(s.type==='graph'){el.innerHTML=`<div class="mathviz-title">${esc(s.title||'Đồ thị')}</div>`+buildGraphSVG(s)+`<div class="mathviz-legend">${(s.functions||[]).map(f=>`<span style="--c:${esc(f.color||'#176fa8')}">$${esc(f.label||f.expr)}$</span>`).join('')}</div>`}
-  else if(s.type==='variation'&&Array.isArray(s.points)){const svg=buildVariationSVG(s);if(!svg)throw new Error('variation schema không hợp lệ');const g=graphFromVariation(s);el.innerHTML=`<div class="mathviz-title">${esc(s.title||'Bảng biến thiên')}</div><div class="mathviz-scroll vt-scroll">${svg}</div>`+(g?`<div class="mathviz-title" style="margin-top:14px">${esc(g.title)}</div>${buildGraphSVG(g)}<div class="mathviz-legend"><span style="--c:#176fa8">$${esc(g.functions[0].label)}$</span></div>`:'')}else{const svg=buildSignSVG(s);if(!svg)throw new Error('sign schema không hợp lệ');el.innerHTML=`<div class="mathviz-title">${esc(s.title||(s.type==='sign'?'Bảng xét dấu':'Bảng biến thiên'))}</div><div class="mathviz-scroll vt-scroll">${svg}</div>`}}catch(e){el.innerHTML='<p class="mathviz-error">Không dựng được hình toán học này. Vui lòng tạo lại nội dung.</p>'}})}
+  else if(s.type==='variation'&&Array.isArray(s.points)){const svg=buildVariationSVG(s);if(!svg)throw new Error('variation schema không hợp lệ');/* b18 — TÁCH ĐỒ THỊ RA MỘT KHUNG RIÊNG.
+     Giáo viên đề nghị: "đồ thị vẽ riêng, không nằm chung với bảng biến thiên, ý là cắt ra
+     làm 2 khung để đồ thị không bị co lại". Trước đây cả bảng lẫn đồ thị nhét chung một
+     ô, nên đồ thị luôn phải nhường chỗ. Nay đồ thị được đặt vào một khung .mathviz riêng
+     ngay bên dưới, có tiêu đề riêng, chiếm trọn bề ngang. */
+    const g=graphFromVariation(s);
+    el.innerHTML=`<div class="mathviz-title">${esc(s.title||'Bảng biến thiên')}</div><div class="mathviz-scroll vt-scroll">${svg}</div>`;
+    if(g){
+      const khung=document.createElement('figure');
+      khung.className='mathviz mathviz-graph';
+      khung.innerHTML=`<div class="mathviz-title">${esc(g.title)}</div>${buildGraphSVG(g)}<div class="mathviz-legend"><span style="--c:#176fa8">$${esc(g.functions[0].label)}$</span></div>`;
+      el.insertAdjacentElement('afterend',khung);
+    }}else{const svg=buildSignSVG(s);if(!svg)throw new Error('sign schema không hợp lệ');el.innerHTML=`<div class="mathviz-title">${esc(s.title||(s.type==='sign'?'Bảng xét dấu':'Bảng biến thiên'))}</div><div class="mathviz-scroll vt-scroll">${svg}</div>`}}catch(e){el.innerHTML='<p class="mathviz-error">Không dựng được hình toán học này. Vui lòng tạo lại nội dung.</p>'}})}
 function balancedFences(s){return (String(s).match(/```/g)||[]).length%2===0}
 /* Vá dấu gạch chéo trong JSON do AI sinh ra.
    VÌ SAO PHẢI VIẾT LẠI: bản cũ dùng /\\(?!["\\/bfnrtu])/ — nghĩa là để nguyên dấu gạch
@@ -913,14 +959,19 @@ function unbalancedMath(text){
   const loi=[];
   for(const seg of mathSegments(text)){
     const s=seg.replace(/\\left|\\right/g,'').replace(/\\[{}]/g,'');
-    let tron=0,vuong=0,nhon=0;
+    /* b18 — SỬA MỘT LỖI DO CHÍNH b17 GÂY RA. b17 đếm riêng "(" với ")" và "[" với "]", nên
+       MỌI NỬA KHOẢNG đều bị báo sai: $(0; 2]$, $[0; +\infty)$, $(-\infty; 1]$ là cách viết
+       chuẩn của SGK chứ không phải lỗi. Trên màn hình giáo viên nó hiện thành "5 công thức
+       có dấu ngoặc không cân đối" và khoá luôn nút xuất Word — một cái chặn oan.
+       Nay ngoặc tròn và ngoặc vuông coi như CÙNG MỘT LOẠI: mở bằng cái nào, đóng bằng cái
+       nào cũng được. Vẫn bắt đúng trường hợp thiếu dấu đóng và thừa dấu đóng. */
+    let mo=0,nhon=0;
     for(const c of s){
-      if(c==='(')tron++;else if(c===')')tron--;
-      else if(c==='[')vuong++;else if(c===']')vuong--;
+      if(c==='('||c==='[')mo++;else if(c===')'||c===']')mo--;
       else if(c==='{')nhon++;else if(c==='}')nhon--;
-      if(tron<0||vuong<0||nhon<0)break;
+      if(mo<0||nhon<0)break;
     }
-    if(tron||vuong||nhon)loi.push(seg.trim().slice(0,60));
+    if(mo||nhon)loi.push(seg.trim().slice(0,60));
   }
   return loi;
 }
@@ -1012,8 +1063,19 @@ if(aiGenerated){
     if(khongDung.length)warnings.push(`Mã NLS ${khongDung.join(', ')} có nêu ở mục Mục tiêu nhưng không hoạt động nào gắn vào — cần chỉ rõ học sinh thực hiện hành vi số đó ở bước nào.`);
   }
   /* Bản in bị giáo viên ghi "thiếu năng lực AI": bật NLAI mà đầu ra không có mục nào. */
-  if($('includeAI').checked&&clampGrade(v.grade)>=10&&!/nang luc ai|nlai/.test(plain))
-    blockers.push('Đã bật tích hợp NLAI nhưng cả bản kế hoạch không có mục Năng lực AI. Nếu bài này không phát sinh hành vi dùng/kiểm chứng AI thì vẫn phải ghi rõ một dòng "Năng lực AI (NLAI): không tích hợp trong bài này".');
+  /* b18 — BỎ LỐI THOÁT "KHÔNG TÍCH HỢP".
+     b17 cho phép ghi "Năng lực AI (NLAI): không tích hợp trong bài này" là hợp lệ. Giáo
+     viên khoanh đúng dòng đó và ghi "lỗi" — theo quy định thì bài nào cũng phải có nội
+     dung năng lực AI, không được bỏ trống bằng một câu từ chối. Nay bắt buộc phải có mã
+     NLAI thật, và chặn thẳng câu từ chối. */
+  if($('includeAI').checked&&clampGrade(v.grade)>=10){
+    if(!/nang luc ai|nlai/.test(plain))
+      blockers.push('Đã bật tích hợp NLAI nhưng cả bản kế hoạch không có mục Năng lực AI.');
+    else if(/khong tich hop|khong ap dung|khong co noi dung ai/.test(plain))
+      blockers.push('Mục Năng lực AI đang ghi "không tích hợp trong bài này". Theo quy định thì bài nào cũng phải có nội dung năng lực AI — hãy nêu ít nhất một mã NLAI kèm hành vi cụ thể (dùng, kiểm chứng hoặc phản biện kết quả của công cụ AI) gắn vào một bước dạy học.');
+    else if(!aiUsed.length)
+      blockers.push('Mục Năng lực AI có tiêu đề nhưng không nêu mã NLAI nào theo Quyết định 2422. Hãy ghi mã dạng 12.A1.3 kèm hành vi quan sát được.');
+  }
 }
 return {blockers:[...new Set(blockers)],warnings:[...new Set(warnings)],passed:!blockers.length,codes:[...nlsUsed,...aiUsed],totalMinutes,expectedMinutes:expected}}
 function syncExportLock(){const approval=$('approveCompetencies'),blocked=!!lastValidation?.blockers?.length,needsApproval=!!lastValidation?.codes?.length;$('wordBtn').disabled=blocked||(needsApproval&&!approval?.checked);$('wordBtn').title=blocked?'Hãy tạo lại hoặc sửa các lỗi kiểm định trước khi xuất Word':needsApproval&&!approval?.checked?'Giáo viên cần duyệt mã NLS/NLAI trước khi xuất Word':''}

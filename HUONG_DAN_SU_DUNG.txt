@@ -1,5 +1,5 @@
 TRỢ LÝ SOẠN KẾ HOẠCH BÀI DẠY 2026–2027
-BẢN CHUYÊN NGHIỆP – BƯỚC 4 · HIỆU CHỈNH b17
+BẢN CHUYÊN NGHIỆP – BƯỚC 4 · HIỆU CHỈNH b18
 
 ================================================================
 ĐIỀU KIỆN CẦN
@@ -137,7 +137,7 @@ XỬ LÝ SỰ CỐ THƯỜNG GẶP
 TỰ KIỂM TRA SAU KHI SỬA MÃ
 ================================================================
 Mở tệp test.html bằng Chrome hoặc Edge rồi bấm "Chạy kiểm tra". Trang
-này chạy 81 phép kiểm tra trên đúng các tệp đang nằm trong thư mục,
+này chạy 88 phép kiểm tra trên đúng các tệp đang nằm trong thư mục,
 không phải trên bản sao, nên kết quả phản ánh đúng tình trạng thật.
 
 - Toàn bộ xanh: phần mềm còn lành, dùng được.
@@ -249,3 +249,42 @@ Mỗi mục dưới đây là một chỗ đã bị khoanh trên giấy.
 LƯU Ý: các mục 3, 4, 5, 6 là lỗi NỘI DUNG do AI sinh ra, phần mềm không
 tự sửa hộ được — nó chỉ chặn không cho xuất Word và nói rõ sai ở đâu để
 thầy cô bấm soạn lại. Các mục 1, 2, 7, 8, 9 thì phần mềm sửa tự động.
+
+================================================================
+NHỮNG THAY ĐỔI CỦA b18 (so với b17)
+================================================================
+Đợt này sửa theo bốn ảnh chụp màn hình và bản in giáo viên gửi kèm.
+Mục 1 là một lỗi do CHÍNH BẢN b17 gây ra.
+
+1. SỬA LỖI CỦA b17 — chặn oan nửa khoảng. b17 đếm riêng ngoặc tròn với
+   ngoặc vuông, nên $(0; 2]$, $[0; +∞)$, $(-∞; 1]$ đều bị báo "dấu ngoặc
+   không cân đối" và KHOÁ luôn nút xuất Word. Đây là cách viết chuẩn của
+   SGK, không phải lỗi. Nay ngoặc tròn và ngoặc vuông coi như cùng một
+   loại; vẫn bắt đúng trường hợp thiếu dấu đóng và thừa dấu đóng.
+
+2. MỘT Ô LƯỚI NAY LÀ MỘT HÌNH VUÔNG trên cả hai trục. Trước đây khung vẽ
+   bị ép vào một khung ảnh cố định 760×390 rồi kéo giãn hai trục độc lập,
+   nên đồ thị y=x² có trục hoành chia 0,5 một ô còn trục tung chia 1 một
+   ô, parabol bẹp ngang. Nay dùng chung một hệ số quy đổi cho hai trục và
+   để chiều cao khung ảnh tự co giãn. Tệp Word cũng đọc đúng tỉ lệ mới
+   nên ảnh không bị kéo méo.
+
+3. ĐỒ THỊ BẬC BA VẼ TRÊN TRỤC TUNG -160..60. Mốc trong bảng biến thiên
+   hầu như luôn là biểu thức LaTeX như \dfrac{3-\sqrt3}{3}; b17 không
+   đọc được thành số nên coi như không có mốc nào, rơi về khung mặc định
+   [-5; 5], và tại x=-5 hàm bậc ba đã là -209. Nay phần mềm dùng chính bộ
+   đọc biểu thức của mình để tính mốc ra số. Khung thu về [-0,58; 2,58]
+   và cả hai cực trị hiện rõ.
+
+4. ĐỒ THỊ TÁCH RA KHUNG RIÊNG, đặt ngay dưới bảng biến thiên thay vì nhét
+   chung một ô — theo đúng đề nghị "cắt ra làm 2 khung để đồ thị không bị
+   co lại".
+
+5. MỤC NĂNG LỰC AI KHÔNG CÒN ĐƯỢC GHI "không tích hợp trong bài này".
+   b17 coi câu đó là hợp lệ; nay bị chặn. Bật tích hợp NLAI thì phải nêu
+   mã thật theo Quyết định 2422 kèm hành vi quan sát được.
+
+6. Nhãn đồ thị bỏ dấu nhân: "y = x^3-3*x^2+2*x+1" thành "y = x^3-3x^2+2x+1".
+
+7. Prompt bổ sung hai quy tắc: năng lực AI là bắt buộc, và trường expr
+   của bảng biến thiên phải là biểu thức thuần không có dấu nhân.

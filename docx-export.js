@@ -587,6 +587,13 @@
    * hai lượt: lượt một quét trước toàn bộ đồ thị và đổi ra PNG, lượt hai mới dựng
    * thân tài liệu với ảnh đã sẵn sàng. */
   const GRAPH_W = 760, GRAPH_H = 390;
+  /* b18 — khung ảnh đồ thị nay CO GIÃN theo miền giá trị để mỗi ô lưới là một hình vuông,
+     nên không được dùng chiều cao cố định nữa: đọc thẳng từ viewBox của chính ảnh, nếu
+     không tệp Word sẽ kéo méo hình và ô lưới lại thành chữ nhật y như cũ. */
+  const svgSize = svg => {
+    const m = /viewBox="0 0 ([0-9.]+) ([0-9.]+)"/.exec(String(svg || ''));
+    return m ? { w: +m[1], h: +m[2] } : { w: GRAPH_W, h: GRAPH_H };
+  };
   const EMU_PER_TWIP = 635;
   /* Vùng chữ = khổ A4 (11906 twip) trừ lề trái 1418 và lề phải 1134 = 9354 twip ≈ 16,5 cm.
      Dùng 9638 như trước sẽ làm ảnh và bảng rộng hơn vùng chữ 0,5 cm và tràn ra ngoài lề. */
@@ -635,8 +642,9 @@
     for (const spec of specs) {
       try {
         const svg = buildGraphSVG(spec, { standalone: true });
-        const bytes = await window.rasterizeSVG(svg, GRAPH_W, GRAPH_H, 2);
-        out.push({ spec, bytes });
+        const kt = svgSize(svg);
+        const bytes = await window.rasterizeSVG(svg, kt.w, kt.h, 2);
+        out.push({ spec, bytes, w: kt.w, h: kt.h });
       } catch (_) {
         out.push({ spec, bytes: null });   // thất bại thì ghi chú, không làm hỏng cả tệp
       }
@@ -644,9 +652,9 @@
     return out;
   }
 
-  function drawingXml(index, relId) {
+  function drawingXml(index, relId, w, h) {
     const cx = CONTENT_TWIPS * EMU_PER_TWIP;
-    const cy = Math.round(cx * GRAPH_H / GRAPH_W);
+    const cy = Math.round(cx * (h || GRAPH_H) / (w || GRAPH_W));
     const A = 'http://schemas.openxmlformats.org/drawingml/2006/main';
     return `<w:r><w:drawing><wp:inline distT="0" distB="0" distL="0" distR="0">` +
       `<wp:extent cx="${cx}" cy="${cy}"/><wp:effectExtent l="0" t="0" r="0" b="0"/>` +
@@ -671,7 +679,7 @@
         ? para(runsFrom('*' + legend.map(t => t.includes('$') ? t : `$${t}$`).join(';  ') + '*', { small: true }), { align: 'center' })
         : '';
       if (slot && slot.bytes) {
-        return title + para(drawingXml(slot.index, slot.relId), { align: 'center' }) + caption;
+        return title + para(drawingXml(slot.index, slot.relId, slot.w, slot.h), { align: 'center' }) + caption;
       }
       return title + para(runsFrom('*[Không chuyển được đồ thị sang ảnh — xem bản trên màn hình hoặc in ra PDF]*', { i: true })) + caption;
     }
@@ -739,7 +747,7 @@
         if (slot && slot.bytes) {
           out += para(runsFrom('Đồ thị hàm số ' + (spec.funcLabel || 'y = ' + spec.expr), { b: true }),
                       { align: 'center', spaceBefore: 120, spaceAfter: 60 })
-               + para(drawingXml(slot.index, slot.relId), { align: 'center' });
+               + para(drawingXml(slot.index, slot.relId, slot.w, slot.h), { align: 'center' });
         }
       }
       return out;

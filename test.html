@@ -115,12 +115,12 @@ h2{font-size:.82rem;letter-spacing:.09em;text-transform:uppercase;color:var(--mu
 })();
 </script>
 
-<script src="standards.js?v=b17"></script>
-<script src="app.js?v=b17"></script>
-<script src="flow.js?v=b17"></script>
-<script src="professional.js?v=b17"></script>
+<script src="standards.js?v=b18"></script>
+<script src="app.js?v=b18"></script>
+<script src="flow.js?v=b18"></script>
+<script src="professional.js?v=b18"></script>
 <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
-<script src="docx-export.js?v=b17"></script>
+<script src="docx-export.js?v=b18"></script>
 
 <script>
 (function(){
@@ -702,6 +702,79 @@ async function runAll(){
       'themeBtn','sampleBtn','clearDraftBtn','resultActions','lessonForm'];
     var thieu=ids.filter(function(i){return !document.getElementById(i)});
     return thieu.length===0||'Thiếu: '+thieu.join(', ');
+  });
+
+  /* ---------- b18: bốn ảnh chụp màn hình và bản in giáo viên gửi kèm ---------- */
+  group('b18 — Ô lưới vuông, nửa khoảng, mốc LaTeX, NLAI');
+
+  await T('KHÔNG báo oan nửa khoảng (0;2] và [0;+∞)',function(){
+    /* b17 đếm riêng ngoặc tròn với ngoặc vuông nên chặn nhầm 5 công thức hợp lệ và
+       khoá luôn nút xuất Word — ảnh chụp màn hình của giáo viên. */
+    var n=unbalancedMath('$x\\in(0; 2]$ $t\\in[0; +\\infty)$ $(-\\infty; 1]$ $[-2; 2]$');
+    return n.length===0||'Vẫn chặn oan '+n.length+' nửa khoảng: '+n[0];
+  });
+
+  await T('Vẫn bắt được thiếu và thừa dấu đóng',function(){
+    if(!unbalancedMath('$(-\\infty; \\dfrac{3-\\sqrt3}{3} và (x; +\\infty;$').length)
+      return 'Bỏ lọt công thức thiếu dấu đóng';
+    return unbalancedMath('$t\\in[0; +\\infty)]$').length===1||'Bỏ lọt công thức thừa dấu đóng';
+  });
+
+  await T('Một ô lưới là một hình vuông trên cả hai trục',function(){
+    /* Ảnh 1: đồ thị y=x^2 có trục hoành chia 0,5 một ô còn trục tung chia 1 một ô, nên
+       parabol bị bẹp ngang, không giống Hình 1.2 SGK. */
+    var svg=buildGraphSVG({xMin:-3.5,xMax:3.5,yMin:-1,yMax:12,functions:[{expr:'x^2'}]});
+    var re=/<line x1="([0-9.]+)" y1="([0-9.]+)" x2="([0-9.]+)" y2="([0-9.]+)" class="grid-line"/g;
+    var doc=[],ngang=[],m;
+    while((m=re.exec(svg))){
+      if(m[1]===m[3])doc.push(parseFloat(m[1]));
+      else if(m[2]===m[4])ngang.push(parseFloat(m[2]));
+    }
+    if(doc.length<2||ngang.length<2)return 'Không đọc được lưới (dọc '+doc.length+', ngang '+ngang.length+')';
+    doc.sort(function(a,b){return a-b});ngang.sort(function(a,b){return a-b});
+    var bd=doc[1]-doc[0],bn=ngang[1]-ngang[0];
+    return Math.abs(bd-bn)<0.5
+      ||'Ô lưới vẫn là chữ nhật: bước dọc '+bd.toFixed(1)+' px, bước ngang '+bn.toFixed(1)+' px';
+  });
+
+  await T('Đọc được mốc bảng biến thiên viết bằng LaTeX',function(){
+    /* Ảnh 4: mốc là \dfrac{3-\sqrt3}{3}, Number() trả NaN nên khung rơi về [-5;5] và
+       đồ thị bậc ba bẹp thành một nét ngang trên trục tung -160..60. */
+    var g=graphFromVariation({expr:'x^3-3x^2+2x+1',
+      points:['-\\infty','\\dfrac{3-\\sqrt3}{3}','\\dfrac{3+\\sqrt3}{3}','+\\infty']});
+    if(!g)return 'Không dựng được đồ thị';
+    if(g.xMin<-2||g.xMax>4.5)return 'Khung hoành độ vẫn quá rộng: ['+g.xMin+'; '+g.xMax+']';
+    return (g.yMax-g.yMin)<6||'Khung tung độ vẫn quá rộng: '+(g.yMax-g.yMin)+' đơn vị';
+  });
+
+  await T('Nhãn đồ thị bỏ dấu nhân theo lối viết SGK',function(){
+    var g=graphFromVariation({expr:'x^3-3x^2+2x+1',funcLabel:'y = x^3-3*x^2+2*x+1',points:['0','1']});
+    return g.title.indexOf('*')<0||'Nhãn vẫn còn dấu nhân: '+g.title;
+  });
+
+  await T('Ảnh đồ thị trong Word giữ đúng tỉ lệ, không bị kéo méo',async function(){
+    var md=BASE+'\n```mathviz\n{"type":"graph","title":"y=x^2","xMin":-3.5,"xMax":3.5,"yMin":-1,"yMax":12,"functions":[{"expr":"x^2"}]}\n```\n';
+    var d=(await buildDocxParts(md,'kiểm tra'))['word/document.xml'];
+    var m=/cx="(\d+)" cy="(\d+)"/.exec(d);
+    if(!m)return 'Không nhúng được ảnh đồ thị vào tệp Word';
+    var svg=buildGraphSVG({xMin:-3.5,xMax:3.5,yMin:-1,yMax:12,functions:[{expr:'x^2'}]});
+    var vb=/viewBox="0 0 ([0-9.]+) ([0-9.]+)"/.exec(svg);
+    var tWord=(+m[2])/(+m[1]), tAnh=(+vb[2])/(+vb[1]);
+    return Math.abs(tWord-tAnh)<0.01
+      ||'Tỉ lệ trong Word ('+tWord.toFixed(3)+') khác tỉ lệ ảnh ('+tAnh.toFixed(3)+') — ô lưới sẽ méo';
+  });
+
+  await T('Chặn mục Năng lực AI ghi "không tích hợp trong bài này"',function(){
+    /* Ảnh 2: giáo viên khoanh đúng dòng đó và ghi "lỗi" — quy định là bài nào cũng phải
+       có nội dung năng lực AI. b17 lại coi câu từ chối này là hợp lệ. */
+    document.getElementById('includeAI').checked=true;
+    try{
+      var md=plan([4],11,'\n## NĂNG LỰC AI (NLAI)\n- Không tích hợp trong bài này.\n')
+        +'\n## ĐIỀU CHỈNH SAU BÀI DẠY\n...\n';
+      var r=validatePlan(md,V,true);
+      return r.blockers.join(' ').indexOf('không tích hợp trong bài này')>=0
+        ||'Không chặn. Các mục chặn: '+r.blockers.join(' | ');
+    }finally{document.getElementById('includeAI').checked=false}
   });
 
   /* ---------- Các phép kiểm tra thêm ở b17 (lấy từ bản in giáo viên rà bút đỏ) ---------- */

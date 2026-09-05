@@ -95,3 +95,8 @@ input:focus-visible, select:focus-visible, textarea:focus-visible {
 .mathviz mjx-assistive-mml,
 .mathviz .MJX_Assistive_MathML,
 .document foreignObject mjx-assistive-mml { display: none !important; }
+
+/* b18 — Đồ thị tự sinh từ bảng biến thiên nay là một khung RIÊNG đặt ngay bên dưới bảng,
+   theo đề nghị của giáo viên: "cắt ra làm 2 khung để đồ thị không bị co lại". */
+.mathviz-graph{margin-top:10px}
+.mathviz-graph svg{width:100%;height:auto;display:block}

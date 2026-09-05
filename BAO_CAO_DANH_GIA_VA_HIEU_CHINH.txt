@@ -1,5 +1,5 @@
 BÁO CÁO ĐÁNH GIÁ VÀ HIỆU CHỈNH TRỢ LÝ KHBD
-Phiên bản rà soát: 2026-09-05 · b17 (soát b15, rồi soát tiếp theo bản in giáo viên)
+Phiên bản rà soát: 2026-09-05 · b18 (b15 → b16 → b17 → b18, mỗi vòng theo phản hồi thật)
 
 I. KẾT LUẬN NGẮN
 
@@ -228,5 +228,50 @@ D. CÒN LẠI TRONG BẢN IN, PHẦN MỀM CHƯA XỬ LÝ ĐƯỢC
 - "5e^{-t}" bị mất phần mũ thành "5e − t" ở bài 1.9. Nếu AI trả về đã mất ngoặc mũ thì
   không thể khôi phục chắc chắn được; hiện chỉ chặn gián tiếp qua phép kiểm cân đối ngoặc.
 - Bộ kiểm tra nay có 81 phép (80 đạt + 1 bỏ qua ngoài trình duyệt).
+
+X. ĐỢT SỬA b18 — BỐN ẢNH CHỤP MÀN HÌNH VÀ BẢN IN CỦA GIÁO VIÊN
+
+X0. TỰ PHÊ TRƯỚC: b17 GÂY RA MỘT LỖI MỚI.
+Phép kiểm "ngoặc không cân đối" mà tôi thêm ở b17 đếm riêng "(" với ")" và "[" với "]".
+Nhưng NỬA KHOẢNG là cách viết chuẩn của SGK: $(0; 2]$, $[0; +\infty)$, $(-\infty; 1]$.
+Cả ba đều bị báo sai. Ảnh chụp màn hình cho thấy hậu quả: dòng "5 công thức có dấu ngoặc
+không cân đối" và nút xuất Word bị KHOÁ trên một bản kế hoạch không hề sai chỗ đó. Đây
+đúng là loại lỗi tệ nhất mà một bộ kiểm định có thể mắc — chặn người dùng vì cái đúng.
+Nguyên nhân sâu xa: ở b17 tôi chỉ thử phép kiểm này trên các ví dụ SAI lấy từ bản in, mà
+không thử trên các ví dụ ĐÚNG. Nay đã bổ sung phép kiểm ngược cho cả 7 hạng mục mới.
+Cách sửa: ngoặc tròn và ngoặc vuông coi như cùng một loại; vẫn bắt đúng thiếu và thừa
+dấu đóng.
+
+X1. Ô LƯỚI PHẢI VUÔNG (ảnh 1 — "quy ước 1 ô = 1 đơn vị cả trục tung và trục hoành").
+Bản cũ ép khung vẽ vào khung ảnh cố định 760×390 rồi kéo giãn hai trục ĐỘC LẬP, nên đồ
+thị y=x² có trục hoành chia 0,5 một ô còn trục tung chia 1 một ô. Parabol bẹp ngang,
+không giống Hình 1.2 SGK. Nay một hệ số quy đổi dùng chung cho hai trục, chiều cao khung
+ảnh tự co giãn, một bước chia duy nhất. Đo lại: bước lưới dọc và ngang lệch nhau dưới
+0,5 px trên cả ba dạng đồ thị thử.
+
+X2. MỐC BẢNG BIẾN THIÊN VIẾT BẰNG LaTeX (ảnh 4 — đồ thị bậc ba vẽ trên trục tung
+-160..60, đường cong bẹp thành một nét ngang).
+Mốc gần như luôn là \dfrac{3-\sqrt3}{3} chứ không phải "0.42". Number() trả NaN, nên
+b17 coi như KHÔNG CÓ mốc nào, rơi về khung mặc định [-5; 5] rồi lấy phân vị mẫu — mà tại
+x=-5 hàm bậc ba đã là -209. Nay dùng chính bộ đọc biểu thức của phần mềm (đã viết lại ở
+b16) để tính mốc ra số; bổ sung luôn dạng \sqrt3 viết tắt không ngoặc.
+Đo lại: khung từ [-5; 5]×[-175,65; 71,81] thu về [-0,58; 2,58]×[-0,38; 2,38].
+
+X3. ĐỒ THỊ TÁCH KHỎI BẢNG BIẾN THIÊN (ảnh 4 — "cắt ra làm 2 khung để đồ thị không bị co
+lại"). Nay đồ thị là một khung riêng đặt ngay dưới bảng, chiếm trọn bề ngang.
+
+X4. "KHÔNG TÍCH HỢP TRONG BÀI NÀY" LÀ SAI (ảnh 2 — giáo viên khoanh đúng dòng đó, ghi
+"lỗi", và ghi thêm: quy định là bài nào cũng phải có năng lực AI).
+Đây là chỗ tôi hiểu sai quy định ở b17: tôi đã tự thiết kế một lối thoát cho AI. Nay bỏ
+hẳn — bật tích hợp NLAI thì phải nêu mã thật theo Quyết định 2422 kèm hành vi quan sát
+được, và mã đó phải gắn vào ít nhất một bước dạy học.
+
+X5. Nhãn đồ thị bỏ dấu nhân theo lối viết SGK; tệp Word đọc đúng tỉ lệ ảnh mới nên hình
+không bị kéo méo (đã đo: tỉ lệ trong Word khớp tỉ lệ ảnh tới 3 chữ số thập phân).
+
+X6. Prompt bổ sung mục 12.6 và 12.7.
+
+Bộ kiểm tra: 88 phép (87 đạt + 1 bỏ qua ngoài trình duyệt), thêm 7 phép cho đợt này,
+trong đó có phép kiểm NGƯỢC để không tái diễn lỗi chặn oan.
 
 Đánh giá sau hiệu chỉnh: ĐẠT ĐỂ CHẠY THỬ CÓ KIỂM SOÁT.
