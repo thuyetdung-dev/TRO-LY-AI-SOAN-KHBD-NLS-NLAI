@@ -1,5 +1,5 @@
 TRỢ LÝ SOẠN KẾ HOẠCH BÀI DẠY 2026–2027
-BẢN CHUYÊN NGHIỆP – BƯỚC 4 · HIỆU CHỈNH b18
+BẢN CHUYÊN NGHIỆP – BƯỚC 4 · HIỆU CHỈNH b19
 
 ================================================================
 ĐIỀU KIỆN CẦN
@@ -137,7 +137,7 @@ XỬ LÝ SỰ CỐ THƯỜNG GẶP
 TỰ KIỂM TRA SAU KHI SỬA MÃ
 ================================================================
 Mở tệp test.html bằng Chrome hoặc Edge rồi bấm "Chạy kiểm tra". Trang
-này chạy 88 phép kiểm tra trên đúng các tệp đang nằm trong thư mục,
+này chạy 95 phép kiểm tra trên đúng các tệp đang nằm trong thư mục,
 không phải trên bản sao, nên kết quả phản ánh đúng tình trạng thật.
 
 - Toàn bộ xanh: phần mềm còn lành, dùng được.
@@ -288,3 +288,38 @@ Mục 1 là một lỗi do CHÍNH BẢN b17 gây ra.
 
 7. Prompt bổ sung hai quy tắc: năng lực AI là bắt buộc, và trường expr
    của bảng biến thiên phải là biểu thức thuần không có dấu nhân.
+
+================================================================
+NHỮNG THAY ĐỔI CỦA b19 (so với b18) — VÒNG SỬA CUỐI
+================================================================
+Căn cứ: bản in Bài 4 "Khảo sát sự biến thiên và vẽ đồ thị của hàm số".
+
+1. BẢNG BIẾN THIÊN NAY XUẤT RA TỆP WORD DƯỚI DẠNG ẢNH, đúng đề nghị
+   "BBT nên ở dạng ảnh như đồ thị thì không bị lỗi". Ô bảng Word không
+   bao giờ vẽ đúng được bảng biến thiên: mũi tên phải nằm CHÉO giữa hai
+   mốc, vạch đôi phải cắt dọc cả ba hàng, bề rộng các khoảng phải tỉ lệ.
+   Nay bảng được vẽ như một hình, có mũi tên chéo thật và vạch đôi thật.
+   Nếu vì lý do nào đó không dựng được ảnh, phần mềm tự quay về bảng ô
+   như cũ — không bao giờ mất nội dung.
+
+2. SỬA MỘT LỖI DO b18 GÂY RA. Hàm y = -2x³+3x²-5x đơn điệu nên bảng biến
+   thiên chỉ có -∞ và +∞, không có mốc nào. b18 rơi về khung [-5; 5], mà
+   miền giá trị khi đó trải hơn 500 đơn vị; do hai trục dùng chung một hệ
+   số quy đổi, vùng vẽ bị ép còn ĐÚNG 8,5 PIXEL bề ngang — chính cái vạch
+   dọc trong bản in. Nay hàm đơn điệu được lấy điểm uốn làm tâm khung, và
+   khung vẽ luôn lấp đầy khổ giấy.
+
+3. Ô LƯỚI VẪN LUÔN VUÔNG, nhưng theo hai chế độ. Hai miền chênh nhau
+   không quá 4 lần thì một bước chia dùng chung cho cả hai trục, tức
+   1 ô = 1 đơn vị như thầy cô yêu cầu. Chênh quá nhiều (hàm dốc) thì mỗi
+   trục một bước chia riêng, ô vẫn vuông và số trên trục nói rõ mỗi ô là
+   bao nhiêu đơn vị — giống hệt cách SGK nén trục tung.
+
+4. ĐỒ THỊ NAY CÓ HỆ TRỤC Oxy ĐẦY ĐỦ: mũi tên ở đầu mỗi trục và các chữ
+   O, x, y — đúng chỗ thầy cô đã vẽ tay bổ sung lên bản in.
+
+5. Nhãn đồ thị bỏ nốt cặp dấu sao kiểu markdown mà AI hay bọc quanh
+   ("*y = -2*x^3...*" nay thành "y = -2x^3+3x^2-5x").
+
+6. Chặn mã mục tiêu được dùng nhưng chưa định nghĩa: bản in có ma trận
+   ghi MT6, MT7, MT8, MT9 trong khi mục Mục tiêu chỉ khai tới MT6.

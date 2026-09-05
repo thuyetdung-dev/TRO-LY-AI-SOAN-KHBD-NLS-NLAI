@@ -115,12 +115,12 @@ h2{font-size:.82rem;letter-spacing:.09em;text-transform:uppercase;color:var(--mu
 })();
 </script>
 
-<script src="standards.js?v=b18"></script>
-<script src="app.js?v=b18"></script>
-<script src="flow.js?v=b18"></script>
-<script src="professional.js?v=b18"></script>
+<script src="standards.js?v=b19"></script>
+<script src="app.js?v=b19"></script>
+<script src="flow.js?v=b19"></script>
+<script src="professional.js?v=b19"></script>
 <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
-<script src="docx-export.js?v=b18"></script>
+<script src="docx-export.js?v=b19"></script>
 
 <script>
 (function(){
@@ -520,13 +520,21 @@ async function runAll(){
           rows.push(c);}}
       rows.forEach(function(c){if(c!==grid)lech.push('bảng '+(n+1)+': '+c+'≠'+grid)});
     });
-    if(tbls.length<2)return 'Chỉ dựng được '+tbls.length+'/2 bảng';
+    /* b19: bảng BIẾN THIÊN nay xuất ra dạng ảnh theo yêu cầu của giáo viên, nên chỉ còn
+       bảng XÉT DẤU là bảng Word. Phép kiểm chuyển sang: 1 bảng + 1 ảnh, không lệch cột. */
+    if(tbls.length<1)return 'Không dựng được bảng xét dấu';
+    if(!/<w:drawing>/.test(parts['word/document.xml']))return 'Bảng biến thiên chưa xuất ra dạng ảnh';
     return lech.length===0||'Lệch cột: '+lech.join(', ');
   });
 
   await T('xMin bằng 0 không bị hiểu nhầm thành -5',function(){
+    /* b19 nới nhẹ khung cho hình lấp đầy khổ giấy, nên có thể lấn sang miền âm một chút;
+       điều phải giữ là KHÔNG rơi về khung mặc định [-5; 5]. */
     var s=buildGraphSVG({xMin:0,xMax:4,yMin:0,yMax:16,functions:[{expr:'x^2'}]});
-    return !/class="tick">-/.test(s)||'Vẫn vẽ miền âm — số 0 đang bị coi là giá trị rỗng';
+    var t=(s.match(/class="tick">(-?[0-9,]+)</g)||[]).map(function(m){
+      return parseFloat(m.replace(/[^0-9,\-]/g,'').replace(',','.'))});
+    var min=Math.min.apply(null,t);
+    return min>-2||'Khung vẫn rơi về miền âm sâu (tick nhỏ nhất '+min+') — số 0 đang bị coi là giá trị rỗng';
   });
 
   await T('Hai đồ thị trong cùng bài không dùng chung id vùng cắt',function(){
@@ -702,6 +710,76 @@ async function runAll(){
       'themeBtn','sampleBtn','clearDraftBtn','resultActions','lessonForm'];
     var thieu=ids.filter(function(i){return !document.getElementById(i)});
     return thieu.length===0||'Thiếu: '+thieu.join(', ');
+  });
+
+  /* ---------- b19: bản in Bài 4 (Khảo sát và vẽ đồ thị hàm số) ---------- */
+  group('b19 — Bảng biến thiên dạng ảnh, khung đồ thị, hệ trục Oxy');
+
+  await T('Hàm đơn điệu không còn bị bóp thành một vạch dọc',function(){
+    /* Bản in: y = -2x³+3x²-5x không có cực trị, b18 rơi về khung [-5;5] rồi hệ số chung bị
+       miền tung độ ép xuống, vùng vẽ còn 8,5 pixel bề ngang. */
+    var g=graphFromVariation({expr:'-2x^3+3x^2-5x',points:['-\\infty','+\\infty']});
+    var svg=buildGraphSVG(g);
+    var m=/<rect x="[0-9.]+" y="[0-9.]+" width="([0-9.]+)" height="([0-9.]+)" class="plot-bg"/.exec(svg);
+    if(!m)return 'Không đọc được vùng vẽ';
+    var w=parseFloat(m[1]);
+    return w>200||'Vùng vẽ chỉ rộng '+w.toFixed(0)+' px — đồ thị vẫn là một vạch dọc';
+  });
+
+  await T('Ô lưới vẫn vuông kể cả khi hai miền chênh nhau rất nhiều',function(){
+    var svg=buildGraphSVG({xMin:-5,xMax:5,yMin:-200,yMax:306,functions:[{expr:'-2x^3+3x^2-5x'}]});
+    var doc=[],ngang=[],m,re=/<line x1="([0-9.]+)" y1="([0-9.]+)" x2="([0-9.]+)" y2="([0-9.]+)" class="grid-line"/g;
+    while((m=re.exec(svg))){if(m[1]===m[3])doc.push(+m[1]);else if(m[2]===m[4])ngang.push(+m[2])}
+    doc.sort(function(a,b){return a-b});ngang.sort(function(a,b){return a-b});
+    if(doc.length<2||ngang.length<2)return 'Không đọc được lưới';
+    return Math.abs((doc[1]-doc[0])-(ngang[1]-ngang[0]))<0.5
+      ||'Ô lưới thành chữ nhật: '+(doc[1]-doc[0]).toFixed(1)+' và '+(ngang[1]-ngang[0]).toFixed(1);
+  });
+
+  await T('Đồ thị có hệ trục Oxy với mũi tên và nhãn O, x, y',function(){
+    var svg=buildGraphSVG({xMin:-3,xMax:3,yMin:-2,yMax:6,functions:[{expr:'x^2'}]});
+    if(!/marker-end="url\(#ar/.test(svg))return 'Trục chưa có mũi tên';
+    var nhan=(svg.match(/class="axis-name">([Oxy])</g)||[]).length;
+    return nhan===3||'Thiếu nhãn trục (chỉ thấy '+nhan+'/3 chữ O, x, y)';
+  });
+
+  await T('Đổi được nhãn LaTeX của bảng biến thiên sang chữ thường',function(){
+    var c=[['-\\infty','-∞'],['\\dfrac{3-\\sqrt3}{3}','(3-√3)/3'],['-\\dfrac{5}{4}','-5/4'],['x^2','x²']];
+    for(var i=0;i<c.length;i++){
+      var r=texToPlain(c[i][0]);
+      if(r!==c[i][1])return c[i][0]+' cho ra "'+r+'", mong đợi "'+c[i][1]+'"';
+    }
+    return true;
+  });
+
+  await T('Bảng biến thiên dựng được dạng ảnh, không dùng foreignObject',function(){
+    /* Giáo viên đề nghị BBT để dạng ảnh như đồ thị. Bản trên màn hình dùng foreignObject
+       nên trình duyệt không đổi sang PNG được — phải có một bản riêng chỉ dùng <text>. */
+    var svg=buildVariationPrintSVG({points:['-\\infty','1','2','3','+\\infty'],
+      derivative:['-','0','+','‖','+','0','-'],
+      values:['+\\infty','3',{left:'+\\infty',right:'-\\infty'},'-1','-\\infty']});
+    if(!svg)return 'Không dựng được bảng biến thiên dạng ảnh';
+    if(/foreignObject/.test(svg))return 'Vẫn còn foreignObject — trình duyệt sẽ không đổi sang PNG được';
+    return /<path[^>]*class="bbt-a"/.test(svg)||'Thiếu mũi tên chiều biến thiên';
+  });
+
+  await T('Tệp Word nhận bảng biến thiên là ảnh, không phải bảng ô',async function(){
+    var md=BASE+'\n```mathviz\n'+JSON.stringify({type:'variation',title:'BBT',expr:'x^3-3x+1',
+      points:['-\\infty','-1','1','+\\infty'],derivative:['+','0','-','0','+'],
+      values:['-\\infty','3','-1','+\\infty']})+'\n```\n';
+    var parts=await buildDocxParts(md,'kiểm tra');
+    var d=parts['word/document.xml'];
+    var anh=(d.match(/<w:drawing>/g)||[]).length;
+    if(anh<2)return 'Chỉ nhúng được '+anh+' ảnh, mong đợi 2 (bảng biến thiên và đồ thị)';
+    return !/<w:tbl>/.test(d)||'Bảng biến thiên vẫn xuất ra dạng bảng ô Word';
+  });
+
+  await T('Chặn mã mục tiêu được dùng nhưng chưa định nghĩa',function(){
+    /* Bản in: ma trận liên kết ghi MT6, MT7, MT8, MT9 trong khi mục Mục tiêu chỉ tới MT6. */
+    var md=plan([4],11,'\n| MT7, MT8 | HĐ5 | SP9 | TC9 |\n')+'\n## ĐIỀU CHỈNH SAU BÀI DẠY\n...\n';
+    var r=validatePlan('- MT1: Nhận biết được điều thứ nhất.\n'+md,V,true);
+    return r.blockers.join(' ').indexOf('không được định nghĩa ở mục I. Mục tiêu')>=0
+      ||'Không chặn. Các mục chặn: '+r.blockers.join(' | ');
   });
 
   /* ---------- b18: bốn ảnh chụp màn hình và bản in giáo viên gửi kèm ---------- */

@@ -1,5 +1,5 @@
 BÁO CÁO ĐÁNH GIÁ VÀ HIỆU CHỈNH TRỢ LÝ KHBD
-Phiên bản rà soát: 2026-09-05 · b18 (b15 → b16 → b17 → b18, mỗi vòng theo phản hồi thật)
+Phiên bản rà soát: 2026-09-05 · b19 (b15 → b16 → b17 → b18 → b19, mỗi vòng theo phản hồi thật)
 
 I. KẾT LUẬN NGẮN
 
@@ -273,5 +273,53 @@ X6. Prompt bổ sung mục 12.6 và 12.7.
 
 Bộ kiểm tra: 88 phép (87 đạt + 1 bỏ qua ngoài trình duyệt), thêm 7 phép cho đợt này,
 trong đó có phép kiểm NGƯỢC để không tái diễn lỗi chặn oan.
+
+XI. ĐỢT SỬA b19 — BẢN IN BÀI 4, VÒNG CUỐI
+
+XI0. LẠI MỘT LỖI DO VÒNG TRƯỚC GÂY RA.
+b18 ép hai trục dùng chung một hệ số quy đổi để ô lưới thành hình vuông. Với hàm
+y = -2x³+3x²-5x — đơn điệu, bảng biến thiên chỉ có -∞ và +∞, không mốc nào — khung rơi về
+[-5; 5], miền giá trị trải hơn 500 đơn vị, hệ số chung bị miền tung độ ép xuống 0,86
+px/đơn vị và VÙNG VẼ CÒN 8,5 PIXEL BỀ NGANG. Đó là cái vạch dọc trong bản in.
+Bài học rút ra sau hai vòng liên tiếp mắc lỗi kiểu này: mỗi khi thêm một ràng buộc hình
+học hay một phép kiểm định, phải thử ngay trên các trường hợp BIÊN (hàm không cực trị,
+nửa khoảng, miền lệch nhau hàng trăm lần), không chỉ trên các ví dụ đã có sẵn.
+Cách sửa gồm ba phần:
+ - Hàm đơn điệu: lấy điểm uốn làm tâm khung thay vì mặc định [-5; 5].
+ - Nới chiều hẹp hơn (tối đa 1,8 lần) để hình lấp đầy khổ giấy — chỉ mở rộng tầm nhìn,
+   không bao giờ cắt bớt nội dung. Đây cũng là chỗ thầy cô ghi "đồ thị nên to ra ở trục
+   hoành" cho đồ thị y=(x+1)/(x-2).
+ - Hai chế độ chia độ: chênh không quá 4 lần thì một bước chia chung (1 ô = 1 đơn vị trên
+   cả hai trục); chênh nhiều hơn thì mỗi trục một bước riêng nhưng Ô VẪN VUÔNG, đúng cách
+   SGK nén trục tung cho hàm dốc.
+Đo lại vùng vẽ: 8,5 px → 352 px (hàm đơn điệu); các đồ thị khác 334–498 px trên 672 px khả
+dụng, ô lưới vuông tuyệt đối trên cả bốn dạng thử.
+
+XI1. BẢNG BIẾN THIÊN XUẤT RA WORD DƯỚI DẠNG ẢNH (đề nghị trực tiếp của thầy cô).
+Ô bảng Word về nguyên tắc không vẽ đúng được bảng biến thiên: mũi tên phải nằm CHÉO giữa
+hai mốc, vạch đôi phải cắt dọc cả ba hàng, bề rộng các khoảng phải tỉ lệ với nhau. Ba việc
+đó nằm ngoài khả năng của một bảng ô.
+Một trở ngại kỹ thuật đáng ghi lại: KHÔNG dùng lại được hình trên màn hình, vì hình đó
+dựng nhãn bằng <foreignObject> để MathJax vẽ công thức, mà trình duyệt từ chối vẽ
+foreignObject lên canvas nên không đổi sang PNG được. Vì vậy b19 dựng một bản riêng chỉ
+dùng <text>, kèm bộ đổi LaTeX sang ký tự Unicode cho các nhãn ngắn của bảng biến thiên
+(-∞, (3-√3)/3, -5/4, x²...). Hỏng thì tự quay về bảng ô như cũ, không bao giờ mất nội dung.
+
+XI2. HỆ TRỤC Oxy. Thầy cô vẽ tay bổ sung mũi tên và các chữ O, x, y lên hai bản in — nghĩa
+là thiếu chúng thì hình chưa đọc được như một đồ thị. Nay đã có đủ.
+
+XI3. Nhãn đồ thị bỏ nốt cặp dấu sao kiểu markdown mà AI bọc quanh nhãn.
+
+XI4. Chặn mã mục tiêu dùng mà chưa định nghĩa: bản in có ma trận liên kết ghi
+"MT6, MT7, MT8, MT9" trong khi mục I chỉ khai tới MT6 — ba mã trỏ vào chỗ trống.
+
+Bộ kiểm tra: 95 phép (94 đạt + 1 bỏ qua ngoài trình duyệt), thêm 7 phép cho vòng này.
+
+XII. VIỆC CÒN LẠI SAU NĂM VÒNG SỬA
+Ba giới hạn ở mục V vẫn nguyên: nội dung sửa tay trên màn hình chưa vào được tệp Word;
+tệp nguồn tải lên lại mỗi lần soạn; validatePlan còn đọc thẳng trạng thái ô nhập. Ngoài ra
+phần mềm vẫn không đối chiếu chéo được nội dung do AI viết ở hai chỗ khác nhau (ví dụ tiêu
+đề hình ghi một hàm còn chú thích dưới hình ghi hàm khác). Những việc đó nên làm thành một
+đợt riêng, có kiểm thử riêng, chứ không nên ghép vào một vòng sửa gấp.
 
 Đánh giá sau hiệu chỉnh: ĐẠT ĐỂ CHẠY THỬ CÓ KIỂM SOÁT.

@@ -1,7 +1,7 @@
 /* Mốc phiên bản — hiện ngay trên thanh tiêu đề. Sau nhiều vòng sửa, đã có lần trang web
    chạy bản cũ mà cả hai bên đều tưởng là bản mới, mất công đi tìm lỗi đã sửa xong rồi.
    Nhìn dòng chữ trên đầu trang là biết ngay đang chạy bản nào. */
-const APP_BUILD='2026-09-05 · b18';
+const APP_BUILD='2026-09-05 · b19';
 const $=id=>document.getElementById(id);let selectedFiles=[],rawMarkdown='',availableModels=[],scanTimer,draftTimer,lastValidation=null;
 const fields=['subject','grade','lesson','book','periods','students','classSize','equipment','notes','tableLayout','assessmentMode','lessonTemplate','sourceMode'];
 const toast=m=>{const t=$('toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2600)};
@@ -555,7 +555,10 @@ function coerceLen(arr,n,fill){arr=Array.isArray(arr)?arr.slice():[];while(arr.l
    là phần mềm vẽ luôn đồ thị bên dưới — bớt được một việc mà mô hình hay quên. */
 /* Nhãn hiển thị: bỏ dấu * mà AI hay chèn ("x^3-3*x^2+2*x+1"), vì SGK không viết dấu nhân
    giữa hệ số và biến. */
-const nhanGon=t=>String(t||'').replace(/([0-9a-zA-Z)\}])\s*\*\s*(?=[0-9a-zA-Z(\\])/g,'$1');
+/* Nhãn hiển thị: bỏ cặp *...* kiểu markdown mà AI hay bọc quanh nhãn (bản in hiện ra
+   nguyên hai dấu sao), rồi bỏ dấu nhân giữa hệ số và biến vì SGK không viết dấu đó. */
+const nhanGon=t=>String(t||'').trim().replace(/^\*+|\*+$/g,'')
+  .replace(/([0-9a-zA-Z)\}])\s*\*\s*(?=[0-9a-zA-Z(\\])/g,'$1').trim();
 function graphFromVariation(spec){
   const expr=String(spec.expr||'').trim();
   if(!expr)return null;
@@ -582,15 +585,28 @@ function graphFromVariation(spec){
         rồi bộ tự nới lại kéo lên theo giá trị ở rìa.
      Nay: đệm trục hoành theo tỉ lệ, và tính thẳng giá trị hàm TẠI CÁC ĐIỂM CỰC TRỊ để lấy
      miền tung độ — không phụ thuộc vào cách AI viết phân số nữa. */
-  let xMin=-5,xMax=5;
+  let xMin=-5,xMax=5,f0=null;
+  try{f0=compileExpr(expr)}catch(_){}
+  /* b19: hàm ĐƠN ĐIỆU (bảng biến thiên chỉ có -∞ và +∞) thì không có mốc nào, b18 rơi về
+     [-5; 5] — với y = -2x³+3x²-5x thì miền giá trị trải hơn 500 đơn vị và đồ thị thành một
+     vạch dọc trong bản in. Nay lấy điểm uốn làm tâm và chỉ nhìn quanh đó vài đơn vị. */
+  if(!nums.length&&f0){
+    const dd=x=>{const h=1e-3;return (f0(x+h)-2*f0(x)+f0(x-h))/(h*h)};
+    let tam=0,truoc=null;
+    for(let x=-6;x<=6;x+=0.25){const v=dd(x);
+      if(!Number.isFinite(v))continue;
+      if(Math.abs(v)<1e-9){tam=x;break}
+      if(truoc!==null&&truoc*v<0){tam=x-0.125;break}
+      truoc=v}
+    xMin=tam-2.5;xMax=tam+2.5;
+  }
   if(nums.length){
     const lo=Math.min(...nums),hi=Math.max(...nums),span=hi-lo;
     const pad=Math.max(span*0.55,1);
     xMin=lo-pad;xMax=hi+pad;
     if(span===0){xMin=lo-3;xMax=lo+3}
   }
-  let yMin=-5,yMax=5,f=null;
-  try{f=compileExpr(expr)}catch(_){}
+  let yMin=-5,yMax=5;const f=f0;
   if(f){
     const moc=[];
     nums.forEach(x=>{const y=f(x);if(Number.isFinite(y))moc.push(y)});
@@ -652,6 +668,130 @@ function buildSignSVG(spec){
     `<line x1="${xAt(i)+3}" y1="${padTop+2}" x2="${xAt(i)+3}" y2="${H-10}" class="vt-discontinuity"/>`});
   return svg+'</svg>';
 }
+/* ===== Bảng biến thiên dạng ẢNH để đưa vào tệp Word (thêm ở b19) =====
+
+   VÌ SAO: giáo viên khoanh nguyên bảng biến thiên trong tệp Word và ghi "BBT xuất ra dạng
+   Word bị lỗi — đề nghị BBT nên ở dạng ảnh như đồ thị thì không bị lỗi". Bảng biến thiên
+   dựng bằng ô bảng Word không bao giờ ra đúng: mũi tên phải nằm CHÉO giữa hai mốc, vạch
+   đôi phải cắt dọc cả ba hàng, và chiều rộng các khoảng phải tỉ lệ — ô bảng không làm được
+   ba việc đó.
+
+   VÌ SAO KHÔNG DÙNG LẠI ẢNH TRÊN MÀN HÌNH: bản trên màn hình dựng nhãn bằng <foreignObject>
+   để MathJax vẽ công thức. Trình duyệt TỪ CHỐI vẽ foreignObject lên canvas, nên không thể
+   đổi sang PNG. Vì vậy ở đây dựng một bản riêng chỉ dùng <text>, kèm bộ đổi LaTeX sang ký
+   tự Unicode cho các nhãn ngắn thường gặp trong bảng biến thiên. */
+
+const SIEU_SO={'0':'⁰','1':'¹','2':'²','3':'³','4':'⁴','5':'⁵','6':'⁶','7':'⁷','8':'⁸','9':'⁹','+':'⁺','-':'⁻','n':'ⁿ'};
+const DUOI_SO={'0':'₀','1':'₁','2':'₂','3':'₃','4':'₄','5':'₅','6':'₆','7':'₇','8':'₈','9':'₉'};
+const KY_HIEU={infty:'∞',pm:'±',mp:'∓',times:'×',cdot:'·',to:'→',rightarrow:'→',
+  alpha:'α',beta:'β',gamma:'γ',delta:'δ',Delta:'Δ',theta:'θ',lambda:'λ',mu:'μ',pi:'π',
+  sigma:'σ',omega:'ω',varphi:'φ',phi:'φ',le:'≤',ge:'≥',leq:'≤',geq:'≥',ne:'≠',neq:'≠',
+  approx:'≈',in:'∈',notin:'∉',cup:'∪',cap:'∩',setminus:'∖',backslash:'∖',
+  varnothing:'∅',emptyset:'∅',forall:'∀',exists:'∃',sqrt:'√',mathbb:'',mathrm:'',text:''};
+
+/* Đổi một nhãn LaTeX ngắn sang chuỗi ký tự thường, đủ dùng cho ô của bảng biến thiên. */
+function texToPlain(t){
+  let s=String(t??'').trim();
+  if(!s)return '';
+  s=s.replace(/^\$+|\$+$/g,'');
+  if(typeof repairLatex==='function')s=repairLatex(s);
+  s=s.replace(/\\left|\\right|\\,|\\;|\\!|\\quad|\\qquad/g,'');
+  for(let i=0;i<4;i++)
+    s=s.replace(/\\[dt]?frac\s*\{([^{}]*)\}\s*\{([^{}]*)\}/g,(m,a,b)=>
+      (/[+\-]/.test(a)?`(${a})`:a)+'/'+(/[+\-]/.test(b)?`(${b})`:b));
+  s=s.replace(/\\sqrt\s*\{([^{}]*)\}/g,(m,a)=>'√'+(/[+\-\/]/.test(a)?`(${a})`:a))
+     .replace(/\\sqrt\s*([0-9a-zA-Z])/g,'√$1');
+  s=s.replace(/\^\s*\{([^{}]*)\}|\^\s*([0-9a-zA-Z+\-])/g,(m,a,b)=>
+    [...(a||b)].map(c=>SIEU_SO[c]||c).join(''));
+  s=s.replace(/_\s*\{([^{}]*)\}|_\s*([0-9a-zA-Z])/g,(m,a,b)=>{
+    const t=a||b;return [...t].every(c=>DUOI_SO[c])?[...t].map(c=>DUOI_SO[c]).join(''):t});
+  s=s.replace(/\\([a-zA-Z]+)/g,(m,n)=>KY_HIEU[n]!==undefined?KY_HIEU[n]:n);
+  return s.replace(/[{}]/g,'').replace(/\s+/g,' ').trim();
+}
+
+/* Dựng bảng biến thiên bằng <text> và đường kẻ — đưa thẳng sang PNG được. */
+function buildVariationPrintSVG(spec){
+  const pts=(Array.isArray(spec.points)?spec.points:[]).map(texToPlain);
+  const N=pts.length;
+  if(N<2)return null;
+  const dau=(spec.derivative||[]).map(texToPlain);
+  const gt=(spec.values||[]).map(v=>(v&&typeof v==='object')
+    ?{left:texToPlain(v.left),right:texToPlain(v.right)}:texToPlain(v));
+  const doRong=Math.max(24,...pts.map(t=>t.length),
+    ...gt.map(v=>typeof v==='object'?Math.max(v.left.length,v.right.length):String(v).length));
+  const colNhan=64,khoang=Math.max(96,doRong*7);
+  const p=18,le=34;
+  const W=p*2+colNhan+le*2+khoang*(N-1);
+  const hX=40,hD=40,hY=86,H=p*2+hX+hD+hY+(spec.title?30:0);
+  const y0=p+(spec.title?30:0),y1=y0+hX,y2=y1+hD,y3=y2+hY;
+  const X=i=>p+colNhan+le+khoang*i;
+  const giua=i=>(X(i)+X(i+1))/2;
+  let g=`<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">`+
+    `<style>.bbt{font:16px/1 "Times New Roman",Georgia,serif;fill:#123252}`+
+    `.bbt-i{font:italic 16px/1 "Times New Roman",Georgia,serif;fill:#123252}`+
+    `.bbt-t{font:bold 15px/1 "Segoe UI",Arial,sans-serif;fill:#123252}`+
+    `.bbt-l{stroke:#123252;stroke-width:1.1;fill:none}`+
+    `.bbt-a{stroke:#176fa8;stroke-width:1.6;fill:none}</style>`+
+    `<rect width="${W}" height="${H}" fill="#ffffff"/>`;
+  if(spec.title)g+=`<text x="${W/2}" y="${p+16}" text-anchor="middle" class="bbt-t">${esc(texToPlain(spec.title))}</text>`;
+  /* Khung ngoài và hai đường kẻ ngang chia ba hàng x, y', y. */
+  g+=`<rect x="${p}" y="${y0}" width="${W-2*p}" height="${y3-y0}" class="bbt-l"/>`+
+     `<line x1="${p}" y1="${y1}" x2="${W-p}" y2="${y1}" class="bbt-l"/>`+
+     `<line x1="${p}" y1="${y2}" x2="${W-p}" y2="${y2}" class="bbt-l"/>`+
+     `<line x1="${p+colNhan}" y1="${y0}" x2="${p+colNhan}" y2="${y3}" class="bbt-l"/>`;
+  g+=`<text x="${p+colNhan/2}" y="${(y0+y1)/2+6}" text-anchor="middle" class="bbt-i">x</text>`+
+     `<text x="${p+colNhan/2}" y="${(y1+y2)/2+6}" text-anchor="middle" class="bbt-i">y'</text>`+
+     `<text x="${p+colNhan/2}" y="${(y2+y3)/2+6}" text-anchor="middle" class="bbt-i">y</text>`;
+  pts.forEach((t,i)=>g+=`<text x="${X(i)}" y="${(y0+y1)/2+6}" text-anchor="middle" class="bbt">${esc(t)}</text>`);
+  /* Hàng dấu: dấu trên các khoảng, còn 0 hoặc vạch đôi ngay tại mốc. */
+  /* Quy ước của mảng derivative: chỉ số CHẴN là dấu trên một khoảng, chỉ số LẺ là ký hiệu
+     ngay tại một mốc (số 0 hoặc vạch đôi). Tính nhầm chỗ này thì số 0 và vạch đôi trôi
+     sang giữa khoảng — đúng kiểu bảng biến thiên "bị lỗi" trong tệp Word. */
+  dau.forEach((t,i)=>{
+    if(!t)return;
+    const taiMoc=i%2===1;
+    const x=taiMoc?X((i+1)/2):giua(i/2);
+    if(t==='‖'||t==='||')g+=`<line x1="${x-2}" y1="${y1+6}" x2="${x-2}" y2="${y3-6}" class="bbt-l"/>`+
+      `<line x1="${x+2}" y1="${y1+6}" x2="${x+2}" y2="${y3-6}" class="bbt-l"/>`;
+    else g+=`<text x="${x}" y="${(y1+y2)/2+6}" text-anchor="middle" class="bbt">${esc(t)}</text>`;
+  });
+  /* Hàng giá trị: mốc ở hai mép, mũi tên chéo nối giữa — đúng lối vẽ của SGK. */
+  const cao=(v,i)=>{
+    const so=parseFloat(String(v).replace(',','.').replace('∞','Infinity').replace('−','-'));
+    return so;
+  };
+  const veGt=(v,i)=>{
+    const x=X(i);
+    if(v&&typeof v==='object'){
+      /* Tại điểm gián đoạn, giới hạn trái viết SÁT BÊN TRÁI vạch đôi và giới hạn phải sát
+         bên phải — viết chồng lên vạch như bản đầu thì đọc không ra. */
+      const tren=/^[+]?∞/.test(v.left)?y2+22:y3-12, duoi=/^[+]?∞/.test(v.right)?y2+22:y3-12;
+      g+=`<text x="${x-8}" y="${tren}" text-anchor="end" class="bbt">${esc(v.left)}</text>`+
+         `<text x="${x+8}" y="${duoi}" text-anchor="start" class="bbt">${esc(v.right)}</text>`;
+      return;
+    }
+    const t=String(v??'');
+    const tren=/^[+]?∞/.test(t),duoi=/^[−-]∞/.test(t);
+    const yy=tren?y2+22:duoi?y3-10:(y2+y3)/2+6;
+    g+=`<text x="${x}" y="${yy}" text-anchor="middle" class="bbt">${esc(t)}</text>`;
+  };
+  const mocY=i=>{
+    const v=gt[i];const t=(v&&typeof v==='object')?v.right:String(v??'');
+    return /^[+]?∞/.test(t)?y2+16:/^[−-]∞/.test(t)?y3-16:(y2+y3)/2;
+  };
+  const mocYTrai=i=>{
+    const v=gt[i];const t=(v&&typeof v==='object')?v.left:String(v??'');
+    return /^[+]?∞/.test(t)?y2+16:/^[−-]∞/.test(t)?y3-16:(y2+y3)/2;
+  };
+  for(let i=0;i<N-1;i++){
+    const a=X(i)+22,b=X(i+1)-22,ya=mocY(i),yb=mocYTrai(i+1);
+    if(b>a)g+=`<path d="M${a} ${ya} L${b} ${yb}" class="bbt-a" marker-end="url(#mb)"/>`;
+  }
+  g+=`<defs><marker id="mb" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,1 L10,5 L0,9 z" fill="#176fa8"/></marker></defs>`;
+  gt.forEach(veGt);
+  return g+'</svg>';
+}
+
 function buildVariationSVG(spec){
   const points=Array.isArray(spec.points)?spec.points:[];
   const N=points.length;
@@ -732,7 +872,7 @@ function snapNice(x){
 }
 /* Dựng nhãn đường thẳng theo lối viết của SGK: bỏ hệ số 1, gộp dấu, bỏ hạng tử 0. */
 function nhanDuongThang(a,b){
-  const he=a===1?'x':a===-1?'-x':`${a}x`;
+  const he=a===1?'x':a===-1?'-x':`${a}x.axis-name{font:italic 600 15px/1 'Times New Roman',Georgia,serif;fill:#123252}`;
   return b?`y=${he}${b>0?'+':'-'}${Math.abs(b)}`:`y=${he}`;
 }
 function inferAsymptotes(s){
@@ -784,52 +924,84 @@ function fitGraphYRange(s,x0,x1,y0,y1){
 function buildGraphSVG(s,opt){
   opt=opt||{};
   const num=(v,d)=>{const n=Number(v);return Number.isFinite(n)?n:d};
-  /* b18 — MỘT Ô LƯỚI PHẢI LÀ MỘT HÌNH VUÔNG, ĐÚNG NHƯ SGK.
-     Bản cũ ép khung vẽ vào một khung ảnh cố định 760×390 rồi kéo giãn hai trục ĐỘC LẬP.
-     Hệ quả: đồ thị y=x² có trục hoành chia 0,5 một ô còn trục tung chia 1 một ô, parabol
-     bị bẹp ngang và trông không giống Hình 1.2 SGK — đúng chỗ giáo viên khoanh đỏ và ghi
-     "quy ước 1 ô = 1 đơn vị cả trục tung và trục hoành".
-     Nay chọn MỘT hệ số quy đổi k (pixel trên một đơn vị) dùng chung cho cả hai trục, rồi
-     để chiều cao khung ảnh tự co giãn theo. Ô lưới luôn vuông, hình dạng đường cong luôn
-     đúng, và một bước chia dùng chung cho cả hai trục. */
-  const W=760,p=38,PLOT_H_MAX=430,PLOT_H_MIN=180;
+  /* ===== Bộ dựng khung vẽ (viết lại lần cuối ở b19) =====
+
+     b18 đã ép hai trục dùng chung MỘT hệ số quy đổi để ô lưới thành hình vuông. Đúng ý
+     "1 ô = 1 đơn vị", nhưng lại sinh ra một tai nạn: hàm y = -2x³+3x²-5x đơn điệu, miền
+     giá trị trải 500 đơn vị trong khi miền hoành độ chỉ 10 — hệ số chung bị miền tung độ
+     ép xuống 0,86 px/đơn vị, vùng vẽ còn ĐÚNG 8,5 PIXEL BỀ NGANG. Đó là cái vạch dọc
+     trong ảnh giáo viên chụp.
+
+     Bài toán thật ra là: không thể vừa giữ 1 đơn vị y = 1 đơn vị x, vừa có hình cân đối,
+     khi hệ số góc của hàm lên tới vài chục. SGK giải bằng cách nén trục tung lại và ghi
+     rõ số trên trục.
+     NAY làm đúng như vậy, theo hai chế độ:
+     - Hai miền chênh nhau không quá 4 lần → MỘT bước chia dùng chung, tức 1 ô = 1 đơn vị
+       (hoặc 2, 5...) trên CẢ HAI TRỤC. Đây là chế độ thường gặp: y=x², các hàm phân thức.
+     - Chênh quá 4 lần → mỗi trục một bước chia riêng, nhưng Ô LƯỚI VẪN LÀ HÌNH VUÔNG và
+       số trên trục nói rõ mỗi ô là bao nhiêu đơn vị. Hình luôn cân đối, không còn vạch dọc.
+     Thêm hệ trục Oxy có mũi tên và nhãn O, x, y đúng như giáo viên vẽ tay lên bản in. */
+  const W=760,p=44,PLOT_H_MAX=430,CELL_MIN=24;
   let x0=num(s.xMin,-5),x1=num(s.xMax,5),y0=num(s.yMin,-5),y1=num(s.yMax,5);
   if(x1<=x0){x0=-5;x1=5}
   if(y1<=y0){y0=-5;y1=5}
   ({y0,y1}=fitGraphYRange(s,x0,x1,y0,y1));
-  const k=Math.min((W-2*p)/(x1-x0),PLOT_H_MAX/(y1-y0));
-  /* Hàm rất "phẳng" thì nới thêm miền tung độ cho khung đỡ dẹt — vẫn giữ ô vuông vì chỉ
-     nới miền giá trị chứ không đụng tới hệ số quy đổi. */
-  if((y1-y0)*k<PLOT_H_MIN){const bu=(PLOT_H_MIN/k-(y1-y0))/2;y0-=bu;y1+=bu}
-  const plotW=(x1-x0)*k,plotH=(y1-y0)*k;
-  const H=Math.round(plotH)+2*p,L=p+((W-2*p)-plotW)/2,R=L+plotW,B=p+plotH;
-  const X=x=>L+(x-x0)*k,Y=y=>B-(y-y0)*k;
+  /* Nới chiều hẹp hơn cho hình lấp đầy khung, tối đa 1,8 lần — chỉ MỞ RỘNG tầm nhìn chứ
+     không bao giờ cắt bớt nội dung. Thiếu bước này thì đồ thị y=(x+1)/(x-2) chỉ chiếm 185
+     trên 672 pixel bề ngang, đúng chỗ giáo viên ghi "đồ thị nên to ra ở trục hoành". */
+  const TI_LE=PLOT_H_MAX/(W-2*p);
+  {
+    const rx0=x1-x0,ry0=y1-y0;
+    if(ry0>rx0*TI_LE){
+      const muon=Math.min(ry0/TI_LE,rx0*1.8),bu=(muon-rx0)/2;
+      if(bu>0){x0-=bu;x1+=bu}
+    }else if(ry0<rx0*TI_LE){
+      const muon=Math.min(rx0*TI_LE,ry0*1.8),bu=(muon-ry0)/2;
+      if(bu>0){y0-=bu;y1+=bu}
+    }
+  }
+  const rx=x1-x0,ry=y1-y0;
+  const step=r=>{const raw=r/12,pow=Math.pow(10,Math.floor(Math.log10(raw)||0));const m=raw/pow;return (m<1.5?1:m<3.5?2:m<7.5?5:10)*pow};
+  const canDoi=Math.max(rx,ry)/Math.min(rx,ry)<=4;
+  const sx=canDoi?step(Math.max(rx,ry)):step(rx);
+  const sy=canDoi?sx:step(ry);
+  let cell=Math.min((W-2*p)/(rx/sx),PLOT_H_MAX/(ry/sy));
+  if(!Number.isFinite(cell)||cell<CELL_MIN)cell=CELL_MIN;
+  const plotW=(rx/sx)*cell,plotH=(ry/sy)*cell;
+  const kx=cell/sx,ky=cell/sy;
+  const H=Math.round(plotH)+2*p,L=p+Math.max(0,((W-2*p)-plotW)/2),R=L+plotW,B=p+plotH;
+  const X=x=>L+(x-x0)*kx,Y=y=>B-(y-y0)*ky;
   const uid='plotClip'+(++GRAPH_UID);
-  const step=r=>{const raw=(r)/10,pow=Math.pow(10,Math.floor(Math.log10(raw)||0));const m=raw/pow;return (m<1.5?1:m<3.5?2:m<7.5?5:10)*pow};
-  /* Một bước chia duy nhất cho cả hai trục, lấy theo miền rộng hơn. */
-  const sx=step(Math.max(x1-x0,y1-y0)),sy=sx;
-  let svg=`<svg ${opt.standalone?'xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" '.replace('${W}',W).replace('${H}',H):''}viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(s.title||'Đồ thị hàm số')}">`;
+  let svg=`<svg ${opt.standalone?`xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" `:''}viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(s.title||'Đồ thị hàm số')}">`;
   if(opt.standalone)svg+=`<style>${GRAPH_CSS}</style><rect width="${W}" height="${H}" fill="#ffffff"/>`;
-  svg+=`<defs><clipPath id="${uid}"><rect x="${L}" y="${p}" width="${plotW}" height="${plotH}"/></clipPath></defs>`;
+  svg+=`<defs><clipPath id="${uid}"><rect x="${L}" y="${p}" width="${plotW}" height="${plotH}"/></clipPath>`+
+       `<marker id="ar${uid}" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">`+
+       `<path d="M0,1 L10,5 L0,9 z" fill="#123252"/></marker></defs>`;
   svg+=`<rect x="${L}" y="${p}" width="${plotW}" height="${plotH}" class="plot-bg"/>`;
   for(let k=Math.ceil(x0/sx)*sx;k<=x1+1e-9;k+=sx)svg+=`<line x1="${X(k).toFixed(2)}" y1="${p}" x2="${X(k).toFixed(2)}" y2="${B}" class="grid-line"/>`;
   for(let k=Math.ceil(y0/sy)*sy;k<=y1+1e-9;k+=sy)svg+=`<line x1="${L}" y1="${Y(k).toFixed(2)}" x2="${R}" y2="${Y(k).toFixed(2)}" class="grid-line"/>`;
-  if(y0<=0&&y1>=0)svg+=`<line x1="${L}" y1="${Y(0).toFixed(2)}" x2="${R}" y2="${Y(0).toFixed(2)}" class="axis"/>`;
-  if(x0<=0&&x1>=0)svg+=`<line x1="${X(0).toFixed(2)}" y1="${p}" x2="${X(0).toFixed(2)}" y2="${B}" class="axis"/>`;
-  const fmtTick=v=>Math.abs(v)<1e-9?'0':(Math.round(v*100)/100).toString();
-  const baseY=(y0<=0&&y1>=0)?Y(0):B, baseX=(x0<=0&&x1>=0)?X(0):L;
+  /* Hệ trục Oxy: mũi tên ở đầu trục và nhãn O, x, y — giáo viên đã vẽ tay bổ sung đúng
+     chỗ này trên bản in, nghĩa là thiếu nó thì hình chưa đọc được như một đồ thị. */
+  const coOy=x0<=0&&x1>=0, coOx=y0<=0&&y1>=0;
+  if(coOx)svg+=`<line x1="${L}" y1="${Y(0).toFixed(2)}" x2="${(R+14).toFixed(2)}" y2="${Y(0).toFixed(2)}" class="axis" marker-end="url(#ar${uid})"/>`+
+    `<text x="${(R+20).toFixed(2)}" y="${(Y(0)+4).toFixed(2)}" class="axis-name">x</text>`;
+  if(coOy)svg+=`<line x1="${X(0).toFixed(2)}" y1="${B}" x2="${X(0).toFixed(2)}" y2="${p-14}" class="axis" marker-end="url(#ar${uid})"/>`+
+    `<text x="${(X(0)+7).toFixed(2)}" y="${p-16}" class="axis-name">y</text>`;
+  if(coOx&&coOy)svg+=`<text x="${(X(0)-11).toFixed(2)}" y="${(Y(0)+15).toFixed(2)}" class="axis-name">O</text>`;
+  const fmtTick=v=>Math.abs(v)<1e-9?'':(Math.round(v*1000)/1000).toString().replace('.',',');
+  const baseY=coOx?Y(0):B, baseX=coOy?X(0):L;
   for(let k=Math.ceil(x0/sx)*sx;k<=x1+1e-9;k+=sx){if(Math.abs(k)<1e-9)continue;
-    svg+=`<text x="${X(k).toFixed(2)}" y="${Math.min(H-6,baseY+14).toFixed(2)}" text-anchor="middle" class="tick">${fmtTick(k)}</text>`}
+    svg+=`<text x="${X(k).toFixed(2)}" y="${Math.min(H-6,baseY+15).toFixed(2)}" text-anchor="middle" class="tick">${fmtTick(k)}</text>`}
   for(let k=Math.ceil(y0/sy)*sy;k<=y1+1e-9;k+=sy){if(Math.abs(k)<1e-9)continue;
     svg+=`<text x="${Math.max(4,baseX-7).toFixed(2)}" y="${(Y(k)+4).toFixed(2)}" text-anchor="end" class="tick">${fmtTick(k)}</text>`}
   for(const a of inferAsymptotes(s)){
     if(a.type==='vertical'&&Number.isFinite(Number(a.value))&&a.value>=x0&&a.value<=x1){const xx=X(Number(a.value));
       svg+=`<line x1="${xx.toFixed(2)}" y1="${p}" x2="${xx.toFixed(2)}" y2="${B}" class="asymptote" clip-path="url(#${uid})"/>`+
-           `<text x="${(xx+5).toFixed(2)}" y="${p+14}" class="asymptote-label">x=${esc(a.value)}</text>`}
+           `<text x="${(xx+5).toFixed(2)}" y="${p+14}" class="asymptote-label">x=${esc(snapNice(Number(a.value)))}</text>`}
     else if(a.type==='horizontal'&&Number.isFinite(Number(a.value))&&a.value>=y0&&a.value<=y1){const yy=Y(Number(a.value));
       svg+=`<line x1="${L}" y1="${yy.toFixed(2)}" x2="${R}" y2="${yy.toFixed(2)}" class="asymptote" clip-path="url(#${uid})"/>`+
            `<text x="${R-5}" y="${(yy-6).toFixed(2)}" text-anchor="end" class="asymptote-label">y=${esc(snapNice(Number(a.value)))}</text>`}
-    else if(a.type==='oblique') {const slope=Number(a.slope),intercept=Number(a.intercept);if(Number.isFinite(slope)&&Number.isFinite(intercept)){
+    else if(a.type==='oblique'){const slope=Number(a.slope),intercept=Number(a.intercept);if(Number.isFinite(slope)&&Number.isFinite(intercept)){
       svg+=`<line x1="${X(x0).toFixed(2)}" y1="${Y(slope*x0+intercept).toFixed(2)}" x2="${X(x1).toFixed(2)}" y2="${Y(slope*x1+intercept).toFixed(2)}" class="asymptote" clip-path="url(#${uid})"/>`+
            `<text x="${X(x1).toFixed(2)}" y="${Math.max(p+14,Math.min(B-4,Y(slope*x1+intercept)-6)).toFixed(2)}" text-anchor="end" class="asymptote-label">${esc(nhanDuongThang(slope,intercept))}</text>`}}
   }
@@ -837,7 +1009,7 @@ function buildGraphSVG(s,opt){
   for(const fn of s.functions||[]){
     let f;try{f=compileExpr(fn.expr)}catch(_){continue}
     let d='',pen=false;
-    for(let i=0;i<=700;i++){const x=x0+(x1-x0)*i/700,y=f(x),ok=Number.isFinite(y)&&y>=y0-(y1-y0)&&y<=y1+(y1-y0);
+    for(let i=0;i<=900;i++){const x=x0+(x1-x0)*i/900,y=f(x),ok=Number.isFinite(y)&&y>=y0-ry&&y<=y1+ry;
       if(ok){d+=(pen?'L':'M')+X(x).toFixed(2)+' '+Y(y).toFixed(2);pen=true}else pen=false}
     if(d){plotted++;svg+=`<path d="${d}" stroke="${esc(fn.color||'#176fa8')}" class="plot-path" clip-path="url(#${uid})"/>`}}
   if(!plotted)svg+=`<text x="${W/2}" y="${H/2}" text-anchor="middle" class="tick">Không dựng được đường cong — kiểm tra biểu thức</text>`;
@@ -1041,6 +1213,15 @@ if(aiGenerated){
   if(sot.length)warnings.push(`Có thể còn lệnh LaTeX viết trần trong công thức (${sot.slice(0,4).join(', ')}) — hãy xem lại các chỗ này trên màn hình trước khi in.`);
   const lech=unbalancedMath(text);
   if(lech.length)blockers.push(`${lech.length} công thức có dấu ngoặc không cân đối, in ra sẽ sai hoặc mất vế: “${lech[0]}...”.`);
+  /* b19: bản in mới nhất có ma trận liên kết ghi "MT6, MT7, MT8, MT9" trong khi mục Mục tiêu
+     chỉ khai tới MT6 — ba mã trỏ vào chỗ trống. Máy đối chiếu được việc này. */
+  {
+    const khai=new Set((text.match(/\bMT\d+\b/g)||[]).filter(m=>
+      new RegExp('[•\\-*]\\s*(?:\\*\\*)?'+m+'\\b\\s*[::]').test(text)));
+    const dung=new Set(text.match(/\bMT\d+\b/g)||[]);
+    const thieu=[...dung].filter(m=>khai.size&&!khai.has(m));
+    if(thieu.length)blockers.push(`Mã ${thieu.slice(0,5).join(', ')} được dùng trong bài nhưng không được định nghĩa ở mục I. Mục tiêu — người đọc không biết mục tiêu đó là gì.`);
+  }
   const trung=trungMaSanPham(flows);
   if(trung.length)blockers.push(`Mã ${trung.slice(0,5).join(', ')} được dùng lại ở nhiều hoạt động khác nhau — ma trận liên kết đầu bài sẽ không truy được về đúng sản phẩm. Hãy đánh mã liên tục cho cả bài.`);
   /* Cột NLS/NLAI của bản in bị điền toàn năng lực đặc thù môn Toán ("Giao tiếp toán học",

@@ -629,24 +629,37 @@
         const spec = parseLoose(body.trim());
         /* Bảng biến thiên có khai báo "expr" cũng sinh ra một đồ thị ngay dưới nó trên màn hình,
            nên tệp Word phải có đúng số ảnh và đúng thứ tự, nếu không ảnh sẽ gán nhầm khối. */
-        if (spec?.type === 'graph') specs.push(spec);
-        else if (spec?.type === 'variation' && spec.expr && typeof graphFromVariation === 'function') {
-          const g = graphFromVariation(spec);
-          if (g) specs.push(g);
+        /* b19 — BẢNG BIẾN THIÊN NAY CŨNG LÀ MỘT ẢNH.
+           Giáo viên khoanh nguyên bảng trong tệp Word và ghi "BBT xuất ra dạng Word bị lỗi,
+           đề nghị để dạng ảnh như đồ thị". Đúng: mũi tên phải nằm CHÉO giữa hai mốc, vạch
+           đôi phải cắt dọc cả ba hàng, bề rộng các khoảng phải tỉ lệ — ô bảng Word không
+           làm được ba việc đó. Thứ tự đẩy vào đây phải khớp tuyệt đối với thứ tự lấy ra ở
+           mathvizXml: bảng trước, đồ thị sau. */
+        if (spec?.type === 'graph') specs.push({ loai: 'do-thi', spec });
+        else if (spec?.type === 'variation' && Array.isArray(spec.points)) {
+          if (typeof buildVariationPrintSVG === 'function') specs.push({ loai: 'bbt', spec });
+          if (spec.expr && typeof graphFromVariation === 'function') {
+            const g = graphFromVariation(spec);
+            if (g) specs.push({ loai: 'do-thi', spec: g });
+          }
         }
       } catch (_) { }
       return whole;
     });
     if (!specs.length || typeof buildGraphSVG !== 'function') return [];
     const out = [];
-    for (const spec of specs) {
+    for (const it of specs) {
       try {
-        const svg = buildGraphSVG(spec, { standalone: true });
+        const svg = it.loai === 'bbt'
+          ? buildVariationPrintSVG(it.spec)
+          : buildGraphSVG(it.spec, { standalone: true });
+        if (!svg) throw new Error('không dựng được hình');
         const kt = svgSize(svg);
         const bytes = await window.rasterizeSVG(svg, kt.w, kt.h, 2);
-        out.push({ spec, bytes, w: kt.w, h: kt.h });
+        out.push({ spec: it.spec, loai: it.loai, bytes, w: kt.w, h: kt.h });
       } catch (_) {
-        out.push({ spec, bytes: null });   // thất bại thì ghi chú, không làm hỏng cả tệp
+        /* Hỏng thì để bytes rỗng; bảng biến thiên sẽ tự quay về dạng bảng Word như cũ. */
+        out.push({ spec: it.spec, loai: it.loai, bytes: null });
       }
     }
     return out;
@@ -670,6 +683,17 @@
   }
 
   /* mathviz: bảng xét dấu / bảng biến thiên → bảng Word thật; đồ thị → ảnh PNG. */
+  /* Bảng biến thiên có khai báo expr thì sinh thêm một đồ thị ngay dưới. Tách ra hàm riêng
+     để cả nhánh ảnh lẫn nhánh bảng dự phòng đều lấy đúng một ô ảnh, không lệch nhịp. */
+  function layDoThiKemTheo(spec, images) {
+    if (!(spec.expr && images.length && images[0] && images[0].loai === 'do-thi')) return '';
+    const slot = images.shift();
+    const tieuDe = para(runsFrom(slot.spec && slot.spec.title ? slot.spec.title : 'Đồ thị hàm số',
+      { b: true }), { align: 'center', spaceAfter: 60 });
+    if (!slot.bytes) return tieuDe + para(runsFrom('*[Không dựng được đồ thị — xem bản trên màn hình]*', { i: true }), { align: 'center' });
+    return tieuDe + para(drawingXml(slot.index, slot.relId, slot.w, slot.h), { align: 'center' });
+  }
+
   function mathvizXml(spec, images) {
     if (spec.type === 'graph') {
       const slot = images && images.shift();
@@ -718,6 +742,17 @@
       const pts = spec.points.map(String);
       const N = pts.length;
       if (N < 2) return para(runsFrom('*[Bảng biến thiên chưa đủ dữ liệu]*', { i: true }));
+      /* b19: lấy ảnh bảng biến thiên nếu dựng được; hỏng thì rơi về bảng Word như cũ để
+         không bao giờ mất nội dung. Ô ảnh phải được lấy ra kể cả khi rỗng, nếu không mọi
+         ảnh phía sau sẽ lệch một nhịp và gán nhầm khối. */
+      if (images.length && images[0] && images[0].loai === 'bbt') {
+        const anh = images.shift();
+        if (anh.bytes) {
+          return (spec.title ? para(runsFrom(spec.title, { b: true }), { align: 'center', spaceAfter: 60 }) : '')
+            + para(drawingXml(anh.index, anh.relId, anh.w, anh.h), { align: 'center' })
+            + layDoThiKemTheo(spec, images);
+        }
+      }
       const it = interleave(pts, spec.derivative || []);
       const cell = (t, bold) => para(runsFrom(wrapMath(t), bold ? { b: true } : {}), { align: 'center', spaceAfter: 20 });
       const head = [para(runsFrom('$x$', { b: true }))].concat(it.rowX.map(t => cell(t, true)));
@@ -742,14 +777,7 @@
       const widths = [2].concat(Array(it.slots).fill(1).map((_, j) => j % 2 === 0 ? 1.4 : 1));
       let out = (spec.title ? para(runsFrom(spec.title, { b: true }), { align: 'center', spaceAfter: 60 }) : '')
         + tableXml([head, rowD, rowY], widths, { header: false });
-      if (spec.expr) {
-        const slot = images && images.shift();
-        if (slot && slot.bytes) {
-          out += para(runsFrom('Đồ thị hàm số ' + (spec.funcLabel || 'y = ' + spec.expr), { b: true }),
-                      { align: 'center', spaceBefore: 120, spaceAfter: 60 })
-               + para(drawingXml(slot.index, slot.relId, slot.w, slot.h), { align: 'center' });
-        }
-      }
+      out += layDoThiKemTheo(spec, images || []);
       return out;
     }
     return para(runsFrom('*[Hình minh hoạ toán học — xem bản trên màn hình]*', { i: true }));
