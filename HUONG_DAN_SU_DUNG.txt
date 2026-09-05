@@ -1,5 +1,5 @@
 TRỢ LÝ SOẠN KẾ HOẠCH BÀI DẠY 2026–2027
-BẢN CHUYÊN NGHIỆP – BƯỚC 4 · HIỆU CHỈNH b12
+BẢN CHUYÊN NGHIỆP – BƯỚC 4 · HIỆU CHỈNH b13
 
 ================================================================
 ĐIỀU KIỆN CẦN
@@ -129,7 +129,7 @@ XỬ LÝ SỰ CỐ THƯỜNG GẶP
 TỰ KIỂM TRA SAU KHI SỬA MÃ
 ================================================================
 Mở tệp test.html bằng Chrome hoặc Edge rồi bấm "Chạy kiểm tra". Trang
-này chạy 59 phép kiểm tra trên đúng các tệp đang nằm trong thư mục,
+này chạy 60 phép kiểm tra trên đúng các tệp đang nằm trong thư mục,
 không phải trên bản sao, nên kết quả phản ánh đúng tình trạng thật.
 
 - Toàn bộ xanh: phần mềm còn lành, dùng được.

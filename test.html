@@ -115,12 +115,12 @@ h2{font-size:.82rem;letter-spacing:.09em;text-transform:uppercase;color:var(--mu
 })();
 </script>
 
-<script src="standards.js?v=b12"></script>
-<script src="app.js?v=b12"></script>
-<script src="flow.js?v=b12"></script>
-<script src="professional.js?v=b12"></script>
+<script src="standards.js?v=b13"></script>
+<script src="app.js?v=b13"></script>
+<script src="flow.js?v=b13"></script>
+<script src="professional.js?v=b13"></script>
 <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
-<script src="docx-export.js?v=b12"></script>
+<script src="docx-export.js?v=b13"></script>
 
 <script>
 (function(){
@@ -462,18 +462,20 @@ async function runAll(){
   await T('Bảng biến thiên có đủ mũi tên cho từng khoảng',function(){
     var svg=buildVariationSVG({points:['-\\infty','1','3','+\\infty'],
       derivative:['+','0','-','0','+'],values:['-\\infty','34','30','+\\infty']});
-    var n=(svg.match(/class="vt-arrow"/g)||[]).length;
-    if(n!==3)return 'Có '+n+' mũi tên, phải đúng 3 (một mũi mỗi khoảng)';
-    /* SGK đặt đầu mũi tên ở CUỐI đoạn, ngay trước giá trị đích. Chỉ đếm số mũi tên thì
-       một bản sửa đưa mũi tên về giữa đoạn vẫn lọt — đã thử và đúng là lọt. */
+    var n=(svg.match(/marker-end="url\(#vtArrow\d+\)"/g)||[]).length;
+    if(n!==3)return 'Có '+n+' đoạn gắn đầu mũi tên, phải đúng 3 (một mũi mỗi khoảng)';
+    /* Đầu mũi tên phải là marker gắn liền cuối đường, không phải tam giác rời đặt giữa đoạn. */
     var d=new DOMParser().parseFromString(svg,'application/xml');
-    var mui=[].slice.call(d.getElementsByTagName('*'))
-      .filter(function(e){return e.localName==='polygon'})
-      .map(function(p){return parseFloat(p.getAttribute('points').split(',')[0])}).sort(function(a,b){return a-b});
-    /* Bảng chuẩn SGK không kẻ vạch dọc tại điểm cực trị. Với mẫu 4 mốc,
-       vùng đặt mốc chạy từ x=90 đến x=732 nên mỗi khoảng rộng 642/3. */
-    var dau=90,cuoiKhoangDau=90+642/3,ti=(mui[0]-dau)/(cuoiKhoangDau-dau);
-    return ti>0.7||'Mũi tên đầu tiên nằm ở '+Math.round(ti*100)+'% đoạn — SGK đặt ở cuối đoạn (khoảng 88%), không phải giữa';
+    var paths=[].slice.call(d.getElementsByTagName('*')).filter(function(e){return /vt-path/.test(e.getAttribute('class')||'')});
+    return paths.length===3&&paths.every(function(e){return !!e.getAttribute('marker-end')})
+      ||'Đầu mũi tên chưa gắn trực tiếp vào cuối đường biến thiên';
+  });
+
+  await T('Phân thức bậc hai trên bậc nhất tự nhận tiệm cận đứng và xiên',function(){
+    var a=inferAsymptotes({functions:[{expr:'(x^2+x+4)/(x-3)'}]});
+    return a.some(function(x){return x.type==='vertical'&&x.value===3})
+      &&a.some(function(x){return x.type==='oblique'&&Math.abs(x.slope-1)<1e-6&&Math.abs(x.intercept-4)<1e-3})
+      ||'Chưa nhận đúng x=3 và y=x+4';
   });
 
   await T('Ô giá trị cực trị bỏ trống thì hiện dấu ? thay vì để trắng',function(){

@@ -1,7 +1,7 @@
 /* Mốc phiên bản — hiện ngay trên thanh tiêu đề. Sau nhiều vòng sửa, đã có lần trang web
    chạy bản cũ mà cả hai bên đều tưởng là bản mới, mất công đi tìm lỗi đã sửa xong rồi.
    Nhìn dòng chữ trên đầu trang là biết ngay đang chạy bản nào. */
-const APP_BUILD='2026-09-05 · b12';
+const APP_BUILD='2026-09-05 · b13';
 const $=id=>document.getElementById(id);let selectedFiles=[],rawMarkdown='',availableModels=[],scanTimer,draftTimer,lastValidation=null;
 const fields=['subject','grade','lesson','book','periods','students','classSize','equipment','notes','tableLayout','assessmentMode','lessonTemplate','sourceMode'];
 const toast=m=>{const t=$('toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2600)};
@@ -147,9 +147,10 @@ function mathRulesFor(v){if(!isMathSubject(v))return '6) Không áp dụng mô-�
  - Ví dụ đúng: columns ["-\\\\infty","1","3","+\\\\infty"], cells ["+","0","-","0","+"].
  - Đếm sai số phần tử là bảng vẽ ra lệch cột, không dùng được.
 
-6c) ĐỒ THỊ HÀM SỐ: {"type":"graph","title":"...","xMin":-5,"xMax":5,"yMin":-5,"yMax":5,"functions":[{"expr":"x^3-3*x","label":"y=x^3-3x","color":"#176fa8"}]}
+6c) ĐỒ THỊ HÀM SỐ: {"type":"graph","title":"...","xMin":-5,"xMax":5,"yMin":-5,"yMax":5,"asymptotes":[{"type":"vertical","value":3},{"type":"horizontal","value":1},{"type":"oblique","slope":1,"intercept":4}],"functions":[{"expr":"x^3-3*x","label":"y=x^3-3x","color":"#176fa8"}]}
  - "expr" viết theo cú pháp máy tính: dùng dấu * cho phép nhân (viết "3*x" chứ không phải "3x"), dùng ^ cho luỹ thừa. Dùng được sin, cos, tan, sqrt, abs, exp, log, ln, pi.
  - Chọn xMin/xMax/yMin/yMax bao trọn các điểm cực trị và giao điểm cần quan sát.
+ - "asymptotes": bắt buộc với hàm phân thức hoặc hàm có tiệm cận. Tính chính xác trước khi ghi: tiệm cận đứng dùng {"type":"vertical","value":a} cho $x=a$; tiệm cận ngang dùng {"type":"horizontal","value":b} cho $y=b$; tiệm cận xiên dùng {"type":"oblique","slope":m,"intercept":n} cho $y=mx+n$. Chỉ ghi các tiệm cận thực sự tồn tại, không đưa đồng thời ngang và xiên nếu không đúng.
  - BẮT BUỘC có ít nhất một đồ thị khi bài học có bất kỳ nội dung nào sau đây: nhận biết tính đơn điệu hoặc cực trị QUA HÌNH ẢNH ĐỒ THỊ, khảo sát và vẽ đồ thị hàm số, tương giao đồ thị, hoặc khi sách giáo khoa có hình vẽ đồ thị ở phần tương ứng. Yêu cầu cần đạt "nhận biết qua hình ảnh đồ thị" mà bản soạn không có đồ thị nào thì chưa dạy được mục tiêu đó.
 
 QUY TẮC CHUNG: mỗi khối mathviz đặt ngay dưới dòng văn bản dẫn vào nó. Chỉ dùng khi đúng nội dung bài, không ép dùng cho mọi bài Toán. Nhưng với bài về tính đơn điệu, cực trị hay khảo sát hàm số thì bảng biến thiên và đồ thị là bắt buộc, không được thay bằng lời mô tả suông.`}
@@ -236,7 +237,7 @@ function graphFromVariation(spec){
   if(vals.length){const lo=Math.min(...vals),hi=Math.max(...vals),pad=Math.max(2,(hi-lo)*0.6||3);
     yMin=Math.floor(lo-pad);yMax=Math.ceil(hi+pad)}
   return {type:'graph',title:'Đồ thị '+(spec.funcLabel||('y = '+expr)),
-    xMin,xMax,yMin,yMax,functions:[{expr,label:spec.funcLabel||('y='+expr)}]};
+    xMin,xMax,yMin,yMax,asymptotes:spec.asymptotes||[],functions:[{expr,label:spec.funcLabel||('y='+expr)}]};
 }
 function buildSignSVG(spec){
   const pts=(spec.columns||spec.points||[]).map(x=>String(x??''));
@@ -302,7 +303,9 @@ function buildVariationSVG(spec){
   const valLabel=i=>{const v=values[i];return (v&&typeof v==='object')?null:String(v)};
   const yArrive=i=>{const v=valLabel(i);if(isPosInf(v))return valTopY+16;if(isNegInf(v))return valBotY-16;return yForLevel(arriveLevel[i])};
   const yDepart=i=>{const v=valLabel(i);if(isPosInf(v))return valTopY+16;if(isNegInf(v))return valBotY-16;return yForLevel(departLevel[i])};
+  const arrowId='vtArrow'+(++GRAPH_UID);
   let svg=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(spec.title||'Bảng biến thiên')}">`;
+  svg+=`<defs><marker id="${arrowId}" markerWidth="7" markerHeight="7" refX="6.2" refY="3.5" orient="auto" markerUnits="strokeWidth"><path d="M0,0 L7,3.5 L0,7 Z" class="vt-arrow"/></marker></defs>`;
   svg+=`<line x1="${leftLabel}" y1="${yTop}" x2="${leftLabel}" y2="${valBotY}" class="vt-frame"/>`;
   svg+=`<line x1="8" y1="${derivTopY}" x2="${W-rightPad}" y2="${derivTopY}" class="vt-frame"/>`;
   svg+=`<line x1="8" y1="${valTopY}" x2="${W-rightPad}" y2="${valTopY}" class="vt-frame"/>`;
@@ -312,12 +315,8 @@ function buildVariationSVG(spec){
   points.forEach((p,i)=>{svg+=svgLabel(xAt(i),(yTop+derivTopY)/2,wrapMathCell(p),'middle',110,20)});
   for(let i=0;i<N-1;i++){const s=intervalSign(i);if(s)svg+=svgLabel((xAt(i)+xAt(i+1))/2,(derivTopY+valTopY)/2,wrapMathCell(s),'middle',60,20)}
   for(let i=1;i<N-1;i++){const v=deriv[2*i-1];if(!/^\\?\|$/.test(String(v??'').trim())&&v!==undefined)svg+=svgLabel(xAt(i),(derivTopY+valTopY)/2,wrapMathCell(v),'middle',60,20)}
-  for(let i=0;i<N-1;i++){const inset=12,x1=xAt(i)+inset,x2=xAt(i+1)-inset,y1=yDepart(i),y2=yArrive(i+1);svg+=`<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" class="vt-path"/>`;/* SGK vẽ đầu mũi tên ở CUỐI đoạn, ngay trước giá trị đích (xem bảng biến thiên trong SGK),
-   không phải ở giữa đoạn như bản cũ. Đặt ở khoảng 88% chiều dài đoạn cho khớp. */
-const t=0.88,mx=x1+(x2-x1)*t,my=y1+(y2-y1)*t,ang=Math.atan2(y2-y1,x2-x1),ah=8,
-  ax1=mx-ah*Math.cos(ang-0.42),ay1=my-ah*Math.sin(ang-0.42),
-  ax2=mx-ah*Math.cos(ang+0.42),ay2=my-ah*Math.sin(ang+0.42);
-svg+=`<polygon points="${mx.toFixed(1)},${my.toFixed(1)} ${ax1.toFixed(1)},${ay1.toFixed(1)} ${ax2.toFixed(1)},${ay2.toFixed(1)}" class="vt-arrow"/>`}
+  for(let i=0;i<N-1;i++){const inset=14,x1=xAt(i)+inset,x2=xAt(i+1)-inset,y1=yDepart(i),y2=yArrive(i+1);
+    svg+=`<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" class="vt-path" marker-end="url(#${arrowId})"/>`}
   points.forEach((p,i)=>{const v=values[i],anchor=i===0?'start':(i===N-1?'end':'middle');if(v&&typeof v==='object'){const yL=isPosInf(v.left)?valTopY+16:isNegInf(v.left)?valBotY-16:yArrive(i),yR=isPosInf(v.right)?valTopY+16:isNegInf(v.right)?valBotY-16:yDepart(i),midY=(yL+yR)/2;svg+=svgLabel(xAt(i)-8,yL-14,wrapMathCell(v.left),'end',80,20);svg+=svgLabel(xAt(i)+8,yR-14,wrapMathCell(v.right),'start',80,20);/* Điểm gián đoạn: SGK vẽ hai vạch dọc song song chạy suốt hàng y (dấu ‖), không phải hai
    gạch xiên ngắn ở giữa như bản cũ — nhìn vào không ra ký hiệu gián đoạn. */
 svg+=`<line x1="${xAt(i)-3}" y1="${derivTopY+2}" x2="${xAt(i)-3}" y2="${valBotY-2}" class="vt-discontinuity"/>`+
@@ -341,7 +340,26 @@ svg+=`<line x1="${xAt(i)-3}" y1="${derivTopY+2}" x2="${xAt(i)-3}" y2="${valBotY-
 let GRAPH_UID=0;
 const GRAPH_CSS='.plot-bg{fill:#fff;stroke:#b7c9d4}.grid-line{stroke:#dfe9ee;stroke-width:1}'
   +'.axis{stroke:#263d4c;stroke-width:1.7}.plot-path{fill:none;stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round}'
+  +'.asymptote{fill:none;stroke:#c4473a;stroke-width:1.8;stroke-dasharray:8 6}.asymptote-label{font:italic 12px Arial,sans-serif;fill:#a9342a}'
   +'.tick{font:11px Arial,sans-serif;fill:#40566b}';
+function inferAsymptotes(s){
+  const explicit=Array.isArray(s.asymptotes)?s.asymptotes.filter(Boolean):[];
+  if(explicit.length)return explicit;
+  const expr=String(s.functions?.[0]?.expr||'').replace(/\s+/g,'');
+  if(!expr.includes('/'))return [];
+  const out=[];
+  /* Tự nhận mẫu mẫu số bậc nhất (x-a) hoặc (x+a), phổ biến trong chương khảo sát. */
+  const m=expr.match(/\/\(?x([+-])(\d+(?:\.\d+)?)\)?$/i);
+  if(m)out.push({type:'vertical',value:m[1]==='-'?Number(m[2]):-Number(m[2])});
+  /* Ước lượng phần đa thức khi |x| rất lớn. Với phân thức bậc tử không vượt quá
+     bậc mẫu + 1, kết quả cho đúng tiệm cận ngang hoặc xiên; làm tròn nhiễu số. */
+  try{const f=compileExpr(expr),M=1e5,a=(f(2*M)-f(M))/M,b=f(M)-a*M;
+    if(Number.isFinite(a)&&Number.isFinite(b)){
+      const aa=Math.abs(a)<1e-7?0:Math.round(a*1e6)/1e6,bb=Math.abs(b)<1e-6?0:Math.round(b*1e5)/1e5;
+      if(Math.abs(aa)<1e4&&Math.abs(bb)<1e7)out.push(aa===0?{type:'horizontal',value:bb}:{type:'oblique',slope:aa,intercept:bb});
+    }}catch(_){}
+  return out;
+}
 function buildGraphSVG(s,opt){
   opt=opt||{};
   const num=(v,d)=>{const n=Number(v);return Number.isFinite(n)?n:d};
@@ -367,6 +385,17 @@ function buildGraphSVG(s,opt){
     svg+=`<text x="${X(k).toFixed(2)}" y="${Math.min(H-6,baseY+14).toFixed(2)}" text-anchor="middle" class="tick">${fmtTick(k)}</text>`}
   for(let k=Math.ceil(y0/sy)*sy;k<=y1+1e-9;k+=sy){if(Math.abs(k)<1e-9)continue;
     svg+=`<text x="${Math.max(4,baseX-6).toFixed(2)}" y="${(Y(k)+4).toFixed(2)}" text-anchor="end" class="tick">${fmtTick(k)}</text>`}
+  for(const a of inferAsymptotes(s)){
+    if(a.type==='vertical'&&Number.isFinite(Number(a.value))&&a.value>=x0&&a.value<=x1){const xx=X(Number(a.value));
+      svg+=`<line x1="${xx.toFixed(2)}" y1="${p}" x2="${xx.toFixed(2)}" y2="${H-p}" class="asymptote" clip-path="url(#${uid})"/>`+
+           `<text x="${(xx+5).toFixed(2)}" y="${p+14}" class="asymptote-label">x=${esc(a.value)}</text>`}
+    else if(a.type==='horizontal'&&Number.isFinite(Number(a.value))&&a.value>=y0&&a.value<=y1){const yy=Y(Number(a.value));
+      svg+=`<line x1="${p}" y1="${yy.toFixed(2)}" x2="${W-p}" y2="${yy.toFixed(2)}" class="asymptote" clip-path="url(#${uid})"/>`+
+           `<text x="${W-p-5}" y="${(yy-6).toFixed(2)}" text-anchor="end" class="asymptote-label">y=${esc(a.value)}</text>`}
+    else if(a.type==='oblique') {const slope=Number(a.slope),intercept=Number(a.intercept);if(Number.isFinite(slope)&&Number.isFinite(intercept)){
+      svg+=`<line x1="${X(x0).toFixed(2)}" y1="${Y(slope*x0+intercept).toFixed(2)}" x2="${X(x1).toFixed(2)}" y2="${Y(slope*x1+intercept).toFixed(2)}" class="asymptote" clip-path="url(#${uid})"/>`+
+           `<text x="${X(x1).toFixed(2)}" y="${Math.max(p+14,Math.min(H-p-4,Y(slope*x1+intercept)-6)).toFixed(2)}" text-anchor="end" class="asymptote-label">y=${esc(slope)}x${intercept>=0?'+':''}${esc(intercept)}</text>`}}
+  }
   for(const fn of s.functions||[]){
     let f;try{f=compileExpr(fn.expr)}catch(_){continue}
     let d='',pen=false;
