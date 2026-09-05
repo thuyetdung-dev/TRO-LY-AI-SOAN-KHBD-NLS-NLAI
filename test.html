@@ -115,12 +115,12 @@ h2{font-size:.82rem;letter-spacing:.09em;text-transform:uppercase;color:var(--mu
 })();
 </script>
 
-<script src="standards.js?v=b14"></script>
-<script src="app.js?v=b14"></script>
-<script src="flow.js?v=b14"></script>
-<script src="professional.js?v=b14"></script>
+<script src="standards.js?v=b15"></script>
+<script src="app.js?v=b15"></script>
+<script src="flow.js?v=b15"></script>
+<script src="professional.js?v=b15"></script>
 <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
-<script src="docx-export.js?v=b14"></script>
+<script src="docx-export.js?v=b15"></script>
 
 <script>
 (function(){
@@ -534,6 +534,17 @@ async function runAll(){
   await T('Trục toạ độ có vạch chia số',function(){
     var s=buildGraphSVG({xMin:-4,xMax:4,yMin:-4,yMax:4,functions:[{expr:'x'}]});
     return (s.match(/class="tick"/g)||[]).length>=4||'Không thấy số nào trên trục';
+  });
+
+  await T('Đồ thị nhận đúng -x^2 và biến thời gian t',function(){
+    var f=compileExpr('-x^2+5*x-7'), h=compileExpr('-4.9*t^2+24.5*t+2');
+    return Math.abs(f(2)+1)<1e-9&&Math.abs(h(1)-21.6)<1e-9
+      ||'Trình đọc biểu thức vẫn làm mất đồ thị có -x^2 hoặc biến t';
+  });
+
+  await T('Khung tung độ tự nới để không cắt đường cong',function(){
+    var r=fitGraphYRange({functions:[{expr:'x^4-3*x^2+1'}]},-4,4,-4,3);
+    return r.y1>100||'Khung vẫn dừng ở y=3 trong khi đường cong đạt trên 100';
   });
 
   await T('Đổi được đồ thị SVG sang ảnh PNG',async function(){

@@ -1,7 +1,7 @@
 /* Mốc phiên bản — hiện ngay trên thanh tiêu đề. Sau nhiều vòng sửa, đã có lần trang web
    chạy bản cũ mà cả hai bên đều tưởng là bản mới, mất công đi tìm lỗi đã sửa xong rồi.
    Nhìn dòng chữ trên đầu trang là biết ngay đang chạy bản nào. */
-const APP_BUILD='2026-09-05 · b14';
+const APP_BUILD='2026-09-05 · b15';
 const $=id=>document.getElementById(id);let selectedFiles=[],rawMarkdown='',availableModels=[],scanTimer,draftTimer,lastValidation=null;
 const fields=['subject','grade','lesson','book','periods','students','classSize','equipment','notes','tableLayout','assessmentMode','lessonTemplate','sourceMode'];
 const toast=m=>{const t=$('toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2600)};
@@ -202,7 +202,20 @@ const latexCmdRe=new RegExp('(^|[^\\\\a-zA-Z])('+LATEX_CMDS.join('|')+')(?=\\{|\
 const repairLatex=s=>repairVecBare(s).replace(latexCmdRe,(m,pre,cmd)=>pre+'\\'+cmd);
 function inline(s){return esc(s).replace(/&lt;br\s*\/?&gt;/gi,'<br>').replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>').replace(/\*(.+?)\*/g,'<em>$1</em>').replace(/`(.+?)`/g,'<code>$1</code>').replace(/\$\$([^$]+)\$\$/g,(m,g1)=>`<span class="math-display">\\[${repairLatex(g1)}\\]</span>`).replace(/\$([^$]+)\$/g,(m,g1)=>`<span class="math">\\(${repairLatex(g1)}\\)</span>`)}
 function mdToHtml(md){const specs=[];md=md.replace(/```mathviz\s*([\s\S]*?)```/gi,(_,json)=>{const id=specs.push(json.trim())-1;return `\n@@MATHVIZ_${id}@@\n`});const lines=md.replace(/```[a-z]*\n?/g,'').replace(/```/g,'').split('\n');let out='',list=false;for(let i=0;i<lines.length;i++){let l=lines[i].trimEnd(),mv=l.trim().match(/^@@MATHVIZ_(\d+)@@$/);if(mv){if(list){out+='</ul>';list=false}out+=`<div class="mathviz" data-spec="${encodeURIComponent(specs[+mv[1]])}"></div>`;continue}if(l.startsWith('|')&&i+1<lines.length&&/^\|?[\s:|-]+\|?$/.test(lines[i+1].trim())){if(list){out+='</ul>';list=false}const rows=[];rows.push(l);i+=2;while(i<lines.length&&lines[i].trim().startsWith('|')){rows.push(lines[i].trim());i++}i--;out+='<table>';rows.forEach((r,ri)=>{const cells=r.replace(/^\||\|$/g,'').split('|');out+=`<tr>${cells.map(c=>`<${ri?'td':'th'}>${inline(c.trim())}</${ri?'td':'th'}>`).join('')}</tr>`});out+='</table>';continue}if(/^#{1,3} /.test(l)){if(list){out+='</ul>';list=false}const n=l.match(/^#+/)[0].length;out+=`<h${n}>${inline(l.slice(n+1))}</h${n}>`}else if(/^[-*] /.test(l)){if(!list){out+='<ul>';list=true}out+=`<li>${inline(l.slice(2))}</li>`}else if(/^\d+\. /.test(l)){if(list){out+='</ul>';list=false}out+=`<p>${inline(l)}</p>`}else if(l.startsWith('> ')){if(list){out+='</ul>';list=false}out+=`<blockquote>${inline(l.slice(2))}</blockquote>`}else if(!l){if(list){out+='</ul>';list=false}}else{if(list){out+='</ul>';list=false}out+=`<p>${inline(l)}</p>`}}if(list)out+='</ul>';return out}
-function compileExpr(expr){let s=String(expr||'').toLowerCase().replace(/\^/g,'**').replace(/\bpi\b/g,'Math.PI');if(!/^[0-9x+\-*/().,\s*a-z]+$/.test(s))throw Error('Biểu thức không hợp lệ');for(const f of ['sin','cos','tan','sqrt','abs','exp','log'])s=s.replace(new RegExp(`\\b${f}\\b`,'g'),`Math.${f}`);const check=s.replace(/Math\.(?:PI|sin|cos|tan|sqrt|abs|exp|log)/g,'').replace(/x/g,'');if(/[a-z]/i.test(check))throw Error('Hàm chưa được hỗ trợ');return new Function('x',`"use strict";return (${s})`)}
+function compileExpr(expr){
+  let s=String(expr||'').toLowerCase().replace(/[−–]/g,'-').replace(/\bt\b/g,'x')
+    .replace(/\bpi\b/g,'Math.PI').replace(/\^/g,'**');
+  /* JavaScript không chấp nhận -x**2 dù biểu thức Toán -x^2 hoàn toàn đúng.
+     Đưa lũy thừa vào ngoặc trước khi áp dấu âm. */
+  s=s.replace(/(^|[,(+*/-])\s*-\s*x\s*\*\*\s*([0-9.]+)/g,'$1-(x**$2)');
+  /* Vá phép nhân ngầm thường gặp khi AI viết 2x hoặc x(x+1). */
+  s=s.replace(/(\d|\))\s*x\b/g,'$1*x').replace(/\bx\s*\(/g,'x*(').replace(/\)\s*\(/g,')*(');
+  if(!/^[0-9x+\-*/().,\s*a-z]+$/.test(s))throw Error('Biểu thức không hợp lệ');
+  for(const f of ['sin','cos','tan','sqrt','abs','exp','log'])s=s.replace(new RegExp(`\\b${f}\\b`,'g'),`Math.${f}`);
+  const check=s.replace(/Math\.(?:PI|sin|cos|tan|sqrt|abs|exp|log)/g,'').replace(/x/g,'');
+  if(/[a-z]/i.test(check))throw Error('Hàm chưa được hỗ trợ');
+  return new Function('x',`"use strict";return (${s})`)
+}
 const wrapMathCell=v=>{const s=String(v??'').trim();if(!s)return '';if(/^[+\-0↗↘↑↓∞]+$/.test(s))return esc(s);return s.includes('$')?inline(s):`$${esc(s)}$`};
 // Nhãn đặt trong foreignObject để MathJax vẫn xử lý được $...$ bên trong SVG (phân số, chỉ số dưới...).
 function svgLabel(cx,cy,content,anchor,w,h){w=w||100;h=h||24;const x=anchor==='start'?cx:anchor==='end'?cx-w:cx-w/2;const justify=anchor==='start'?'flex-start':anchor==='end'?'flex-end':'center';return `<foreignObject x="${x}" y="${cy-h/2}" width="${w}" height="${h}" style="overflow:visible"><div xmlns="http://www.w3.org/1999/xhtml" class="vt-label" style="justify-content:${justify}">${content}</div></foreignObject>`}
@@ -362,6 +375,31 @@ function inferAsymptotes(s){
     }}catch(_){}
   return out;
 }
+/* Nới miền tung độ khi dữ liệu AI khai báo khung quá hẹp. Dùng phân vị thay vì
+   min/max tuyệt đối để các điểm sát tiệm cận đứng không ép toàn bộ đường cong
+   thành một nét gần như nằm ngang. Miền do giáo viên/AI khai báo chỉ được nới,
+   không bị thu lại. */
+function fitGraphYRange(s,x0,x1,y0,y1){
+  if(s.autoFit===false)return {y0,y1};
+  const values=[];
+  for(const fn of s.functions||[]){
+    let f;try{f=compileExpr(fn.expr)}catch(_){continue}
+    for(let i=0;i<=1000;i++){
+      const y=f(x0+(x1-x0)*i/1000);
+      if(Number.isFinite(y)&&Math.abs(y)<1e9)values.push(y);
+    }
+  }
+  if(values.length<5)return {y0,y1};
+  values.sort((a,b)=>a-b);
+  const q=p=>values[Math.max(0,Math.min(values.length-1,Math.floor((values.length-1)*p)))];
+  const lo=q(.02),hi=q(.98),oldSpan=y1-y0;
+  let next0=Math.min(y0,lo),next1=Math.max(y1,hi);
+  if(next0===y0&&next1===y1)return {y0,y1};
+  const pad=Math.max((next1-next0)*.07,oldSpan*.04,0.25);
+  if(lo<y0)next0-=pad;
+  if(hi>y1)next1+=pad;
+  return {y0:next0,y1:next1};
+}
 function buildGraphSVG(s,opt){
   opt=opt||{};
   const num=(v,d)=>{const n=Number(v);return Number.isFinite(n)?n:d};
@@ -369,6 +407,7 @@ function buildGraphSVG(s,opt){
   let x0=num(s.xMin,-5),x1=num(s.xMax,5),y0=num(s.yMin,-5),y1=num(s.yMax,5);
   if(x1<=x0){x0=-5;x1=5}
   if(y1<=y0){y0=-5;y1=5}
+  ({y0,y1}=fitGraphYRange(s,x0,x1,y0,y1));
   const X=x=>p+(x-x0)/(x1-x0)*(W-2*p),Y=y=>H-p-(y-y0)/(y1-y0)*(H-2*p);
   const uid='plotClip'+(++GRAPH_UID);
   const step=r=>{const raw=(r)/10,pow=Math.pow(10,Math.floor(Math.log10(raw)||0));const m=raw/pow;return (m<1.5?1:m<3.5?2:m<7.5?5:10)*pow};
@@ -398,12 +437,14 @@ function buildGraphSVG(s,opt){
       svg+=`<line x1="${X(x0).toFixed(2)}" y1="${Y(slope*x0+intercept).toFixed(2)}" x2="${X(x1).toFixed(2)}" y2="${Y(slope*x1+intercept).toFixed(2)}" class="asymptote" clip-path="url(#${uid})"/>`+
            `<text x="${X(x1).toFixed(2)}" y="${Math.max(p+14,Math.min(H-p-4,Y(slope*x1+intercept)-6)).toFixed(2)}" text-anchor="end" class="asymptote-label">y=${esc(slope)}x${intercept>=0?'+':''}${esc(intercept)}</text>`}}
   }
+  let plotted=0;
   for(const fn of s.functions||[]){
     let f;try{f=compileExpr(fn.expr)}catch(_){continue}
     let d='',pen=false;
     for(let i=0;i<=700;i++){const x=x0+(x1-x0)*i/700,y=f(x),ok=Number.isFinite(y)&&y>=y0-(y1-y0)&&y<=y1+(y1-y0);
       if(ok){d+=(pen?'L':'M')+X(x).toFixed(2)+' '+Y(y).toFixed(2);pen=true}else pen=false}
-    svg+=`<path d="${d}" stroke="${esc(fn.color||'#176fa8')}" class="plot-path" clip-path="url(#${uid})"/>`}
+    if(d){plotted++;svg+=`<path d="${d}" stroke="${esc(fn.color||'#176fa8')}" class="plot-path" clip-path="url(#${uid})"/>`}}
+  if(!plotted)svg+=`<text x="${W/2}" y="${H/2}" text-anchor="middle" class="tick">Không dựng được đường cong — kiểm tra biểu thức</text>`;
   return svg+'</svg>';
 }
 function renderMathViz(){document.querySelectorAll('.mathviz').forEach(el=>{try{const s=JSON.parse(decodeURIComponent(el.dataset.spec));if(s.type==='graph'){el.innerHTML=`<div class="mathviz-title">${esc(s.title||'Đồ thị')}</div>`+buildGraphSVG(s)+`<div class="mathviz-legend">${(s.functions||[]).map(f=>`<span style="--c:${esc(f.color||'#176fa8')}">$${esc(f.label||f.expr)}$</span>`).join('')}</div>`}
