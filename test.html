@@ -115,12 +115,12 @@ h2{font-size:.82rem;letter-spacing:.09em;text-transform:uppercase;color:var(--mu
 })();
 </script>
 
-<script src="standards.js?v=b11"></script>
-<script src="app.js?v=b11"></script>
-<script src="flow.js?v=b11"></script>
-<script src="professional.js?v=b11"></script>
+<script src="standards.js?v=b12"></script>
+<script src="app.js?v=b12"></script>
+<script src="flow.js?v=b12"></script>
+<script src="professional.js?v=b12"></script>
 <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
-<script src="docx-export.js?v=b11"></script>
+<script src="docx-export.js?v=b12"></script>
 
 <script>
 (function(){
@@ -467,13 +467,12 @@ async function runAll(){
     /* SGK đặt đầu mũi tên ở CUỐI đoạn, ngay trước giá trị đích. Chỉ đếm số mũi tên thì
        một bản sửa đưa mũi tên về giữa đoạn vẫn lọt — đã thử và đúng là lọt. */
     var d=new DOMParser().parseFromString(svg,'application/xml');
-    var vach=[].slice.call(d.getElementsByTagName('*'))
-      .filter(function(e){return e.localName==='line'&&/vt-grid/.test(e.getAttribute('class')||'')})
-      .map(function(l){return parseFloat(l.getAttribute('x1'))}).sort(function(a,b){return a-b});
     var mui=[].slice.call(d.getElementsByTagName('*'))
       .filter(function(e){return e.localName==='polygon'})
       .map(function(p){return parseFloat(p.getAttribute('points').split(',')[0])}).sort(function(a,b){return a-b});
-    var ti=(mui[0]-vach[0])/(vach[1]-vach[0]);
+    /* Bảng chuẩn SGK không kẻ vạch dọc tại điểm cực trị. Với mẫu 4 mốc,
+       vùng đặt mốc chạy từ x=90 đến x=732 nên mỗi khoảng rộng 642/3. */
+    var dau=90,cuoiKhoangDau=90+642/3,ti=(mui[0]-dau)/(cuoiKhoangDau-dau);
     return ti>0.7||'Mũi tên đầu tiên nằm ở '+Math.round(ti*100)+'% đoạn — SGK đặt ở cuối đoạn (khoảng 88%), không phải giữa';
   });
 
@@ -483,11 +482,17 @@ async function runAll(){
     return svg.indexOf('?')>=0||'Để trắng — giáo viên tưởng bảng đã đủ';
   });
 
-  await T('Điểm gián đoạn vẽ bằng hai vạch dọc song song',function(){
+  await T('Điểm gián đoạn vẽ bằng đúng hai vạch dọc song song',function(){
     var svg=buildVariationSVG({points:['-\\infty','-1','+\\infty'],
       derivative:['+','\\|','+'],values:['1',{left:'+\\infty',right:'-\\infty'},'1']});
-    var n=(svg.match(/class="vt-grid"/g)||[]).length;
-    return n>=5||'Chỉ có '+n+' vạch dọc — thiếu ký hiệu gián đoạn';
+    var n=(svg.match(/class="vt-discontinuity"/g)||[]).length;
+    return n===2||'Có '+n+' vạch gián đoạn — phải đúng 2 vạch song song';
+  });
+
+  await T('Không kẻ lưới dọc tại các điểm cực trị',function(){
+    var svg=buildVariationSVG({points:['-\\infty','0','2','+\\infty'],
+      derivative:['+','0','-','0','+'],values:['-\\infty','2','-2','+\\infty']});
+    return svg.indexOf('class="vt-grid"')<0||'Còn vạch dọc tại điểm cực trị — không đúng mẫu SGK';
   });
 
   await T('Bảng xét dấu và biến thiên xuất sang Word không lệch cột',async function(){

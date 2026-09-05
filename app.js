@@ -1,7 +1,7 @@
 /* Mốc phiên bản — hiện ngay trên thanh tiêu đề. Sau nhiều vòng sửa, đã có lần trang web
    chạy bản cũ mà cả hai bên đều tưởng là bản mới, mất công đi tìm lỗi đã sửa xong rồi.
    Nhìn dòng chữ trên đầu trang là biết ngay đang chạy bản nào. */
-const APP_BUILD='2026-09-05 · b11';
+const APP_BUILD='2026-09-05 · b12';
 const $=id=>document.getElementById(id);let selectedFiles=[],rawMarkdown='',availableModels=[],scanTimer,draftTimer,lastValidation=null;
 const fields=['subject','grade','lesson','book','periods','students','classSize','equipment','notes','tableLayout','assessmentMode','lessonTemplate','sourceMode'];
 const toast=m=>{const t=$('toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2600)};
@@ -138,6 +138,7 @@ function mathRulesFor(v){if(!isMathSubject(v))return '6) Không áp dụng mô-�
  - "points": các mốc x theo thứ tự tăng dần, luôn bắt đầu bằng "-\\\\infty" và kết thúc bằng "+\\\\infty". Gọi số mốc là N.
  - "derivative": ĐÚNG 2N-3 phần tử, XEN KẼ theo thứ tự: dấu trên khoảng 1, giá trị tại mốc 2, dấu trên khoảng 2, giá trị tại mốc 3, ... Dấu chỉ dùng "+" hoặc "-". Tại mốc mà y'=0 ghi "0"; tại mốc hàm không xác định ghi "\\\\|".
  - "values": ĐÚNG N phần tử, một giá trị y cho mỗi mốc. BẮT BUỘC TÍNH RA SỐ CỤ THỂ tại mọi điểm cực trị — để trống là lỗi, giáo viên sẽ phải tự tính lại. Tại điểm gián đoạn dùng {"left":"-\\\\infty","right":"+\\\\infty"}.
+ - CHUẨN CHÍNH XÁC: các mốc và giá trị phải giữ dạng phân số/căn thức LaTeX, ví dụ "-\\\\sqrt{\\\\frac{3}{2}}", "\\\\sqrt{\\\\frac{3}{2}}", "-\\\\frac{5}{4}". KHÔNG đổi thành số gần đúng như "-1.22", "1.22", "-1.25", trừ khi tài liệu nguồn hoặc bài toán yêu cầu làm tròn.
  - "expr": BẮT BUỘC — công thức hàm số viết theo cú pháp máy tính (dùng * cho phép nhân, ^ cho luỹ thừa), ví dụ "x^3-3*x^2+2" hoặc "(-x^2+5*x-7)/(x-2)". Phần mềm dùng trường này để VẼ LUÔN ĐỒ THỊ ngay dưới bảng biến thiên, nên thiếu nó là mất hình trực quan của cả hoạt động.
  - Ví dụ đúng cho y=x^3-3x^2+2 (N=4): points ["-\\\\infty","0","2","+\\\\infty"], derivative ["+","0","-","0","+"] (đúng 5 = 2·4-3), values ["-\\\\infty","2","-2","+\\\\infty"], expr "x^3-3*x^2+2".
 
@@ -287,9 +288,11 @@ function buildVariationSVG(spec){
   const INF_POS=/^\+?\s*(\\infty|∞|infty|inf)$/i, INF_NEG=/^-\s*(\\infty|∞|infty|inf)$/i;
   const isPosInf=x=>INF_POS.test(String(x??'').trim());
   const isNegInf=x=>INF_NEG.test(String(x??'').trim());
-  const W=760,leftLabel=40,rightPad=16,plotW=W-leftLabel-rightPad;
-  const xAt=i=>leftLabel+(N===1?0:i*(plotW/(N-1)));
-  const bandX=36,bandDeriv=56,bandVal=204,padTop=10,padBot=10;
+  /* Hình học theo bảng biến thiên SGK: một cột nhãn x/y'/y, không đóng khung ngoài
+     và không kẻ vạch dọc tại mọi điểm tới hạn. Chỉ điểm gián đoạn mới có hai vạch. */
+  const W=760,leftLabel=62,rightPad=18,xStart=leftLabel+28,xEnd=W-rightPad-10,plotW=xEnd-xStart;
+  const xAt=i=>xStart+(N===1?0:i*(plotW/(N-1)));
+  const bandX=38,bandDeriv=44,bandVal=124,padTop=8,padBot=8;
   const yTop=padTop,derivTopY=yTop+bandX,valTopY=derivTopY+bandDeriv,valBotY=valTopY+bandVal,H=valBotY+padBot;
   const intervalSign=i=>deriv[2*i];
   let arriveLevel=[0],departLevel=[0];
@@ -300,26 +303,25 @@ function buildVariationSVG(spec){
   const yArrive=i=>{const v=valLabel(i);if(isPosInf(v))return valTopY+16;if(isNegInf(v))return valBotY-16;return yForLevel(arriveLevel[i])};
   const yDepart=i=>{const v=valLabel(i);if(isPosInf(v))return valTopY+16;if(isNegInf(v))return valBotY-16;return yForLevel(departLevel[i])};
   let svg=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(spec.title||'Bảng biến thiên')}">`;
-  svg+=`<rect x="${leftLabel}" y="${yTop}" width="${plotW}" height="${valBotY-yTop}" class="vt-frame" fill="none" stroke="#333" stroke-width="1.2"/>`;
-  svg+=`<line x1="${leftLabel}" y1="${derivTopY}" x2="${W-rightPad}" y2="${derivTopY}" class="vt-frame" stroke="#333" stroke-width="1.2"/>`;
-  svg+=`<line x1="${leftLabel}" y1="${valTopY}" x2="${W-rightPad}" y2="${valTopY}" class="vt-frame" stroke="#333" stroke-width="1.2"/>`;
-  points.forEach((_,i)=>{const x=xAt(i);svg+=`<line x1="${x}" y1="${yTop}" x2="${x}" y2="${valBotY}" class="vt-grid" stroke="#333" stroke-width="1"/>`});
-  svg+=svgLabel(2,(yTop+derivTopY)/2,'$x$','start',36,20);
-  svg+=svgLabel(2,(derivTopY+valTopY)/2,`$y'$`,'start',36,20);
-  svg+=svgLabel(2,(valTopY+valBotY)/2,'$y$','start',36,20);
+  svg+=`<line x1="${leftLabel}" y1="${yTop}" x2="${leftLabel}" y2="${valBotY}" class="vt-frame"/>`;
+  svg+=`<line x1="8" y1="${derivTopY}" x2="${W-rightPad}" y2="${derivTopY}" class="vt-frame"/>`;
+  svg+=`<line x1="8" y1="${valTopY}" x2="${W-rightPad}" y2="${valTopY}" class="vt-frame"/>`;
+  svg+=svgLabel(20,(yTop+derivTopY)/2,'$x$','middle',28,20);
+  svg+=svgLabel(20,(derivTopY+valTopY)/2,`$y'$`,'middle',28,20);
+  svg+=svgLabel(20,(valTopY+valBotY)/2,'$y$','middle',28,20);
   points.forEach((p,i)=>{svg+=svgLabel(xAt(i),(yTop+derivTopY)/2,wrapMathCell(p),'middle',110,20)});
   for(let i=0;i<N-1;i++){const s=intervalSign(i);if(s)svg+=svgLabel((xAt(i)+xAt(i+1))/2,(derivTopY+valTopY)/2,wrapMathCell(s),'middle',60,20)}
-  for(let i=1;i<N-1;i++){const v=deriv[2*i-1];if(v!==undefined)svg+=svgLabel(xAt(i),(derivTopY+valTopY)/2,wrapMathCell(v),'middle',60,20)}
-  for(let i=0;i<N-1;i++){const x1=xAt(i),x2=xAt(i+1),y1=yDepart(i),y2=yArrive(i+1);svg+=`<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" class="vt-path" fill="none" stroke="#164f75" stroke-width="1.8" stroke-linecap="round"/>`;/* SGK vẽ đầu mũi tên ở CUỐI đoạn, ngay trước giá trị đích (xem bảng biến thiên trong SGK),
+  for(let i=1;i<N-1;i++){const v=deriv[2*i-1];if(!/^\\?\|$/.test(String(v??'').trim())&&v!==undefined)svg+=svgLabel(xAt(i),(derivTopY+valTopY)/2,wrapMathCell(v),'middle',60,20)}
+  for(let i=0;i<N-1;i++){const inset=12,x1=xAt(i)+inset,x2=xAt(i+1)-inset,y1=yDepart(i),y2=yArrive(i+1);svg+=`<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" class="vt-path"/>`;/* SGK vẽ đầu mũi tên ở CUỐI đoạn, ngay trước giá trị đích (xem bảng biến thiên trong SGK),
    không phải ở giữa đoạn như bản cũ. Đặt ở khoảng 88% chiều dài đoạn cho khớp. */
 const t=0.88,mx=x1+(x2-x1)*t,my=y1+(y2-y1)*t,ang=Math.atan2(y2-y1,x2-x1),ah=8,
   ax1=mx-ah*Math.cos(ang-0.42),ay1=my-ah*Math.sin(ang-0.42),
   ax2=mx-ah*Math.cos(ang+0.42),ay2=my-ah*Math.sin(ang+0.42);
-svg+=`<polygon points="${mx.toFixed(1)},${my.toFixed(1)} ${ax1.toFixed(1)},${ay1.toFixed(1)} ${ax2.toFixed(1)},${ay2.toFixed(1)}" class="vt-arrow" fill="#164f75"/>`}
+svg+=`<polygon points="${mx.toFixed(1)},${my.toFixed(1)} ${ax1.toFixed(1)},${ay1.toFixed(1)} ${ax2.toFixed(1)},${ay2.toFixed(1)}" class="vt-arrow"/>`}
   points.forEach((p,i)=>{const v=values[i],anchor=i===0?'start':(i===N-1?'end':'middle');if(v&&typeof v==='object'){const yL=isPosInf(v.left)?valTopY+16:isNegInf(v.left)?valBotY-16:yArrive(i),yR=isPosInf(v.right)?valTopY+16:isNegInf(v.right)?valBotY-16:yDepart(i),midY=(yL+yR)/2;svg+=svgLabel(xAt(i)-8,yL-14,wrapMathCell(v.left),'end',80,20);svg+=svgLabel(xAt(i)+8,yR-14,wrapMathCell(v.right),'start',80,20);/* Điểm gián đoạn: SGK vẽ hai vạch dọc song song chạy suốt hàng y (dấu ‖), không phải hai
    gạch xiên ngắn ở giữa như bản cũ — nhìn vào không ra ký hiệu gián đoạn. */
-svg+=`<line x1="${xAt(i)-3}" y1="${valTopY+4}" x2="${xAt(i)-3}" y2="${valBotY-4}" class="vt-grid"/>`+
-     `<line x1="${xAt(i)+3}" y1="${valTopY+4}" x2="${xAt(i)+3}" y2="${valBotY-4}" class="vt-grid"/>`}else{
+svg+=`<line x1="${xAt(i)-3}" y1="${derivTopY+2}" x2="${xAt(i)-3}" y2="${valBotY-2}" class="vt-discontinuity"/>`+
+     `<line x1="${xAt(i)+3}" y1="${derivTopY+2}" x2="${xAt(i)+3}" y2="${valBotY-2}" class="vt-discontinuity"/>`}else{
     /* Nếu mô hình không tính ra giá trị cực trị, bản cũ để trống — người đọc tưởng bảng đã đủ.
        SGK dùng dấu "?" cho ô chưa điền, nên hiện "?" để giáo viên biết còn phải bổ sung. */
     const shown=String(v??'').trim()||'?';
