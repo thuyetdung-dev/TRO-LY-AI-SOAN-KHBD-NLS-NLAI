@@ -1,0 +1,154 @@
+TRỢ LÝ SOẠN KẾ HOẠCH BÀI DẠY 2026–2027
+BẢN CHUYÊN NGHIỆP – BƯỚC 4
+
+================================================================
+ĐIỀU KIỆN CẦN
+================================================================
+- Máy tính CÓ KẾT NỐI INTERNET. Phần mềm chạy trên máy của thầy cô,
+  nhưng vẫn cần mạng để tải bộ hiển thị công thức toán (MathJax), bộ
+  đóng gói tệp Word (JSZip) và để gọi Gemini. Không có mạng thì công
+  thức hiện ra dạng chữ thô và không xuất được DOCX.
+- Trình duyệt Chrome hoặc Microsoft Edge bản mới. Không dùng Internet
+  Explorer.
+- Khóa API Gemini miễn phí, nếu muốn AI soạn bài.
+
+================================================================
+CÁCH MỞ PHẦN MỀM
+================================================================
+1. Giải nén toàn bộ tệp ZIP.
+2. Giữ nguyên đủ 9 tệp trong CÙNG MỘT THƯ MỤC:
+
+      index.html        giao diện
+      styles.css        định dạng hiển thị
+      styles-plus.css   định dạng bổ sung
+      standards.js      bảng mã NLS (TT 02/2025) và NLAI (QĐ 2422)
+      app.js            phần xử lý chính, dựng prompt, kiểm định
+      flow.js           bảng tổ chức thực hiện, giới hạn thời gian chờ
+      professional.js   chỉnh sửa, lưu và so sánh phiên bản
+      docx-export.js    xuất tệp Word giữ nguyên công thức toán
+      test.html         trang tự kiểm tra (không bắt buộc để chạy phần mềm)
+
+   Thứ tự nạp trong index.html có ý nghĩa: flow.js phải sau app.js,
+   docx-export.js phải sau professional.js. Không tự đổi thứ tự.
+
+3. Bấm đúp vào index.html để mở bằng Chrome hoặc Microsoft Edge.
+4. Điền thông tin bài dạy, nhập khóa API Gemini nếu muốn dùng AI, rồi
+   bấm "Soạn kế hoạch bài dạy".
+
+================================================================
+LƯU Ý KHI SỬ DỤNG
+================================================================
+- KHÓA API KHÔNG ĐƯỢC LƯU. Mỗi lần mở lại phần mềm thầy cô phải dán
+  lại khóa. Đây là chủ ý để bảo vệ khóa, không phải lỗi.
+- Tài liệu đính kèm: tối đa 30 MB mỗi tệp, 60 MB tổng cộng. Tệp dưới
+  8 MB được gửi kèm thẳng trong yêu cầu; tệp lớn hơn sẽ được tải lên
+  Google trước rồi mới soạn bài, nên bước "Đang tải tài liệu lên
+  Google" có thể mất một lúc với SGV vài chục MB.
+- Không tải tài liệu chứa dữ liệu cá nhân của học sinh nếu chưa ẩn danh
+  hoặc chưa có quyền sử dụng.
+- Kết quả do AI tạo là BẢN DỰ THẢO. Giáo viên chịu trách nhiệm rà soát,
+  chỉnh sửa và phê duyệt trước khi sử dụng.
+- Nếu báo "KHÔNG ĐẠT KIỂM ĐỊNH", cần tạo lại hoặc sửa lỗi trước khi
+  xuất Word. Các dòng "cảnh báo" (nền vàng) thì không chặn, chỉ nhắc
+  thầy cô rà lại.
+- Chọn bảng hoạt động 3 cột hoặc 5 cột TRƯỚC khi soạn.
+- Tổng thời lượng nên khớp số tiết × 45 phút. Lệch trong khoảng 10%
+  (tối thiểu 5 phút) chỉ là cảnh báo; lệch nhiều hơn mới bị chặn.
+- Hoạt động 1, 2, 3 phải đủ 4 bước. Riêng Hoạt động 4 (Vận dụng), nếu
+  giao ngoài giờ lên lớp thì chấp nhận 2–3 bước theo đúng tinh thần
+  Phụ lục IV Công văn 5512.
+- Nếu KHBD có mã NLS/NLAI, giáo viên phải tích ô duyệt mã trước khi
+  xuất Word.
+- Nhãn "Theo nguồn" và "AI đề xuất" giúp xác định trách nhiệm giải trình.
+- Hỗ trợ lớp 6–12. NLAI chỉ bật ở lớp 10–12 theo bảng chuẩn có sẵn.
+- "Khóa nguồn tuyệt đối" chỉ cho phép AI dùng dữ liệu thầy cô cung cấp,
+  và bắt buộc phải có ít nhất một tài liệu hoặc nội dung nguồn.
+- Có thể chỉnh trực tiếp bản kế hoạch, lưu tối đa 10 phiên bản, so sánh
+  và khôi phục.
+
+================================================================
+VỀ TỆP WORD XUẤT RA
+================================================================
+- Nút "Tải DOCX" tạo tệp .docx thật, mở được bằng Word, WPS, LibreOffice
+  và Google Docs.
+- Công thức toán được chuyển sang định dạng công thức gốc của Word
+  (OMML), nên thầy cô mở ra sửa được như tự gõ, không phải ảnh chết.
+- Nếu có lệnh LaTeX phần mềm chưa dịch được, nó sẽ hiện NGUYÊN VĂN màu
+  đỏ bằng phông Cambria Math để thầy cô nhìn thấy và sửa tay, thay vì
+  biến mất âm thầm.
+- Bản DOCX dựng từ nội dung AI trả về. Nếu thầy cô sửa tay trên màn
+  hình, hãy bấm "Lưu phiên bản" trước, và lưu ý phần sửa tay có thể
+  chưa vào tệp DOCX — phần mềm sẽ hỏi lại trước khi xuất.
+- Bảng biến thiên và bảng xét dấu được xuất thành BẢNG WORD thật, chỉnh
+  sửa được (gõ đè, thêm cột, đổi mũi tên).
+- Đồ thị hàm số được nhúng vào tệp Word dưới dạng ẢNH, rộng đúng bằng
+  vùng chữ khổ A4, vẽ ở độ phân giải gấp đôi nên in ra không bị rỗ.
+  Ảnh thì không sửa được bằng Word: muốn đổi đồ thị, hãy sửa trên màn
+  hình rồi xuất lại tệp.
+- Nếu máy không chuyển được đồ thị sang ảnh, tệp Word vẫn xuất bình
+  thường, chỗ đó ghi một dòng nhắc thầy cô xem bản trên màn hình.
+
+================================================================
+XỬ LÝ SỰ CỐ THƯỜNG GẶP
+================================================================
+- "AI phản hồi quá 120 giây": một lượt gọi chờ tối đa 2 phút. Tài liệu
+  đính kèm càng nặng càng dễ quá giờ. Hãy bớt tệp, hoặc mở "Tuỳ chọn
+  nâng cao" chọn một mô hình khác rồi thử lại.
+
+- "Bài soạn dài hơn hạn mức của <mô hình>": mô hình đã viết hết dung
+  lượng cho phép và bị cắt giữa chừng. Cách xử lý: giảm số tiết, chọn
+  phong cách "Gọn, dễ triển khai", hoặc tách bài thành 2 lần soạn.
+
+- "Không kết nối được tới Google": kiểm tra mạng, tắt VPN, thử lại.
+
+- "Không tải được <tệp> lên Google": trình duyệt bị chặn tải tệp lớn.
+  Hãy tách tệp PDF thành các phần dưới 15 MB rồi đính kèm lại; phần mềm
+  sẽ tự chuyển sang cách gửi kèm trực tiếp.
+
+- Công thức hiện ra dạng \frac{a}{b} trên màn hình: máy chưa tải được
+  MathJax. Kiểm tra Internet rồi tải lại trang.
+
+- "Chưa tải được bộ tạo DOCX": JSZip chưa tải xong. Kết nối Internet và
+  mở lại trang.
+
+- Đồ thị trong tệp Word bị thiếu, chỉ còn dòng chữ nhắc: trình duyệt
+  chưa vẽ được ảnh. Thử tải lại trang và xuất lại; nếu vẫn không được,
+  dùng nút "In/PDF" để giữ đồ thị.
+
+- Bảng "Tổ chức thực hiện" hiện ô báo lỗi đỏ: JSON do AI sinh bị hỏng.
+  Bấm soạn lại. Nếu lặp lại nhiều lần, đổi phong cách sang "Gọn, dễ
+  triển khai".
+
+- "Bộ nhớ trình duyệt đã đầy": xoá bớt phiên bản cũ trong mục Lịch sử.
+
+- Trang trắng hoặc nút không phản hồi: kiểm tra đủ tệp trong cùng thư
+  mục chưa, rồi mở lại bằng Chrome/Edge. Sau đó mở test.html để biết
+  chính xác chỗ nào hỏng.
+
+================================================================
+TỰ KIỂM TRA SAU KHI SỬA MÃ
+================================================================
+Mở tệp test.html bằng Chrome hoặc Edge rồi bấm "Chạy kiểm tra". Trang
+này chạy 38 phép kiểm tra trên đúng các tệp đang nằm trong thư mục,
+không phải trên bản sao, nên kết quả phản ánh đúng tình trạng thật.
+
+- Toàn bộ xanh: phần mềm còn lành, dùng được.
+- Có dòng đỏ: mỗi dòng ghi rõ chỗ sai và lý do. Nếu vừa sửa mã, quay
+  lại đúng chỗ vừa sửa trước tiên.
+- Dòng xám ghi "bỏ qua": phép kiểm tra không áp dụng cho môi trường
+  hiện tại, không phải lỗi.
+
+Sau khi tất cả xanh, bấm "Tải tệp Word thử" và mở bằng Word để tận mắt
+xác nhận công thức, bảng và đồ thị hiển thị đúng. Máy chỉ kiểm được cấu
+trúc tệp, không thay được việc thầy cô nhìn bằng mắt.
+
+Nên chạy test.html mỗi lần sửa mã, kể cả khi chỉ sửa một dòng nhỏ. Lỗi
+chữ "đ" từng âm thầm khoá bộ kiểm định của phần mềm mà không ai biết,
+trong khi chỉ một phép kiểm tra là phát hiện ra ngay.
+
+================================================================
+CHIA SẺ CHO NGƯỜI KHÁC
+================================================================
+Muốn gửi cho đồng nghiệp dùng qua Internet, phải đưa CẢ THƯ MỤC lên
+dịch vụ lưu trữ website; không gửi riêng tệp index.html. Mỗi người dùng
+tự nhập khóa API riêng của mình.

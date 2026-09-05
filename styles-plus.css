@@ -86,3 +86,12 @@ input:focus-visible, select:focus-visible, textarea:focus-visible {
   .flow-wrap { overflow: visible !important; }
   .lesson-flow { min-width: 0 !important; }
 }
+
+/* ---------- 8. Nhãn trong bảng biến thiên bị in đôi ----------
+ * MathJax kèm theo một bản MathML dành cho trình đọc màn hình và giấu nó bằng
+ * CSS "clip". Nhưng nhãn của bảng biến thiên nằm trong <foreignObject> có
+ * overflow:visible, nên phép giấu bằng clip mất tác dụng và mọi con số hiện ra
+ * HAI LẦN cạnh nhau (3 3, −1 −1, 12 12). Giấu hẳn bản MathML trong khối hình vẽ. */
+.mathviz mjx-assistive-mml,
+.mathviz .MJX_Assistive_MathML,
+.document foreignObject mjx-assistive-mml { display: none !important; }

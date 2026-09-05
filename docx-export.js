@@ -540,7 +540,13 @@
     String(md || '').replace(/```([a-zA-Z]*)\s*\n?([\s\S]*?)```/g, (whole, lang, body) => {
       try {
         const spec = parseLoose(body.trim());
+        /* Bảng biến thiên có khai báo "expr" cũng sinh ra một đồ thị ngay dưới nó trên màn hình,
+           nên tệp Word phải có đúng số ảnh và đúng thứ tự, nếu không ảnh sẽ gán nhầm khối. */
         if (spec?.type === 'graph') specs.push(spec);
+        else if (spec?.type === 'variation' && spec.expr && typeof graphFromVariation === 'function') {
+          const g = graphFromVariation(spec);
+          if (g) specs.push(g);
+        }
       } catch (_) { }
       return whole;
     });
@@ -589,27 +595,69 @@
       }
       return title + para(runsFrom('*[Không chuyển được đồ thị sang ảnh — xem bản trên màn hình hoặc in ra PDF]*', { i: true })) + caption;
     }
+    /* Bảng xét dấu và bảng biến thiên KHÔNG phải bảng thường: các dấu nằm XEN KẼ giữa và tại
+       các mốc. Với N mốc thì bảng Word phải có 1 + (2N-1) cột — cột nhãn, rồi lần lượt
+       mốc / khoảng / mốc / khoảng... Bản cũ đổ thẳng "cells" thành ô nên hàng tiêu đề có N ô
+       còn hàng dấu có 2N-3 ô, số ô lệch nhau và Word vỡ bảng. */
+    const interleave = (points, cells) => {
+      const N = points.length, slots = 2 * N - 1;
+      const rowX = [], rowV = [];
+      for (let j = 0; j < slots; j++) {
+        rowX.push(j % 2 === 0 ? String(points[j / 2] ?? '') : '');
+        rowV.push(j === 0 || j === slots - 1 ? '' : String(cells[j - 1] ?? ''));
+      }
+      return { rowX, rowV, slots };
+    };
+
     if (spec.type === 'sign' || (spec.columns && spec.rows)) {
-      const cols = spec.columns || [], rows = spec.rows || [];
-      const head = cols.map(c => para(runsFrom(wrapMath(c), { b: true })));
-      const body = rows.map(r => [para(runsFrom(wrapMath(r.label), { b: true })),
-      ...(r.cells || []).map(c => para(runsFrom(wrapMath(c)), { align: 'center' }))]);
-      const n = Math.max(cols.length, 1 + (rows[0]?.cells?.length || 0));
+      const pts = (spec.columns || spec.points || []).map(String);
+      const rows = spec.rows || [];
+      if (pts.length < 2 || !rows.length)
+        return para(runsFrom('*[Bảng xét dấu chưa đủ dữ liệu]*', { i: true }));
+      const first = interleave(pts, rows[0].cells || []);
+      const cell = (t, bold) => para(runsFrom(wrapMath(t), bold ? { b: true } : {}), { align: 'center', spaceAfter: 20 });
+      const head = [para(runsFrom('$x$', { b: true }))].concat(first.rowX.map(t => cell(t, true)));
+      const body = rows.map(r => {
+        const it = interleave(pts, r.cells || []);
+        return [para(runsFrom(wrapMath(r.label), { b: true }))].concat(it.rowV.map(t => cell(t)));
+      });
+      const widths = [2].concat(Array(first.slots).fill(1).map((_, j) => j % 2 === 0 ? 1.4 : 1));
       return (spec.title ? para(runsFrom(spec.title, { b: true }), { align: 'center', spaceAfter: 60 }) : '')
-        + tableXml([head, ...body], Array(n).fill(1));
+        + tableXml([head, ...body], widths);
     }
+
     if (spec.type === 'variation' && Array.isArray(spec.points)) {
-      const pts = spec.points, N = pts.length;
-      const deriv = spec.derivative || [], vals = spec.values || [];
-      const rowX = [para(runsFrom('$x$', { b: true }))].concat(
-        pts.map(p => para(runsFrom(wrapMath(p)), { align: 'center' })));
-      const rowD = [para(runsFrom("$y'$", { b: true }))].concat(
-        Array.from({ length: N }, (_, i) => para(runsFrom(wrapMath(deriv[2 * i - 1] ?? '')), { align: 'center' })));
-      const rowV = [para(runsFrom('$y$', { b: true }))].concat(
-        vals.map(v => para(runsFrom(wrapMath(typeof v === 'object' && v ? `${v.left ?? ''} ‖ ${v.right ?? ''}` : v)), { align: 'center' })));
-      return (spec.title ? para(runsFrom(spec.title, { b: true }), { align: 'center', spaceAfter: 60 }) : '')
-        + tableXml([rowX, rowD, rowV], Array(N + 1).fill(1), { header: false })
-        + para(runsFrom('*Dấu khoảng: ' + (deriv.filter((_, i) => i % 2 === 0).join('  ') || '—') + '*', { i: true, small: true }));
+      const pts = spec.points.map(String);
+      const N = pts.length;
+      if (N < 2) return para(runsFrom('*[Bảng biến thiên chưa đủ dữ liệu]*', { i: true }));
+      const it = interleave(pts, spec.derivative || []);
+      const cell = (t, bold) => para(runsFrom(wrapMath(t), bold ? { b: true } : {}), { align: 'center', spaceAfter: 20 });
+      const head = [para(runsFrom('$x$', { b: true }))].concat(it.rowX.map(t => cell(t, true)));
+      const rowD = [para(runsFrom("$y'$", { b: true }))].concat(it.rowV.map(t => cell(t)));
+      /* Hàng y: mũi tên lên xuống không vẽ được bằng ô bảng Word, nên ghi giá trị tại mốc kèm
+         chiều biến thiên bằng ký hiệu ↗ ↘ để giáo viên đọc được ngay và sửa tay nếu muốn. */
+      const vals = spec.values || [];
+      const dir = k => { const sgn = (spec.derivative || [])[2 * k]; return sgn === '+' ? '↗' : sgn === '-' ? '↘' : ''; };
+      const rowY = [para(runsFrom('$y$', { b: true }))];
+      for (let j = 0; j < it.slots; j++) {
+        if (j % 2 === 0) {
+          const v = vals[j / 2];
+          const t = (v && typeof v === 'object') ? `${v.left ?? ''} ‖ ${v.right ?? ''}` : (String(v ?? '').trim() || '?');
+          rowY.push(cell(t, true));
+        } else rowY.push(cell(dir((j - 1) / 2)));
+      }
+      const widths = [2].concat(Array(it.slots).fill(1).map((_, j) => j % 2 === 0 ? 1.4 : 1));
+      let out = (spec.title ? para(runsFrom(spec.title, { b: true }), { align: 'center', spaceAfter: 60 }) : '')
+        + tableXml([head, rowD, rowY], widths, { header: false });
+      if (spec.expr) {
+        const slot = images && images.shift();
+        if (slot && slot.bytes) {
+          out += para(runsFrom('Đồ thị hàm số ' + (spec.funcLabel || 'y = ' + spec.expr), { b: true }),
+                      { align: 'center', spaceBefore: 120, spaceAfter: 60 })
+               + para(drawingXml(slot.index, slot.relId), { align: 'center' });
+        }
+      }
+      return out;
     }
     return para(runsFrom('*[Hình minh hoạ toán học — xem bản trên màn hình]*', { i: true }));
   }
