@@ -1,5 +1,5 @@
 BÁO CÁO ĐÁNH GIÁ VÀ HIỆU CHỈNH TRỢ LÝ KHBD
-Phiên bản rà soát: 2026-09-06 · b24 (b15 → ... → b23 → b24, mỗi vòng theo phản hồi thật)
+Phiên bản rà soát: 2026-09-06 · b26 (b15 → ... → b25 → b26, mỗi vòng theo phản hồi thật)
 
 I. KẾT LUẬN NGẮN
 
@@ -524,8 +524,83 @@ XXI2. HAI PHÉP KIỂM TRA HỎNG NGAY SAU KHI SỬA — CẢ HAI ĐỀU HỮU �
    đó để nó tiếp tục canh đúng cách vẽ nhãn.
 Bộ kiểm tra: 116 phép (115 đạt + 1 bỏ qua ngoài trình duyệt), thêm 2 phép cho vòng này.
 
-XXII. VIỆC CÒN LẠI SAU MƯỜI VÒNG SỬA
-Sáu việc còn tồn vẫn nguyên, năm vòng b20 đến b24 không đụng tới. Ba giới hạn ở mục V vẫn nguyên: nội dung sửa tay trên màn hình chưa vào được tệp Word;
+XXIII. ĐỢT SỬA b25 — BỘ KIỂM ĐỊNH NÓI ĐÚNG NHƯNG NÓI KHÔNG RÕ
+
+Căn cứ: ảnh chụp bài "Tích phân" với 8 dòng lỗi cùng lúc. Điểm đáng nói: KHÔNG DÒNG NÀO SAI.
+Mọi dòng đều mô tả đúng một khiếm khuyết có thật trong bản kế hoạch. Vấn đề nằm ở chỗ khác —
+cách trình bày khiến người đọc không hành động được.
+
+XXIII0. TÁI HIỆN VÀ ĐẾM. Dựng một phản hồi cắt ngang giữa khối mã rồi chấm: 8 dòng chặn. Trong
+đó dòng đầu là nguyên nhân, 7 dòng sau là hệ quả trực tiếp của nó — thiếu mục cuối bài, không
+tìm thấy lessonflow, chưa đánh mã SP/TC, không có công thức nào. Tất cả chỉ vì văn bản dừng
+giữa chừng.
+
+XXIII1. HAI KHUYẾT ĐIỂM KHÁC NHAU VỀ BẢN CHẤT.
+ (a) LIỆT KÊ TRIỆU CHỨNG THAY VÌ CHẨN ĐOÁN. Bộ kiểm định chạy hàng chục phép độc lập rồi đổ
+     kết quả ra một danh sách phẳng. Khi có một nguyên nhân gốc kéo theo nhiều phép cùng hỏng,
+     danh sách ấy che mất điều duy nhất cần biết. Nay nếu nhận ra phản hồi bị cắt — khối mã chưa
+     đóng, hoặc văn bản dừng giữa chừng kèm thiếu các mục cuối bài — phần mềm nói một câu về
+     nguyên nhân và cách xử lý, còn các dấu hiệu hệ quả xếp xuống mục nên xem lại, KHÔNG xoá đi.
+ (b) TRỘN HAI MỨC ĐỘ VÀO MỘT DANH SÁCH. Hàm hiển thị nối thẳng blockers với warnings, nên những
+     dòng chỉ là cảnh báo cũng nằm dưới dòng chữ "đã khóa xuất Word" — kể cả dòng vừa được nới
+     thành cảnh báo ở b23, vốn có cả câu trấn an "dùng lại cùng một tiêu chí thì không sao" mà
+     vẫn hiện dưới nhãn khóa. Công sức nới ở b23 gần như bị vô hiệu chỉ vì chỗ hiển thị. Nay
+     tách thành hai nhóm có nhãn rõ ràng.
+
+XXIII2. ĐO LẠI:
+   phản hồi bị cắt        : từ 8 dòng chặn xuống còn 1 dòng nguyên nhân, 11 dòng nên xem lại
+   bản kế hoạch hoàn chỉnh: không bị gắn nhãn "bị cắt", các lỗi thật còn nguyên
+   hộp kiểm định          : hai nhãn nhóm hiện đúng thứ tự, phải sửa trước, nên xem lại sau
+
+XXIII3. MỘT PHÉP KIỂM TRA CỦA CHÍNH ĐỢT NÀY VIẾT SAI VÀ ĐÃ HỎNG NGAY.
+Phép kiểm ngược ban đầu đòi bản không bị cắt phải ra "nhiều hơn 1 dòng chặn" — tức là đếm số lỗi
+của bản mẫu thay vì đo điều cần đo. Nó hỏng, và đúng ra phải hỏng: bản mẫu đổi một chút là phép
+vỡ, trong khi vẫn không canh đúng thứ cần canh. Đã sửa thành đo trực tiếp việc "có gắn nhãn bị
+cắt oan hay không". Cùng loại bài học với mục XVII3.
+
+Bộ kiểm tra: 119 phép (118 đạt + 1 bỏ qua ngoài trình duyệt), thêm 3 phép cho vòng này.
+
+XXV. ĐỢT SỬA b26 — TỰ XIN VIẾT TIẾP THAY VÌ BẮT SOẠN LẠI
+
+Căn cứ: nối tiếp mạch b25. Vòng trước phần mềm đã biết NÓI rõ rằng phản hồi bị cắt, nhưng cách
+xử lý vẫn là bắt soạn lại từ đầu. Thầy cô yêu cầu làm nốt phần còn thiếu.
+
+XXV1. VÌ SAO ĐÁNG LÀM.
+MAX_TOKENS không phải lỗi của mô hình mà là hạn mức của MỘT LƯỢT. Vứt bỏ phần đã viết rồi soạn
+lại là cách xử lý tệ nhất có thể: mất vài phút chờ, tốn hạn ngạch, và lượt sau bị cắt y hệt vì
+hạn mức có đổi đâu. Cách đúng chính là cách người ta vẫn làm với nhau — bảo "viết tiếp đi".
+
+XXV2. CÁCH LÀM.
+Gửi lại lượt trước dưới dạng contents [user: đề bài + tài liệu] → [model: phần đã viết] →
+[user: lệnh viết tiếp], nên mô hình nhìn thấy đúng chỗ nó dừng chứ không phải đoán. Tối đa 3
+lượt; mỗi lượt kiểm tra văn bản có DÀI THÊM không, không dài thêm thì dừng để khỏi lặp vô ích.
+Chữ ký requestBody và generateOnce được mở rộng để mang lượt hội thoại trước.
+
+XXV3. CHỖ DỄ SAI NHẤT KHÔNG PHẢI PHẦN GỌI MẠNG MÀ LÀ PHẦN NỐI.
+Mô hình dù được dặn kỹ vẫn hay chép lại vài chữ hoặc cả một đoạn cuối cho liền mạch. Nối thẳng
+thì bản kế hoạch có đoạn lặp — lỗi này KHÓ PHÁT HIỆN HƠN CẢ việc bị cắt, vì bản in trông vẫn
+đầy đủ, thầy cô chỉ nhận ra khi đang dạy. Hàm nối vì thế được viết THUẦN, không đụng mạng cũng
+không đụng DOM, để kiểm thử được đầy đủ ngoài trình duyệt — phần gọi mạng thì môi trường kiểm
+thử không có fetch nên không chạm tới được.
+
+XXV4. HAI LỖI CỦA CHÍNH BẢN THIẾT KẾ ĐẦU TIÊN, BẮT ĐƯỢC KHI ĐO:
+ (a) Ngưỡng nhận chỗ chồng lấn đặt 20 ký tự nên bỏ sót ca mô hình chỉ chép lại vài chữ. Hạ dần
+     xuống 6, NHƯNG kèm điều kiện đoạn chồng phải chứa khoảng trắng, tức từ hai chữ trở lên —
+     một chữ đơn lẻ trùng nhau là chuyện ngẫu nhiên rất dễ gặp ("...trong không gian" nối với
+     "gian đoạn tại x=2"), cắt theo nó sẽ ăn mất chữ thật của bài.
+ (b) Bản đầu tự chèn một dấu xuống dòng ở chỗ nối cho "gọn". Nhưng chỗ bị cắt thường nằm ngay
+     GIỮA MỘT TỪ ("...đồng bie" + "n trên R") — chèn vào là vỡ chữ. Nay tuyệt đối không chèn
+     thêm ký tự nào: thiếu một khoảng trắng thì mắt thường còn đọc được, vỡ chữ thì hỏng hẳn.
+Cả hai đều là lỗi chỉ lộ ra khi cho chạy trên trường hợp biên, không phải khi đọc mã.
+
+XXV5. ĐO LẠI. Tám tình huống nối đều đúng, gồm: chép lại vài chữ, chép lại cả đoạn dài, cắt
+giữa từ, cắt giữa khối JSON, phần tiếp rỗng, phần cũ rỗng, và hai ca kiểm ngược. Kiểm chứng
+đầu-cuối: một bản bị cắt ngay giữa khối lessonflow, sau khi nối thì khối mã đóng đủ, JSON đọc
+được, và dòng chẩn đoán "bị cắt" của b25 biến mất.
+Bộ kiểm tra: 124 phép (123 đạt + 1 bỏ qua ngoài trình duyệt), thêm 5 phép cho vòng này.
+
+XXVI. VIỆC CÒN LẠI SAU MƯỜI HAI VÒNG SỬA
+Năm việc còn tồn vẫn nguyên (việc "phản hồi bị cắt phải soạn lại từ đầu" đã xong ở b26). Ba giới hạn ở mục V vẫn nguyên: nội dung sửa tay trên màn hình chưa vào được tệp Word;
 tệp nguồn tải lên lại mỗi lần soạn; validatePlan còn đọc thẳng trạng thái ô nhập. Ngoài ra
 phần mềm vẫn không đối chiếu chéo được nội dung do AI viết ở hai chỗ khác nhau (ví dụ tiêu
 đề hình ghi một hàm còn chú thích dưới hình ghi hàm khác). Những việc đó nên làm thành một

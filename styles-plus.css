@@ -100,3 +100,8 @@ input:focus-visible, select:focus-visible, textarea:focus-visible {
    theo đề nghị của giáo viên: "cắt ra làm 2 khung để đồ thị không bị co lại". */
 .mathviz-graph{margin-top:10px}
 .mathviz-graph svg{width:100%;height:auto;display:block}
+
+/* b25 — nhãn nhóm trong hộp kiểm định: tách rõ "phải sửa" với "nên xem lại", vì trước đây hai
+   loại nằm chung một danh sách phẳng nên giáo viên tưởng cảnh báo cũng khóa xuất Word. */
+.validation-report .vr-nhom{margin:.6rem 0 .15rem;font-weight:600;font-size:.93em;opacity:.85}
+.validation-report .vr-nhom:first-of-type{margin-top:.2rem}

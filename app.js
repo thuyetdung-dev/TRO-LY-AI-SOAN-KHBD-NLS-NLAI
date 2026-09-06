@@ -1,7 +1,7 @@
 /* Mốc phiên bản — hiện ngay trên thanh tiêu đề. Sau nhiều vòng sửa, đã có lần trang web
    chạy bản cũ mà cả hai bên đều tưởng là bản mới, mất công đi tìm lỗi đã sửa xong rồi.
    Nhìn dòng chữ trên đầu trang là biết ngay đang chạy bản nào. */
-const APP_BUILD='2026-09-06 · b24';
+const APP_BUILD='2026-09-06 · b26';
 const $=id=>document.getElementById(id);let selectedFiles=[],rawMarkdown='',availableModels=[],scanTimer,draftTimer,lastValidation=null;
 const fields=['subject','grade','lesson','book','periods','students','classSize','equipment','notes','tableLayout','assessmentMode','lessonTemplate','sourceMode'];
 const toast=m=>{const t=$('toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2600)};
@@ -222,11 +222,61 @@ window.AI_TIMEOUT_MS=STREAM_TOTAL_MS;
    từ chối thì thử lại đúng mô hình đó mà bỏ trường đi. */
 function thinkingFor(model){return /gemini-(?:2\.5|[3-9])/i.test(model)?{thinkingBudget:4096}:null}
 
-function requestBody(fullName,model,parts,withThinking){
+/* ===== b26: XIN AI VIẾT TIẾP KHI BÀI BỊ CẮT =====
+   VÌ SAO: trước đây gặp MAX_TOKENS là phần mềm báo lỗi và bắt soạn lại từ đầu — bỏ đi toàn bộ
+   phần đã viết, tốn thêm vài phút chờ và vẫn có thể bị cắt y hệt. Bài 6 tiết của môn Toán gần
+   như chắc chắn vượt hạn mức một lượt. Nay phần mềm giữ phần đã có rồi xin mô hình viết tiếp,
+   giống hệt cách người ta bảo "viết tiếp đi" thay vì "viết lại từ đầu".
+   Hai hàm dưới đây cố ý viết THUẦN (không đụng mạng, không đụng DOM) để kiểm thử được ngoài
+   trình duyệt — phần gọi API thì môi trường kiểm thử không có fetch nên không chạm tới được. */
+const MAX_VIET_TIEP=3;
+function promptVietTiep(){
+  return `Phần kế hoạch bài dạy ở trên bị DỪNG GIỮA CHỪNG vì hết hạn mức token, KHÔNG phải vì đã viết xong. Hãy VIẾT TIẾP, nối liền mạch từ đúng ký tự cuối cùng.
+- TUYỆT ĐỐI KHÔNG chào hỏi, không xin lỗi, không tóm tắt, không mở đầu lại, không lặp lại bất kỳ phần nào đã viết.
+- Bắt đầu ngay bằng ký tự tiếp theo của văn bản. Nếu đang viết dở một khối mã lessonflow hay mathviz thì viết tiếp đúng cú pháp JSON rồi đóng khối lại cho hợp lệ.
+- Viết cho tới HẾT bài, không được bỏ sót các mục cuối: HOẠT ĐỘNG LUYỆN TẬP, HOẠT ĐỘNG VẬN DỤNG, HƯỚNG DẪN VỀ NHÀ, ĐIỀU CHỈNH SAU BÀI DẠY, PHỤ LỤC CÔNG CỤ ĐÁNH GIÁ và DẤU VẾT NGUỒN VÀ TRÁCH NHIỆM GIẢI TRÌNH.
+- Giữ nguyên mọi quy tắc đã dặn ở đầu: mã MT/SP/TC đánh tiếp chứ không đánh lại từ 1, công thức đặt trong $...$, gạch chéo ngược LaTeX viết thành hai gạch trong JSON.`;
+}
+/* Nối phần viết tiếp vào phần đã có, cắt bỏ chỗ mô hình chép lại.
+   VÌ SAO cần cắt: dù đã dặn "đừng lặp lại", mô hình vẫn hay chép lại vài dòng cuối cho liền
+   mạch, có khi chép lại cả một đoạn dài. Nối thẳng thì bản kế hoạch có đoạn lặp — lỗi này khó
+   thấy hơn cả việc bị cắt, vì bản in trông vẫn đầy đủ. */
+function noiTiepVanBan(daCo,moi){
+  const a=String(daCo??''),b=String(moi??'');
+  if(!a)return b;
+  if(!b.trim())return a;
+  /* 1. Phần mới mở đầu đúng bằng đoạn đuôi của phần cũ — trường hợp thường gặp nhất.
+        Ngưỡng 20 ký tự thì bỏ sót ca mô hình chỉ chép lại vài chữ ("...của hàm" + "hàm số trên
+        khoảng K"), nên hạ xuống 6 NHƯNG bắt buộc đoạn chồng phải chứa khoảng trắng, tức từ hai
+        chữ trở lên. Một chữ đơn lẻ trùng nhau là chuyện ngẫu nhiên rất dễ gặp, cắt theo nó sẽ
+        ăn mất chữ thật của bài. */
+  const tran=Math.min(1200,a.length,b.length);
+  for(let n=tran;n>=6;n--){
+    const duoi=a.slice(-n);
+    if((n>=20||/\s/.test(duoi))&&b.startsWith(duoi))return a+b.slice(n);
+  }
+  /* 2. Mô hình chép lại một đoạn rồi mới viết tiếp: tìm đuôi phần cũ nằm ĐÂU ĐÓ trong phần mới.
+        Dò đuôi dài trước rồi ngắn dần, để bắt được điểm nối xa nhất mà vẫn chắc chắn. */
+  const dau=b.slice(0,8000);
+  for(let n=Math.min(400,a.length);n>=60;n-=20){
+    const duoi=a.slice(-n),vt=dau.indexOf(duoi);
+    if(vt>=0)return a+b.slice(vt+duoi.length);
+  }
+  /* 3. Không tìm được chỗ chồng lấn thì NỐI THẲNG, tuyệt đối không chèn thêm ký tự nào.
+        VÌ SAO: bản đầu tự chèn một dấu xuống dòng cho "gọn", nhưng phần bị cắt thường đứt ngay
+        GIỮA MỘT TỪ ("...đồng bie" + "n trên R") — chèn vào là vỡ chữ. Thiếu một khoảng trắng
+        thì mắt thường còn đọc được, chứ vỡ chữ thì hỏng hẳn. */
+  return a+b;
+}
+
+function requestBody(fullName,model,parts,withThinking,truoc){
   const cfg={temperature:.25,maxOutputTokens:maxTokensFor(fullName)};
   const th=withThinking?thinkingFor(model):null;
   if(th)cfg.thinkingConfig=th;
-  return JSON.stringify({contents:[{role:'user',parts}],generationConfig:cfg});
+  /* b26: "truoc" là các lượt đã trao đổi (phần AI đã viết + lệnh viết tiếp). Gửi kèm thì mô
+     hình thấy đúng chỗ nó dừng, không phải đoán. Rỗng thì đây là lượt soạn đầu tiên. */
+  const contents=[{role:'user',parts},...(Array.isArray(truoc)?truoc:[])];
+  return JSON.stringify({contents,generationConfig:cfg});
 }
 
 /* Đọc luồng SSE. Trả về {text, finish}. */
@@ -256,7 +306,7 @@ async function readSSE(res,onGrow){
   return {text,finish};
 }
 
-async function generateOnce(fullName,model,parts,key,withThinking,onGrow){
+async function generateOnce(fullName,model,parts,key,withThinking,onGrow,truoc){
   const ctrl=new AbortController();
   let idle=null;
   const hard=setTimeout(()=>ctrl.abort(),STREAM_TOTAL_MS);
@@ -267,7 +317,7 @@ async function generateOnce(fullName,model,parts,key,withThinking,onGrow){
     const res=await fetch(`${base}:streamGenerateContent?alt=sse`,{
       method:'POST',signal:ctrl.signal,
       headers:{'Content-Type':'application/json','x-goog-api-key':key},
-      body:requestBody(fullName,model,parts,withThinking)});
+      body:requestBody(fullName,model,parts,withThinking,truoc)});
     if(!res.ok){
       const data=await res.json().catch(()=>({}));
       const e=new Error(data?.error?.message||`Lỗi HTTP ${res.status}`);e.status=res.status;throw e;
@@ -276,7 +326,7 @@ async function generateOnce(fullName,model,parts,key,withThinking,onGrow){
       /* Trình duyệt không đọc được luồng: quay về cách cũ, vẫn có ích hơn là báo hỏng. */
       const r2=await fetch(`${base}:generateContent`,{method:'POST',signal:ctrl.signal,
         headers:{'Content-Type':'application/json','x-goog-api-key':key},
-        body:requestBody(fullName,model,parts,withThinking)});
+        body:requestBody(fullName,model,parts,withThinking,truoc)});
       const d2=await r2.json();
       if(!r2.ok){const e=new Error(d2?.error?.message||`Lỗi HTTP ${r2.status}`);e.status=r2.status;throw e}
       const c=d2.candidates?.[0];
@@ -317,11 +367,30 @@ async function callGemini(v,key){
       try{
         const onGrow=n=>setProgress(Math.min(92,55+Math.floor(n/1200)),'Đang soạn bài...',
           `${model} · đã nhận ${n.toLocaleString('vi-VN')} ký tự`);
-        const {text,finish}=await generateOnce(fullName,model,parts,key,withThinking,onGrow);
+        let {text,finish}=await generateOnce(fullName,model,parts,key,withThinking,onGrow);
         if(!text)throw new Error('Mô hình không trả về nội dung');
-        /* MAX_TOKENS nghĩa là mô hình đã viết hết hạn mức chứ không phải mô hình lỗi — thử mô
-           hình dự phòng khác cũng sẽ bị cắt y hệt, chỉ tốn thêm vài phút chờ. Dừng ngay. */
-        if(finish==='MAX_TOKENS')throw new Error(`Bài soạn dài hơn hạn mức của ${model} (${maxTokensFor(fullName)} token) nên bị cắt giữa chừng. Hãy giảm số tiết, chọn phong cách “Gọn, dễ triển khai”, hoặc tách bài thành 2 lần soạn.`);
+        /* b26 — BỊ CẮT THÌ XIN VIẾT TIẾP, KHÔNG BẮT SOẠN LẠI.
+           MAX_TOKENS nghĩa là mô hình đã viết hết hạn mức một lượt chứ không phải mô hình lỗi;
+           đổi sang mô hình dự phòng cũng bị cắt y hệt. Trước đây phần mềm báo lỗi và vứt bỏ toàn
+           bộ phần đã viết — với bài 5–6 tiết môn Toán thì gần như lần nào cũng vậy. Nay giữ phần
+           đã có rồi gửi tiếp một lượt "viết tiếp từ chỗ đang dừng", tối đa 3 lượt. */
+        let luot=0;
+        while(finish==='MAX_TOKENS'&&luot<MAX_VIET_TIEP){
+          luot++;
+          setProgress(Math.min(94,80+luot*4),'Bài dài, đang xin AI viết tiếp...',
+            `${model} · lượt viết tiếp ${luot}/${MAX_VIET_TIEP} · đã có ${text.length.toLocaleString('vi-VN')} ký tự`);
+          const truoc=[{role:'model',parts:[{text}]},{role:'user',parts:[{text:promptVietTiep()}]}];
+          const tiep=await generateOnce(fullName,model,parts,key,withThinking,
+            n=>setProgress(Math.min(96,82+luot*4),'Bài dài, đang xin AI viết tiếp...',
+              `${model} · lượt ${luot}/${MAX_VIET_TIEP} · thêm ${n.toLocaleString('vi-VN')} ký tự`),truoc);
+          if(!tiep.text)break;                 /* không viết thêm được thì dừng, giữ phần đã có */
+          const truocKhiNoi=text.length;
+          text=noiTiepVanBan(text,tiep.text);
+          finish=tiep.finish;
+          if(text.length<=truocKhiNoi)break;   /* không dài thêm: tránh lặp vô ích */
+        }
+        if(finish==='MAX_TOKENS')
+          throw new Error(`Bài soạn dài hơn hạn mức của ${model} (${maxTokensFor(fullName)} token). Đã tự xin viết tiếp ${MAX_VIET_TIEP} lượt mà vẫn chưa hết bài. Hãy giảm số tiết mỗi lần soạn, chọn phong cách “Gọn, dễ triển khai”, hoặc tách bài thành 2 lần soạn.`);
         if(['SAFETY','RECITATION','BLOCKLIST','PROHIBITED_CONTENT','SPII'].includes(finish))
           throw new Error(`Phản hồi bị chặn (${finish}). Hãy giảm số tài liệu hoặc tạo lại.`);
         setModelStatus(`Đang dùng ${model}`,'ok');
@@ -1634,9 +1703,40 @@ if(aiGenerated){
       blockers.push('Mục Năng lực AI có tiêu đề nhưng không nêu mã NLAI nào theo Quyết định 2422. Hãy ghi mã dạng 12.A1.3 kèm hành vi quan sát được.');
   }
 }
+/* b25 — CHẨN ĐOÁN NGUYÊN NHÂN GỐC THAY VÌ LIỆT KÊ TRIỆU CHỨNG.
+   VÌ SAO: ảnh chụp bài "Tích phân" cho thấy 8 dòng lỗi cùng lúc, mà dòng đầu — "khối mã chưa
+   đóng đầy đủ, phản hồi AI có thể đã bị cắt" — chính là nguyên nhân của gần hết những dòng còn
+   lại. Dựng lại một phản hồi cắt ngang giữa khối mã rồi đo: 8 dòng chặn, 7 dòng là hệ quả.
+   Giáo viên đọc danh sách đó không biết phải sửa gì, trong khi việc cần làm chỉ là bấm Soạn lại.
+   Nay khi phát hiện phản hồi bị cắt, phần mềm nói đúng MỘT câu về nguyên nhân và cách xử lý;
+   các lỗi hệ quả chuyển xuống mục nên xem lại để không mất thông tin, chứ không xoá đi. */
+{
+  const khoiChuaDong=!balancedFences(text);
+  /* Dấu hiệu thứ hai: văn bản dừng giữa chừng — không kết thúc bằng dấu câu hay dấu đóng khối. */
+  const duoiBai=text.trimEnd().slice(-1);
+  const dungGiuaChung=text.length>900&&!/[.。!?:;)»”"'`\]}*_|-]/.test(duoiBai);
+  const thieuCuoiBai=aiGenerated&&!/dieu chinh sau bai day/.test(plain)&&!/huong dan ve nha/.test(plain);
+  if(khoiChuaDong||(dungGiuaChung&&thieuCuoiBai)){
+    const heQua=blockers.filter(b=>!/bị cắt/.test(b));
+    blockers.length=0;
+    blockers.push('Phản hồi của AI bị cắt giữa chừng nên bản kế hoạch chưa hoàn chỉnh — đây là nguyên nhân của hầu hết các lỗi bên dưới, không phải nhiều lỗi riêng lẻ. Hãy bấm Soạn lại. Nếu lặp lại nhiều lần, hãy giảm số tiết mỗi lần soạn hoặc chọn phong cách "Gọn, dễ triển khai" để phản hồi ngắn hơn.');
+    /* Giữ lại các dấu hiệu đã đo được, nhưng xếp xuống mục nên xem lại và nói rõ chúng là hệ quả. */
+    heQua.slice(0,6).forEach(b=>warnings.push('(hệ quả của việc bị cắt) '+b));
+  }
+}
 return {blockers:[...new Set(blockers)],warnings:[...new Set(warnings)],passed:!blockers.length,codes:[...nlsUsed,...aiUsed],totalMinutes,expectedMinutes:expected}}
 function syncExportLock(){const approval=$('approveCompetencies'),blocked=!!lastValidation?.blockers?.length,needsApproval=!!lastValidation?.codes?.length;$('wordBtn').disabled=blocked||(needsApproval&&!approval?.checked);$('wordBtn').title=blocked?'Hãy tạo lại hoặc sửa các lỗi kiểm định trước khi xuất Word':needsApproval&&!approval?.checked?'Giáo viên cần duyệt mã NLS/NLAI trước khi xuất Word':''}
-function renderValidation(report){lastValidation=report;const el=$('validationReport');el.hidden=false;el.className=`validation-report ${report.blockers.length?'block':report.warnings.length?'warn':'ok'}`;const title=report.blockers.length?'KHÔNG ĐẠT KIỂM ĐỊNH – đã khóa xuất Word':report.warnings.length?'ĐẠT CÓ ĐIỀU KIỆN – giáo viên cần rà soát':'ĐẠT KIỂM ĐỊNH CHUYÊN MÔN TỰ ĐỘNG';const items=[...report.blockers,...report.warnings],time=report.expectedMinutes?`<p><b>Thời lượng:</b> ${report.totalMinutes}/${report.expectedMinutes} phút.</p>`:'';const approval=report.codes.length?`<label class="check competency-approval"><input id="approveCompetencies" type="checkbox"> Tôi đã đọc, đối chiếu và duyệt các mã NLS/NLAI: ${report.codes.map(esc).join(', ')}</label>`:'';el.innerHTML=`<strong>${esc(title)}</strong>${time}${items.length?`<ul>${items.map(x=>`<li>${esc(x)}</li>`).join('')}</ul>`:'<span>Đủ cấu trúc, liên kết mục tiêu, thời lượng, đánh giá và mã tham chiếu.</span>'}${approval}`;$('approveCompetencies')?.addEventListener('change',syncExportLock);syncExportLock()}
+function renderValidation(report){lastValidation=report;const el=$('validationReport');el.hidden=false;el.className=`validation-report ${report.blockers.length?'block':report.warnings.length?'warn':'ok'}`;const title=report.blockers.length?'KHÔNG ĐẠT KIỂM ĐỊNH – đã khóa xuất Word':report.warnings.length?'ĐẠT CÓ ĐIỀU KIỆN – giáo viên cần rà soát':'ĐẠT KIỂM ĐỊNH CHUYÊN MÔN TỰ ĐỘNG';const time=report.expectedMinutes?`<p><b>Thời lượng:</b> ${report.totalMinutes}/${report.expectedMinutes} phút.</p>`:'';
+  /* b25 — TÁCH HAI NHÓM. VÌ SAO: bản trước nối thẳng blockers với warnings thành một danh sách
+     phẳng, nên trong ảnh chụp bài "Tích phân" những dòng chỉ là CẢNH BÁO (mã tiêu chí dùng lại,
+     mã NLS chưa gắn hoạt động) nằm lẫn dưới tiêu đề "đã khóa xuất Word". Giáo viên tưởng phải
+     sửa hết mới xuất được, trong khi cảnh báo không hề khoá gì. Nay ghi rõ nhóm nào là nhóm nào. */
+  const nhom=(ten,ds)=>ds.length?`<p class="vr-nhom">${esc(ten)}</p><ul>${ds.map(x=>`<li>${esc(x)}</li>`).join('')}</ul>`:'';
+  const than=(report.blockers.length||report.warnings.length)
+    ? nhom(report.blockers.length?'Phải sửa — đang khóa xuất Word:':'',report.blockers)
+      +nhom(report.blockers.length?'Nên xem lại — không khóa xuất Word:':'Nên xem lại — vẫn xuất Word được:',report.warnings)
+    : '<span>Đủ cấu trúc, liên kết mục tiêu, thời lượng, đánh giá và mã tham chiếu.</span>';
+  const approval=report.codes.length?`<label class="check competency-approval"><input id="approveCompetencies" type="checkbox"> Tôi đã đọc, đối chiếu và duyệt các mã NLS/NLAI: ${report.codes.map(esc).join(', ')}</label>`:'';el.innerHTML=`<strong>${esc(title)}</strong>${time}${than}${approval}`;$('approveCompetencies')?.addEventListener('change',syncExportLock);syncExportLock()}
 function showResult(md,report){rawMarkdown=md;$('progress').hidden=true;$('emptyState').hidden=true;$('result').innerHTML=mdToHtml(md);renderMathViz();$('result').hidden=false;$('resultActions').hidden=false;$('draftNotice').hidden=false;renderValidation(report||validatePlan(md,values(),false));const typeset=()=>window.MathJax?.typesetPromise?window.MathJax.typesetPromise([$('result')]).catch(()=>{}):null;typeset()||setTimeout(typeset,800);$('validationReport').scrollIntoView({behavior:'smooth',block:'start'});saveDraft()}
 $('lessonForm').onsubmit=async e=>{e.preventDefault();const v=values(),key=$('apiKey').value.trim();if(selectedFiles.length&&!$('privacyConfirm').checked){toast('Vui lòng xác nhận tài liệu đã được ẩn danh và có quyền sử dụng');$('privacyConfirm').focus();return}$('generateBtn').disabled=true;try{setProgress(10,'Đang kiểm tra nguồn...','Chuẩn bị dữ liệu bài dạy');let md;if(key){md=await callGemini(v,key);if(!md)throw new Error('AI chưa trả về nội dung')}else{await new Promise(r=>setTimeout(r,350));setProgress(70,'Đang tạo khung dự thảo...','Dùng chế độ cơ bản không cần API key');md=fallback(v)}setProgress(94,'Đang kiểm định đầu ra...','Đối chiếu cấu trúc, lessonflow và mã NLS/NLAI');const report=validatePlan(md,v,!!key);showResult(md,report);toast(report.blockers.length?'Bản dự thảo chưa đạt kiểm định':report.warnings.length?'Đã tạo – cần rà soát cảnh báo':'Đã tạo và đạt kiểm định tự động')}catch(err){$('progress').hidden=true;$('emptyState').hidden=false;toast(err.message||'Có lỗi xảy ra')}finally{$('generateBtn').disabled=false}}
 $('lessonForm').addEventListener('submit',e=>{if($('sourceMode').value==='strict'&&!selectedFiles.length&&!$('notes').value.trim()){e.preventDefault();e.stopImmediatePropagation();toast('Chế độ khóa nguồn tuyệt đối yêu cầu ít nhất một tài liệu hoặc nội dung nguồn');$('dropZone').focus()}},true);

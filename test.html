@@ -115,12 +115,12 @@ h2{font-size:.82rem;letter-spacing:.09em;text-transform:uppercase;color:var(--mu
 })();
 </script>
 
-<script src="standards.js?v=b24"></script>
-<script src="app.js?v=b24"></script>
-<script src="flow.js?v=b24"></script>
-<script src="professional.js?v=b24"></script>
+<script src="standards.js?v=b26"></script>
+<script src="app.js?v=b26"></script>
+<script src="flow.js?v=b26"></script>
+<script src="professional.js?v=b26"></script>
 <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
-<script src="docx-export.js?v=b24"></script>
+<script src="docx-export.js?v=b26"></script>
 
 <script>
 (function(){
@@ -1104,6 +1104,111 @@ async function runAll(){
     var r=repairLatex('\\text{in the box} + in');
     return (r.indexOf('\\text{in the box}')>=0&&r.indexOf('+ \\in')>=0)
       ||'Đã sửa nhầm chữ trong văn xuôi: '+r;
+  });
+
+  /* b25 — ảnh chụp bài "Tích phân" hiện 8 dòng lỗi cùng lúc, trong đó 7 dòng chỉ là hệ quả của
+     việc phản hồi AI bị cắt giữa chừng. Phần mềm phải nói nguyên nhân, không đổ ra triệu chứng. */
+  /* b26 — phần mềm tự xin AI viết tiếp khi bài bị cắt, thay vì bắt soạn lại từ đầu. Phần gọi
+     mạng không kiểm được ngoài trình duyệt, nhưng hàm NỐI là chỗ dễ sai nhất và nó viết thuần
+     nên kiểm được đầy đủ. */
+  await T('Nối phần viết tiếp: cắt đúng chỗ mô hình chép lại',function(){
+    var ca=[
+      ['chép lại vài chữ cuối','...xét tính đơn điệu của hàm','của hàm số trên khoảng K.',
+       '...xét tính đơn điệu của hàm số trên khoảng K.'],
+      ['chép lại cả một đoạn dài',
+       'Bước 3: Báo cáo. HS trình bày kết quả lên bảng phụ và giải thích cách làm của nhóm mình cho cả lớp cùng nghe.',
+       'HS trình bày kết quả lên bảng phụ và giải thích cách làm của nhóm mình cho cả lớp cùng nghe. Bước 4: Kết luận.',
+       'Bước 3: Báo cáo. HS trình bày kết quả lên bảng phụ và giải thích cách làm của nhóm mình cho cả lớp cùng nghe. Bước 4: Kết luận.'],
+      ['cắt ngay giữa một từ','hàm số đồng bie','n trên R.','hàm số đồng bien trên R.'],
+      ['phần viết tiếp rỗng thì giữ nguyên phần cũ','abc','   ','abc'],
+      ['phần cũ rỗng','','xyz','xyz']];
+    var hong=[];
+    ca.forEach(function(c){
+      var r=noiTiepVanBan(c[1],c[2]);
+      if(r!==c[3])hong.push(c[0]+' → '+JSON.stringify(r));
+    });
+    return hong.length===0||hong.join('; ');
+  });
+
+  /* PHÉP KIỂM NGƯỢC — cắt nhầm còn tệ hơn không cắt: nó ăn mất chữ thật của bài. */
+  await T('KIỂM NGƯỢC: một chữ trùng ngẫu nhiên không bị cắt oan',function(){
+    var r=noiTiepVanBan('ba vectơ trong không gian','gian đoạn tại x=2');
+    if(r!=='ba vectơ trong không giangian đoạn tại x=2')
+      return 'Cắt oan chữ thật: '+JSON.stringify(r);
+    /* Và không được tự chèn thêm ký tự nào — chèn vào là vỡ từ bị cắt dở. */
+    return noiTiepVanBan('## I. MỤC TIÊU','## II. THIẾT BỊ')==='## I. MỤC TIÊU## II. THIẾT BỊ'
+      ||'Tự chèn thêm ký tự khi nối';
+  });
+
+  await T('Bài bị cắt giữa khối JSON, nối tiếp xong thì đóng khối và đọc được',function(){
+    var cut=BASE+'\n```lessonflow\n{"type":"lessonflow","rows":[{"step":"Bước 1: Chuyển giao nhiệm vụ"';
+    if(balancedFences(cut))return 'Bản mẫu lẽ ra phải đang dở khối mã';
+    var tiep='nhiệm vụ","duration":10,"goalIds":["MT1"],"teacherActions":["GV"],"studentActions":["HS"],'
+      +'"product":["SP1: nội dung kiến thức đầy đủ, gồm định nghĩa và ví dụ minh hoạ cụ thể."],'
+      +'"assessment":["TC1: quan sát"],"competency":[]}]}\n```\n'+DIEUCHINH;
+    var noi=noiTiepVanBan(cut,tiep);
+    if(!balancedFences(noi))return 'Nối xong khối mã vẫn chưa đóng';
+    var f=parseLessonFlows(noi);
+    if(!f.length||f[0].__error)return 'JSON sau khi nối vẫn không đọc được';
+    /* Và dòng chẩn đoán "bị cắt" phải biến mất sau khi đã viết tiếp. */
+    return !validatePlan(noi,V,true).blockers.some(function(b){return /bị cắt/.test(b)})
+      ||'Vẫn còn báo bị cắt sau khi đã nối đủ';
+  });
+
+  await T('Thân yêu cầu gửi lên đúng ở cả lượt đầu lẫn lượt viết tiếp',function(){
+    /* Chữ ký requestBody bị đổi ở b26 để mang thêm lượt hội thoại trước — chỗ này mà sai thì
+       lượt soạn ĐẦU TIÊN hỏng, tức hỏng toàn bộ phần mềm chứ không riêng việc viết tiếp. */
+    var dau=JSON.parse(requestBody('models/gemini-2.5-flash','gemini-2.5-flash',[{text:'xin chào'}],false));
+    if(!Array.isArray(dau.contents)||dau.contents.length!==1)return 'Lượt đầu phải có đúng 1 contents';
+    if(dau.contents[0].role!=='user')return 'Lượt đầu phải mang vai trò user';
+    if(!dau.generationConfig||!dau.generationConfig.maxOutputTokens)return 'Thiếu hạn mức token';
+    var truoc=[{role:'model',parts:[{text:'phần đã viết'}]},{role:'user',parts:[{text:promptVietTiep()}]}];
+    var tiep=JSON.parse(requestBody('models/gemini-2.5-flash','gemini-2.5-flash',[{text:'xin chào'}],false,truoc));
+    if(tiep.contents.length!==3)return 'Lượt viết tiếp phải có 3 contents, đang có '+tiep.contents.length;
+    return tiep.contents.map(function(c){return c.role}).join(',')==='user,model,user'
+      ||'Thứ tự vai trò sai: '+tiep.contents.map(function(c){return c.role}).join(',');
+  });
+
+  await T('Lời nhắc viết tiếp dặn đúng những điều cần dặn',function(){
+    var p=promptVietTiep();
+    var thieu=['KHÔNG','viết tiếp','ĐIỀU CHỈNH SAU BÀI DẠY','DẤU VẾT NGUỒN']
+      .filter(function(k){return p.toUpperCase().indexOf(k.toUpperCase())<0});
+    if(thieu.length)return 'Lời nhắc thiếu: '+thieu.join(', ');
+    return MAX_VIET_TIEP>=1&&MAX_VIET_TIEP<=5||'Số lượt viết tiếp tối đa không hợp lý: '+MAX_VIET_TIEP;
+  });
+
+  await T('Phản hồi bị cắt chỉ báo MỘT dòng nguyên nhân, không đổ ra hàng loạt triệu chứng',function(){
+    var cut=BASE+'\n```lessonflow\n{"type":"lessonflow","rows":[{"step":"Bước 1"';
+    var r=validatePlan(cut,V,true);
+    if(r.blockers.length!==1)return 'Vẫn ra '+r.blockers.length+' dòng chặn thay vì 1 dòng nguyên nhân';
+    if(!/bị cắt giữa chừng/.test(r.blockers[0]))return 'Dòng chặn không nói đúng nguyên nhân';
+    /* Các lỗi hệ quả không được xoá mất, phải chuyển xuống mục nên xem lại. */
+    return r.warnings.some(function(w){return /hệ quả của việc bị cắt/.test(w)})
+      ||'Đã xoá mất các dấu hiệu hệ quả thay vì xếp xuống mục nên xem lại';
+  });
+
+  /* PHÉP KIỂM NGƯỢC — bản kế hoạch bình thường không được gắn nhãn "bị cắt", nếu không mọi lỗi
+     thật sẽ bị che sau một câu chẩn đoán sai. */
+  await T('KIỂM NGƯỢC: bản không bị cắt vẫn được chấm từng lỗi như cũ',function(){
+    var du=BASE+'\n```lessonflow\n{"type":"lessonflow","rows":[]}\n```\n'
+      +'## HƯỚNG DẪN VỀ NHÀ\nHọc bài.\n'+DIEUCHINH;
+    var r=validatePlan(du,V,true);
+    /* Điều cần đo là KHÔNG gắn nhãn oan, chứ không phải số lỗi của bản mẫu — đếm số lỗi sẽ làm
+       phép kiểm tra vỡ mỗi lần bản mẫu đổi, mà vẫn không canh đúng thứ cần canh. */
+    if(r.blockers.some(function(b){return /bị cắt/.test(b)}))return 'Gắn nhãn "bị cắt" oan cho bản hoàn chỉnh';
+    if(r.warnings.some(function(w){return /hệ quả của việc bị cắt/.test(w)}))return 'Xếp nhầm lỗi thật thành hệ quả của việc bị cắt';
+    /* Và các lỗi thật của bản mẫu phải còn nguyên, không bị nuốt mất. */
+    return (r.blockers.length+r.warnings.length)>0||'Bản mẫu vốn có lỗi mà nay không báo gì';
+  });
+
+  await T('Hộp kiểm định tách rõ nhóm phải sửa và nhóm nên xem lại',function(){
+    renderValidation({blockers:['Lỗi phải sửa A'],warnings:['Chỉ nên xem lại B'],
+      passed:false,codes:[],totalMinutes:0,expectedMinutes:0});
+    var h=document.getElementById('validationReport').innerHTML;
+    if(h.indexOf('Phải sửa')<0)return 'Thiếu nhãn nhóm "Phải sửa"';
+    if(h.indexOf('Nên xem lại')<0)return 'Thiếu nhãn nhóm "Nên xem lại"';
+    /* Nhãn "phải sửa" phải đứng TRƯỚC nhãn "nên xem lại", không thì đọc ngược ý. */
+    return h.indexOf('Phải sửa')<h.indexOf('Nên xem lại')||'Hai nhóm bị đảo thứ tự';
   });
 
   await T('Chặn công thức thiếu dấu ngoặc đóng',function(){

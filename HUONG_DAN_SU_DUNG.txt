@@ -1,5 +1,5 @@
 TRỢ LÝ SOẠN KẾ HOẠCH BÀI DẠY 2026–2027
-BẢN CHUYÊN NGHIỆP – BƯỚC 4 · HIỆU CHỈNH b24
+BẢN CHUYÊN NGHIỆP – BƯỚC 4 · HIỆU CHỈNH b26
 
 ================================================================
 ĐIỀU KIỆN CẦN
@@ -140,7 +140,7 @@ XỬ LÝ SỰ CỐ THƯỜNG GẶP
 TỰ KIỂM TRA SAU KHI SỬA MÃ
 ================================================================
 Mở tệp test.html bằng Chrome hoặc Edge rồi bấm "Chạy kiểm tra". Trang
-này chạy 116 phép kiểm tra trên đúng các tệp đang nằm trong thư mục,
+này chạy 124 phép kiểm tra trên đúng các tệp đang nằm trong thư mục,
 không phải trên bản sao, nên kết quả phản ánh đúng tình trạng thật.
 
 - Toàn bộ xanh: phần mềm còn lành, dùng được.
@@ -477,3 +477,60 @@ NHỮNG THAY ĐỔI CỦA b24 (so với b23)
 4. Bộ kiểm tra: 116 phép (115 đạt + 1 bỏ qua ngoài trình duyệt), thêm 2
    phép cho vòng này, trong đó có phép kiểm NGƯỢC bảo đảm nhãn vẫn bật lại
    được — bỏ nhãn là MẶC ĐỊNH, không phải xoá hẳn khả năng ghi nhãn.
+
+================================================================
+NHỮNG THAY ĐỔI CỦA b25 (so với b24)
+================================================================
+Căn cứ: ảnh chụp bài "Tích phân" hiện 8 dòng lỗi cùng lúc dưới dòng chữ đỏ
+"KHÔNG ĐẠT KIỂM ĐỊNH – đã khóa xuất Word".
+
+1. NÓI NGUYÊN NHÂN, KHÔNG ĐỔ RA TRIỆU CHỨNG. Dòng lỗi đầu tiên trong ảnh
+   — "khối mã chưa đóng đầy đủ, phản hồi AI có thể đã bị cắt" — chính là
+   nguyên nhân của gần hết những dòng còn lại. Dựng lại một phản hồi bị cắt
+   rồi đo: ra 8 dòng chặn, 7 dòng chỉ là hệ quả. Thầy cô đọc danh sách đó
+   không biết phải sửa gì, trong khi việc cần làm chỉ là bấm Soạn lại.
+   Nay khi phần mềm nhận ra phản hồi bị cắt, nó nói đúng MỘT câu: nguyên
+   nhân là gì và nên làm gì (soạn lại; nếu lặp lại thì giảm số tiết mỗi
+   lần soạn hoặc chọn phong cách "Gọn, dễ triển khai"). Các dấu hiệu hệ
+   quả không bị xoá mà chuyển xuống mục nên xem lại, có ghi rõ "(hệ quả
+   của việc bị cắt)".
+
+2. TÁCH RÕ LỖI PHẢI SỬA VỚI LỖI NÊN XEM LẠI. Trước đây hộp kiểm định nối
+   thẳng hai loại thành một danh sách phẳng, nên những dòng chỉ là CẢNH
+   BÁO — mã tiêu chí dùng lại, mã NLS chưa gắn hoạt động — nằm lẫn dưới
+   dòng chữ "đã khóa xuất Word". Thầy cô tưởng phải sửa hết mới xuất được,
+   trong khi cảnh báo không khóa gì cả. Nay hộp kiểm định có hai nhãn rõ
+   ràng: "Phải sửa — đang khóa xuất Word" và "Nên xem lại — không khóa
+   xuất Word".
+
+3. Bộ kiểm tra: 119 phép (118 đạt + 1 bỏ qua ngoài trình duyệt), thêm 3
+   phép cho vòng này, trong đó có phép kiểm NGƯỢC bảo đảm bản kế hoạch
+   hoàn chỉnh KHÔNG bị gắn nhãn "bị cắt" — nếu gắn oan thì mọi lỗi thật sẽ
+   bị che sau một câu chẩn đoán sai.
+
+================================================================
+NHỮNG THAY ĐỔI CỦA b26 (so với b25)
+================================================================
+1. BÀI DÀI BỊ CẮT: PHẦN MỀM TỰ XIN AI VIẾT TIẾP. Trước đây khi mô hình viết
+   hết hạn mức token một lượt, phần mềm báo lỗi và bắt soạn lại từ đầu —
+   vứt bỏ toàn bộ phần đã viết, chờ thêm vài phút, mà lượt sau vẫn có thể
+   bị cắt y hệt. Bài 5–6 tiết môn Toán gần như lần nào cũng vậy.
+   Nay phần mềm GIỮ phần đã có rồi gửi tiếp một lượt "viết tiếp từ đúng chỗ
+   đang dừng", tối đa 3 lượt. Trên thanh tiến trình sẽ hiện dòng "Bài dài,
+   đang xin AI viết tiếp... lượt 1/3". Thầy cô không phải làm gì cả.
+   Chỉ khi qua 3 lượt vẫn chưa hết bài thì phần mềm mới báo và khuyên giảm
+   số tiết mỗi lần soạn hoặc chọn phong cách "Gọn, dễ triển khai".
+
+2. NỐI KHÉO, KHÔNG ĐỂ LẶP ĐOẠN. Dù đã dặn "đừng lặp lại", mô hình vẫn hay
+   chép lại vài chữ hoặc cả một đoạn cuối cho liền mạch. Phần mềm tự nhận
+   ra chỗ chép lại và cắt bỏ. Việc này quan trọng hơn vẻ ngoài của nó: một
+   bản kế hoạch có đoạn lặp còn khó phát hiện hơn bản bị cắt, vì bản in
+   trông vẫn đầy đủ.
+   Ngược lại, phần mềm KHÔNG cắt khi chỉ trùng một chữ ngẫu nhiên, và không
+   bao giờ tự chèn thêm ký tự vào chỗ nối — vì chỗ bị cắt thường nằm ngay
+   giữa một từ, chèn vào là vỡ chữ.
+
+3. Bộ kiểm tra: 124 phép (123 đạt + 1 bỏ qua ngoài trình duyệt), thêm 5
+   phép cho vòng này, trong đó có phép kiểm NGƯỢC bảo đảm không cắt oan chữ
+   thật, và một phép canh thân yêu cầu gửi lên Google vẫn đúng ở LƯỢT ĐẦU —
+   chỗ này sai thì hỏng cả phần mềm chứ không riêng việc viết tiếp.
