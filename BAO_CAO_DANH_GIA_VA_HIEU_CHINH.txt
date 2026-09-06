@@ -1,5 +1,5 @@
 BÁO CÁO ĐÁNH GIÁ VÀ HIỆU CHỈNH TRỢ LÝ KHBD
-Phiên bản rà soát: 2026-09-06 · b21 (b15 → b16 → b17 → b18 → b19 → b20 → b21, mỗi vòng theo phản hồi thật)
+Phiên bản rà soát: 2026-09-06 · b23 (b15 → ... → b22 → b23, mỗi vòng theo phản hồi thật)
 
 I. KẾT LUẬN NGẮN
 
@@ -425,8 +425,80 @@ XV5. ĐO LẠI SAU KHI SỬA:
    markdown 2 khối solid + 1 graph             : ra đúng 3 ảnh trong tệp Word, đúng thứ tự
 Bộ kiểm tra: 107 phép (106 đạt + 1 bỏ qua ngoài trình duyệt), thêm 8 phép cho vòng này.
 
-XVI. VIỆC CÒN LẠI SAU BẢY VÒNG SỬA
-Sáu việc còn tồn vẫn nguyên, hai vòng b20 và b21 không đụng tới. Ba giới hạn ở mục V vẫn nguyên: nội dung sửa tay trên màn hình chưa vào được tệp Word;
+XVII. ĐỢT SỬA b22 — BÚT ĐỎ KHOANH THẲNG LÊN HÌNH DO PHẦN MỀM VẼ
+
+Căn cứ: ba ảnh chụp màn hình, hai trong đó có bút đỏ khoanh thẳng lên hình lập phương mà b21
+vừa sinh ra. Đây là vòng đầu tiên mà bằng chứng là sản phẩm CỦA CHÍNH TÍNH NĂNG VỪA THÊM.
+
+XVII0. TÁI HIỆN. Dựng lại đúng hình bị khoanh rồi đếm: 3 vectơ, 0 vectơ nét đứt, và 1 tiêu đề
+vẽ trong ảnh cộng thêm 1 dòng tiêu đề in ngoài — khớp từng chi tiết với ảnh chụp.
+
+XVII1. LỖI DO CHÍNH b21 GÂY RA: NÉT KHUẤT MỚI ÁP CHO CẠNH, KHÔNG ÁP CHO VECTƠ.
+b21 tự hào vì tính được nét khuất thay vì đoán — nhưng chỉ tính cho các CẠNH của khối. Vectơ và
+đoạn thẳng phụ do bài học thêm vào thì vẽ liền hết. Hậu quả thấy ngay trên bản in: $\vec{AD}$
+nằm ĐÚNG TRÊN cạnh khuất AD mà là nét liền; $\vec{AC}$ là đường chéo mặt đáy đang quay lưng
+cũng nét liền; $\vec{AD'}$ là đường chéo mặt bên trái quay lưng, cũng vậy. Thầy cô ghi "vẽ nét
+đứt đoạn" và chỉ sang cạnh khuất ngay cạnh đó: "nó giống cái này".
+Bài học: khi thêm một quy tắc hình học, phải rà xem quy tắc ấy còn phải áp cho NHỮNG GÌ KHÁC vẽ
+trên cùng hình, chứ không chỉ cho đối tượng mình đang nghĩ tới lúc viết.
+Cách sửa suy thẳng từ quy tắc cũ nên hai thứ không thể lệch nhau: một đoạn bị che khi MỌI mặt
+chứa cả hai đầu của nó đều quay lưng; không mặt nào chứa cả hai thì đoạn xuyên lòng khối và vẫn
+nhìn thấy — đúng như SGK vẫn vẽ AC′ nét liền. Đầu mũi tên luôn vẽ đặc.
+Đo lại: hình lập phương với AD, AD′, AC → 3/3 vectơ nét đứt. Hình quy tắc hình hộp với AB, AD,
+AA′, AC′ → đúng 1 vectơ đứt (AD), 3 vectơ liền.
+
+XVII2. TIÊU ĐỀ IN HAI LẦN — VÀ LỖI NÀY CÓ TỪ b19, KHÔNG PHẢI TỪ b21.
+Ảnh chụp cho thấy tiêu đề hiện chồng hai dòng. Nguyên nhân: ảnh đã vẽ tiêu đề bên trong, phần
+mềm còn in thêm một dòng chữ ở ngoài. Rà tiếp thì ĐỒ THỊ và BẢNG BIẾN THIÊN trong tệp Word cũng
+bị y hệt kể từ b19 — không ai để ý vì hai dòng chữ giống nhau nằm sát nhau trông như một khối
+tiêu đề. Nay tiêu đề chỉ còn một chỗ: ở trong ảnh, để bản màn hình và bản Word luôn giống nhau.
+
+XVII3. MỘT PHÉP KIỂM TRA CŨ ĐANG ĐO NHẦM THỨ — chỉ lộ ra khi sửa lỗi trên.
+Phép "Bảng biến thiên xuất thành bảng Word chỉnh sửa được" chỉ dò chuỗi chữ "Bảng biến thiên"
+trong document.xml. Từ b19 bảng biến thiên đã là ẢNH, nên phép ấy ĐẠT được hoàn toàn nhờ đúng
+cái dòng tiêu đề bị in lặp. Bỏ dòng lặp đi thì nó hỏng ngay — bằng chứng là nó không còn đo cái
+mà tên nó nói. Nay phép đó kiểm sự có mặt của ảnh, hoặc của bảng ô dự phòng khi không dựng được
+ảnh. Đây là lời nhắc rằng một phép kiểm tra xanh chưa chắc đã đang canh đúng chỗ.
+
+Bộ kiểm tra: 111 phép (110 đạt + 1 bỏ qua ngoài trình duyệt), thêm 4 phép cho vòng này, trong
+đó có phép kiểm NGƯỢC bảo đảm vectơ ở mặt trước và đường chéo xuyên lòng khối không bị vẽ đứt oan.
+
+XIX. ĐỢT SỬA b23 — NỚI MỘT PHÉP KIỂM ĐỊNH QUÁ CHẶT
+
+Căn cứ: ảnh chụp màn hình ở vòng trước cho thấy dòng "KHÔNG ĐẠT KIỂM ĐỊNH – đã khoá xuất Word"
+với lý do đầu tiên là mã TC2 được dùng lại ở nhiều hoạt động. Thầy cô yêu cầu nới thành cảnh báo.
+
+XIX0. TÁI HIỆN. Cho hàm trungMaSanPham chấm hai bảng dùng chung "TC2" nhưng mã SP khác nhau:
+trả về ["TC2"] và bị đẩy vào danh sách chặn. Đúng như ảnh.
+
+XIX1. NGUYÊN NHÂN: GỘP HAI THỨ KHÁC BẢN CHẤT VÀO MỘT PHÉP ĐẾM.
+Hàm này gộp product với assessment rồi đếm chung. Nhưng SẢN PHẨM và TIÊU CHÍ không cùng bản
+chất: mỗi sản phẩm là một kết quả học tập riêng nên mã phải duy nhất, còn một tiêu chí đánh giá
+như "quan sát thái độ hợp tác nhóm" thì hoạt động nào cũng có thể dùng. Ép TC phải duy nhất là
+áp một ràng buộc không có trong nghiệp vụ — và hậu quả nặng hơn vẻ ngoài vì nó KHOÁ nút xuất
+Word, đúng loại lỗi tệ nhất mà một bộ kiểm định có thể mắc (xem mục X0).
+
+XIX2. CÁCH NỚI — CÓ MỨC ĐỘ, KHÔNG BỎ HẲN.
+ - Mã SP trùng: vẫn CHẶN.
+ - Mã TC dùng lại với CÙNG nội dung: im lặng hoàn toàn.
+ - Mã TC dùng lại nhưng trỏ vào hai tiêu chí KHÁC nội dung: CẢNH BÁO, vì lúc đó ma trận đánh giá
+   mới thật sự mơ hồ. So sánh nội dung sau khi bỏ dấu, bỏ hoa thường và bỏ dấu câu, để hai cách
+   gõ khác nhau của cùng một tiêu chí không bị coi là khác nhau.
+Prompt cũng được sửa cho khớp, nếu không AI vẫn tự đánh lại mã TC một cách máy móc.
+
+XIX3. ĐO LẠI trên năm trường hợp:
+   TC2 dùng lại, cùng nội dung          → không báo gì
+   TC2 dùng lại, khác nội dung          → cảnh báo
+   SP1 dùng lại                         → vẫn chặn
+   mã đánh liên tục                     → không báo gì
+   TC2 chỉ khác dấu tiếng Việt/chữ hoa  → không báo gì
+Và dựng lại đúng tình huống trong ảnh: bản kế hoạch hai bảng cùng dùng TC2 nay không còn dòng
+chặn nào liên quan tới TC2.
+Bộ kiểm tra: 114 phép (113 đạt + 1 bỏ qua ngoài trình duyệt), thêm 3 phép, trong đó có phép kiểm
+NGƯỢC bảo đảm dùng lại cùng một tiêu chí không bị báo nhầm.
+
+XX. VIỆC CÒN LẠI SAU CHÍN VÒNG SỬA
+Sáu việc còn tồn vẫn nguyên, bốn vòng b20 đến b23 không đụng tới. Ba giới hạn ở mục V vẫn nguyên: nội dung sửa tay trên màn hình chưa vào được tệp Word;
 tệp nguồn tải lên lại mỗi lần soạn; validatePlan còn đọc thẳng trạng thái ô nhập. Ngoài ra
 phần mềm vẫn không đối chiếu chéo được nội dung do AI viết ở hai chỗ khác nhau (ví dụ tiêu
 đề hình ghi một hàm còn chú thích dưới hình ghi hàm khác). Những việc đó nên làm thành một

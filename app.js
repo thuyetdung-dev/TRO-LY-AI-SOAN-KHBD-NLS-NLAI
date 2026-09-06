@@ -1,7 +1,7 @@
 /* Mốc phiên bản — hiện ngay trên thanh tiêu đề. Sau nhiều vòng sửa, đã có lần trang web
    chạy bản cũ mà cả hai bên đều tưởng là bản mới, mất công đi tìm lỗi đã sửa xong rồi.
    Nhìn dòng chữ trên đầu trang là biết ngay đang chạy bản nào. */
-const APP_BUILD='2026-09-06 · b21';
+const APP_BUILD='2026-09-06 · b23';
 const $=id=>document.getElementById(id);let selectedFiles=[],rawMarkdown='',availableModels=[],scanTimer,draftTimer,lastValidation=null;
 const fields=['subject','grade','lesson','book','periods','students','classSize','equipment','notes','tableLayout','assessmentMode','lessonTemplate','sourceMode'];
 const toast=m=>{const t=$('toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2600)};
@@ -179,7 +179,7 @@ ${mathRulesFor(v)}
 10.1) MẪU CHUYÊN MÔN: ${v.lessonTemplate==='math'?'Ưu tiên lập luận, biểu diễn toán học, bài tập phân hóa và kiểm tra đáp án.':v.lessonTemplate==='science'?'Ưu tiên tiến trình khám phá/thí nghiệm, an toàn, quan sát và xử lí dữ liệu.':v.lessonTemplate==='language'?'Ưu tiên đọc–viết–nói–nghe, ngữ liệu, giao tiếp và sản phẩm ngôn ngữ.':v.lessonTemplate==='project'?'Ưu tiên vấn đề thực tiễn, thiết kế, chế tạo, thử nghiệm, cải tiến và rubric sản phẩm.':'Tự chọn phương pháp đặc thù phù hợp môn học; không áp dụng máy móc mẫu của môn khác.'}
 11) TRÍCH DẪN SÁCH: chỉ được ghi số trang, số hiệu bài tập, số hiệu hoạt động (HĐ1, Ví dụ 2, Luyện tập 3, Bài 1.5...) khi con số đó THỰC SỰ NHÌN THẤY trong tài liệu đính kèm. Nếu không đọc được số trang trong tài liệu, ghi "SGK — bài <tên bài>" và KHÔNG kèm số trang. Bịa số trang là lỗi nghiêm trọng vì giáo viên sẽ mở sách theo chỉ dẫn đó trước mặt học sinh.
 12) ĐỘ DÀI: một kế hoạch bài dạy đạt yêu cầu cho ${v.periods||"số tiết đề xuất"} tiết thường dài hàng chục nghìn ký tự vì phải chép đủ kiến thức và lời giải. Không rút gọn, không viết tắt nội dung bằng nhãn, không dùng dấu ba chấm để lược bỏ. Nếu buộc phải chọn giữa ngắn gọn và đầy đủ nội dung dạy học, luôn chọn đầy đủ.
-12.1) ĐÁNH MÃ LIÊN TỤC CHO CẢ BÀI: MT, SP, TC đánh số một mạch từ đầu đến cuối kế hoạch. TUYỆT ĐỐI KHÔNG bắt đầu lại từ SP1/TC1 ở mỗi hoạt động — nếu SP1 xuất hiện ở hai hoạt động với hai nội dung khác nhau thì ma trận liên kết đầu bài không còn truy được về đâu.
+12.1) ĐÁNH MÃ LIÊN TỤC CHO CẢ BÀI: MT và SP đánh số một mạch từ đầu đến cuối kế hoạch. TUYỆT ĐỐI KHÔNG bắt đầu lại từ SP1 ở mỗi hoạt động — nếu SP1 xuất hiện ở hai hoạt động với hai nội dung khác nhau thì ma trận liên kết đầu bài không còn truy được về đâu. Riêng mã TIÊU CHÍ thì được phép dùng lại: một tiêu chí đánh giá như "TC2: quan sát thái độ hợp tác nhóm" hoàn toàn có thể dùng cho nhiều hoạt động, chỉ cần mỗi mã TC luôn ứng với ĐÚNG MỘT nội dung tiêu chí trong cả bài; đừng lấy cùng một mã TC đặt cho hai tiêu chí khác nhau.
 12.2) CỘT NLS/NLAI (trường competency) CHỈ được ghi mã năng lực số dạng 1.1-B5b hoặc mã năng lực AI dạng 12.A1.3, kèm hành vi quan sát được; nếu hoạt động không phát sinh hành vi số thì ghi đúng một dấu "—". TUYỆT ĐỐI KHÔNG ghi năng lực đặc thù môn học ("Tư duy và lập luận toán học", "Giao tiếp toán học", "Mô hình hoá toán học"...) vào cột này — những năng lực đó thuộc mục I. Mục tiêu. Mọi mã NLS đã nêu ở mục Mục tiêu đều phải xuất hiện lại ở ít nhất một bước trong tiến trình, nếu không thì đừng nêu.
 12.3) MỤC NĂNG LỰC AI: khi được yêu cầu tích hợp NLAI, mục 2. Năng lực phải có tiểu mục "Năng lực AI (NLAI)" ngay sau tiểu mục Năng lực số. Bài không phát sinh hành vi dùng hoặc kiểm chứng AI thì vẫn giữ tiểu mục đó và ghi một dòng "không tích hợp trong bài này".
 12.4) KÝ HIỆU TẬP HỢP VÀ KHOẢNG — đây là chỗ hay sai nhất, đã có bản in ra giấy bị lỗi:
@@ -956,6 +956,31 @@ function buildSolidSVG(spec){
       if(matHuong[i])canh.get(id).hien=true;
     }
   });
+  /* b22 — VECTƠ VÀ ĐOẠN PHỤ CŨNG PHẢI THEO NÉT KHUẤT.
+     VÌ SAO: thầy cô khoanh bút đỏ ba vectơ trên hình lập phương và ghi "vẽ nét đứt đoạn",
+     kèm mũi tên chỉ sang cạnh khuất bên cạnh: "nó giống cái này". Đúng — vectơ $\vec{AD}$ nằm
+     ĐÚNG TRÊN cạnh khuất AD mà lại vẽ nét liền, $\vec{AC}$ là đường chéo của mặt đáy đang quay
+     lưng, $\vec{AD'}$ là đường chéo của mặt bên trái cũng quay lưng. Vẽ liền hết thì hình sai
+     quy ước và học sinh đọc ra một khối khác hẳn.
+     Quy tắc suy ra từ chính quy tắc cạnh khuất ở trên, nên hai thứ không thể lệch nhau: một
+     đoạn nối hai điểm của khối bị che khi MỌI mặt chứa cả hai điểm đó đều quay lưng. Nếu không
+     có mặt nào chứa cả hai (đường chéo xuyên lòng khối như AC′) thì đoạn nằm trong lòng khối và
+     vẫn nhìn thấy — đúng như SGK vẫn vẽ AC′ nét liền. */
+  const matChua={};
+  mau.m.forEach((f,i)=>f.forEach(k=>{(matChua[k]=matChua[k]||new Set()).add(i)}));
+  /* Điểm phụ nằm trên một cạnh thì thuộc đúng các mặt chứa cả hai đầu cạnh đó. */
+  (Array.isArray(spec.points)?spec.points:[]).forEach(p=>{
+    const t=solidKhoa(p.name||''),a=solidKhoa(p.between&&p.between[0]),b=solidKhoa(p.between&&p.between[1]);
+    if(!P[t]||!matChua[a]||!matChua[b])return;
+    matChua[t]=new Set([...matChua[a]].filter(i=>matChua[b].has(i)));
+  });
+  const doanKhuat=(u,v)=>{
+    const A=matChua[u],B=matChua[v];
+    if(!A||!B)return false;
+    const chung=[...A].filter(i=>B.has(i));
+    if(!chung.length)return false;              /* xuyên lòng khối — vẫn thấy */
+    return chung.every(i=>!matHuong[i]);        /* mọi mặt chứa nó đều quay lưng */
+  };
 
   /* Khung ảnh: lấy bao lồi của mọi điểm rồi chừa lề cho nhãn đỉnh và tiêu đề. */
   const moiDiem=Object.keys(P).map(k=>chieu(P[k]));
@@ -980,6 +1005,7 @@ function buildSolidSVG(spec){
     `.hk-n{font:italic 16px/1 "Times New Roman",Georgia,serif;fill:#123252}`+
     `.hk-t{font:bold 15px/1 "Segoe UI",Arial,sans-serif;fill:#123252}`+
     `.hk-v{stroke:#c0392b;stroke-width:2.1;fill:none}`+
+    `.hk-v-k{stroke:#c0392b;stroke-width:1.9;fill:none;stroke-dasharray:6 4}`+
     `.hk-vn{font:italic bold 15px/1 "Times New Roman",Georgia,serif;fill:#c0392b}`+
     `.hk-m{fill:#176fa8;fill-opacity:.13;stroke:none}</style>`+
     `<rect width="${W.toFixed(1)}" height="${H.toFixed(1)}" fill="#ffffff"/>`;
@@ -1005,7 +1031,9 @@ function buildSolidSVG(spec){
     const a=solidKhoa(s.from),b=solidKhoa(s.to);
     if(!P[a]||!P[b])return;
     const p=toa(a),q=toa(b);
-    g+=`<line x1="${p[0].toFixed(1)}" y1="${p[1].toFixed(1)}" x2="${q[0].toFixed(1)}" y2="${q[1].toFixed(1)}" class="${s.dash?'hk-k':'hk'}"/>`;
+    /* dash khai báo tay vẫn được tôn trọng; không khai thì tự tính theo mặt khuất. */
+    const dut=s.dash===undefined?doanKhuat(a,b):!!s.dash;
+    g+=`<line x1="${p[0].toFixed(1)}" y1="${p[1].toFixed(1)}" x2="${q[0].toFixed(1)}" y2="${q[1].toFixed(1)}" class="${dut?'hk-k':'hk'}"/>`;
   });
   /* Vectơ: mũi tên màu đỏ như SGK, lùi 4 px mỗi đầu để không dính vào chữ tên đỉnh. */
   const vecto=(Array.isArray(spec.vectors)?spec.vectors:[]).filter(v=>P[solidKhoa(v.from)]&&P[solidKhoa(v.to)]);
@@ -1013,7 +1041,10 @@ function buildSolidSVG(spec){
     const p=toa(solidKhoa(v.from)),q=toa(solidKhoa(v.to));
     const dx=q[0]-p[0],dy=q[1]-p[1],L=Math.hypot(dx,dy)||1,u=[dx/L,dy/L],lui=Math.min(9,L/3);
     const a=[p[0]+u[0]*lui,p[1]+u[1]*lui],b=[q[0]-u[0]*lui,q[1]-u[1]*lui];
-    g+=`<line x1="${a[0].toFixed(1)}" y1="${a[1].toFixed(1)}" x2="${b[0].toFixed(1)}" y2="${b[1].toFixed(1)}" class="hk-v" marker-end="url(#mhk)"/>`;
+    /* Thân vectơ đứt theo mặt khuất, nhưng ĐẦU MŨI TÊN luôn vẽ đặc — nếu để đứt cả đầu thì
+       không còn đọc ra là vectơ nữa, đó là điều thầy cô cần thấy rõ nhất trên hình. */
+    const dut=v.dash===undefined?doanKhuat(solidKhoa(v.from),solidKhoa(v.to)):!!v.dash;
+    g+=`<line x1="${a[0].toFixed(1)}" y1="${a[1].toFixed(1)}" x2="${b[0].toFixed(1)}" y2="${b[1].toFixed(1)}" class="${dut?'hk-v-k':'hk-v'}" marker-end="url(#mhk)"/>`;
     /* VÌ SAO tự vẽ dấu mũi tên: texToPlain không biết lệnh \vec nên nhãn "$\vec{a}$" in thẳng
        ra chữ "veca" — đã thấy tận mắt ở lần dựng thử đầu tiên. Ký tự tổ hợp Unicode (a⃗) thì
        phụ thuộc phông, in ra Word dễ lệch. Nên vẽ chữ rồi gạch một mũi tên ngắn ngay trên đầu:
@@ -1296,7 +1327,9 @@ function renderMathViz(){document.querySelectorAll('.mathviz').forEach(el=>{try{
   if(s.type==='solid'||s.type==='hinhkhong gian'||s.type==='hinh-khong-gian'){
     const svg=buildSolidSVG(s);
     if(!svg)throw new Error('solid schema không hợp lệ');
-    el.innerHTML=`<div class="mathviz-title">${esc(s.title||'Hình không gian')}</div><div class="mathviz-scroll">${svg}</div>`;
+    /* b22 — KHÔNG in thêm dòng tiêu đề ở ngoài: chính ảnh đã vẽ tiêu đề bên trong, nên bản
+       trước hiện tiêu đề HAI LẦN chồng nhau — thấy rõ trong ảnh chụp màn hình thầy cô gửi. */
+    el.innerHTML=`<div class="mathviz-scroll">${svg}</div>`;
   }
   else if(s.type==='graph'){el.innerHTML=`<div class="mathviz-title">${esc(s.title||'Đồ thị')}</div>`+buildGraphSVG(s)+`<div class="mathviz-legend">${(s.functions||[]).map(f=>`<span style="--c:${esc(f.color||'#176fa8')}">$${esc(f.label||f.expr)}$</span>`).join('')}</div>`}
   else if(s.type==='variation'&&Array.isArray(s.points)){const svg=buildVariationSVG(s);if(!svg)throw new Error('variation schema không hợp lệ');/* b18 — TÁCH ĐỒ THỊ RA MỘT KHUNG RIÊNG.
@@ -1434,17 +1467,41 @@ function unbalancedMath(text){
 /* 3) Mã SP/TC đánh lại từ đầu ở mỗi hoạt động.
    Bản in có SP1..SP9 ở Hoạt động 1, rồi SP1..SP8 khác hẳn ở Hoạt động 2, SP1..SP6 ở Hoạt
    động 3... Ma trận liên kết ở đầu bài trỏ tới "SP1" thì không còn biết là SP1 nào. */
+/* b23 — CHỈ MÃ SẢN PHẨM (SP) MỚI BẮT BUỘC DUY NHẤT.
+   VÌ SAO tách khỏi mã tiêu chí: bản trước gộp SP với TC vào cùng một phép đếm nên một bản kế
+   hoạch bị chặn chỉ vì dùng lại "TC2" ở hai hoạt động. Nhưng dùng lại một TIÊU CHÍ đánh giá cho
+   nhiều hoạt động là chuyện hoàn toàn bình thường trong nghề — chẳng hạn "TC2: quan sát thái độ
+   hợp tác nhóm" thì hoạt động nào cũng có thể chấm bằng nó. Ngược lại, mỗi SẢN PHẨM là một kết
+   quả học tập riêng, hai sản phẩm khác nhau mà mang cùng mã thì ma trận liên kết đầu bài không
+   truy được về đâu — chỗ đó vẫn phải chặn. */
 function trungMaSanPham(flows){
   const dem=new Map();
   flows.forEach((f,i)=>{
     if(!f||!Array.isArray(f.rows))return;
     const ma=new Set();
-    f.rows.forEach(r=>(r.product||[]).concat(r.assessment||[])
-      .forEach(x=>{(String(x).match(/^\s*(SP|TC)\d+/)||[]).slice(1,2)
-        .forEach(()=>ma.add(String(x).match(/^\s*((?:SP|TC)\d+)/)[1]))}));
+    f.rows.forEach(r=>(r.product||[])
+      .forEach(x=>{const m=String(x).match(/^\s*(SP\d+)/);if(m)ma.add(m[1])}));
     ma.forEach(m=>dem.set(m,(dem.get(m)||new Set()).add(i)));
   });
   return [...dem.entries()].filter(([,v])=>v.size>1).map(([k])=>k);
+}
+/* Mã tiêu chí: chỉ nhắc khi CÙNG MỘT MÃ lại trỏ vào hai tiêu chí KHÁC NỘI DUNG — lúc đó ma trận
+   mới thật sự mơ hồ. Dùng lại đúng một tiêu chí ở nhiều hoạt động thì im lặng, không làm phiền. */
+function trungMaTieuChi(flows){
+  const noiDung=new Map();
+  const gon=s=>deaccent(String(s).replace(/^\s*TC\d+\s*[::.\-–]?\s*/,''))
+    .toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();
+  (flows||[]).forEach(f=>{
+    if(!f||!Array.isArray(f.rows))return;
+    f.rows.forEach(r=>(r.assessment||[]).forEach(x=>{
+      const m=String(x).match(/^\s*(TC\d+)/);
+      if(!m)return;
+      const t=gon(x);
+      if(!t)return;
+      (noiDung.set(m[1],noiDung.get(m[1])||new Set()),noiDung.get(m[1])).add(t);
+    }));
+  });
+  return [...noiDung.entries()].filter(([,v])=>v.size>1).map(([k])=>k);
 }
 
 function validatePlan(md,v,aiGenerated=true){const blockers=[],warnings=[],text=String(md||''),plain=deaccent(text);if(text.length<900)blockers.push('Nội dung quá ngắn, có khả năng phản hồi bị thiếu hoặc bị cắt.');if(!balancedFences(text))blockers.push('Khối mã chưa đóng đầy đủ; phản hồi AI có thể đã bị cắt.');[['I. Mục tiêu','i. muc tieu'],['II. Thiết bị dạy học và học liệu','ii. thiet bi day hoc va hoc lieu'],['III. Tiến trình dạy học','iii. tien trinh day hoc']].forEach(([label,key])=>{if(!plain.includes(key))blockers.push(`Thiếu mục ${label}.`)});/* Khung mới đặt tên hoạt động theo giáo án mẫu của tổ chuyên môn (Khởi động / Hình thành kiến
@@ -1528,7 +1585,10 @@ if(aiGenerated){
     if(thieu.length)blockers.push(`Mã ${thieu.slice(0,5).join(', ')} được dùng trong bài nhưng không được định nghĩa ở mục I. Mục tiêu — người đọc không biết mục tiêu đó là gì.`);
   }
   const trung=trungMaSanPham(flows);
-  if(trung.length)blockers.push(`Mã ${trung.slice(0,5).join(', ')} được dùng lại ở nhiều hoạt động khác nhau — ma trận liên kết đầu bài sẽ không truy được về đúng sản phẩm. Hãy đánh mã liên tục cho cả bài.`);
+  if(trung.length)blockers.push(`Mã sản phẩm ${trung.slice(0,5).join(', ')} được dùng lại ở nhiều hoạt động khác nhau — ma trận liên kết đầu bài sẽ không truy được về đúng sản phẩm. Hãy đánh mã SP liên tục cho cả bài.`);
+  /* b23: mã tiêu chí dùng lại chỉ CẢNH BÁO, và chỉ khi nội dung hai chỗ khác nhau. */
+  const trungTC=trungMaTieuChi(flows);
+  if(trungTC.length)warnings.push(`Mã tiêu chí ${trungTC.slice(0,5).join(', ')} được dùng cho hai tiêu chí có nội dung khác nhau — hãy xem lại để ma trận đánh giá trỏ đúng chỗ. (Dùng lại cùng một tiêu chí ở nhiều hoạt động thì không sao.)`);
   /* Cột NLS/NLAI của bản in bị điền toàn năng lực đặc thù môn Toán ("Giao tiếp toán học",
      "Tư duy và lập luận toán học") — đúng chỗ này phải là mã NLS/NLAI hoặc dấu "—". */
   const saiCot=[];

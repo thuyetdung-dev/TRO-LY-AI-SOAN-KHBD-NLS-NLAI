@@ -115,12 +115,12 @@ h2{font-size:.82rem;letter-spacing:.09em;text-transform:uppercase;color:var(--mu
 })();
 </script>
 
-<script src="standards.js?v=b21"></script>
-<script src="app.js?v=b21"></script>
-<script src="flow.js?v=b21"></script>
-<script src="professional.js?v=b21"></script>
+<script src="standards.js?v=b23"></script>
+<script src="app.js?v=b23"></script>
+<script src="flow.js?v=b23"></script>
+<script src="professional.js?v=b23"></script>
 <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
-<script src="docx-export.js?v=b21"></script>
+<script src="docx-export.js?v=b23"></script>
 
 <script>
 (function(){
@@ -734,9 +734,15 @@ async function runAll(){
     return true;
   });
 
-  await T('Bảng biến thiên xuất thành bảng Word chỉnh sửa được',function(){
+  await T('Bảng biến thiên có mặt trong tệp Word (dạng ảnh, có đường dự phòng)',function(){
     if(!docParts)return 'Chưa dựng được tài liệu';
-    return docParts['word/document.xml'].indexOf('Bảng biến thiên')>=0||'Không thấy bảng biến thiên trong tệp';
+    var x=docParts['word/document.xml'];
+    /* b22 — phép này trước đây chỉ dò chuỗi chữ "Bảng biến thiên", nên nó ĐẠT được là nhờ đúng
+       cái dòng tiêu đề bị in lặp. Bỏ dòng lặp đi thì phép hỏng — chứng tỏ nó đang đo nhầm thứ.
+       Từ b19 bảng biến thiên là ẢNH, nên phải kiểm sự có mặt của ảnh, hoặc của bảng ô dự phòng
+       khi máy không dựng được ảnh. */
+    if(/<w:drawing>/.test(x))return true;
+    return /<w:tbl>/.test(x)||'Không thấy bảng biến thiên dưới dạng ảnh lẫn dạng bảng dự phòng';
   });
 
   await T('Lệnh LaTeX lạ được giữ nguyên văn, không biến mất âm thầm',async function(){
@@ -764,6 +770,54 @@ async function runAll(){
   group('b21 — Hình khối không gian');
 
   function demNet(svg,lop){return (String(svg).match(new RegExp('class="'+lop+'"','g'))||[]).length}
+
+  /* b22 — thầy cô khoanh bút đỏ trên hai hình lập phương: "vẽ nét đứt đoạn", kèm mũi tên chỉ
+     sang cạnh khuất bên cạnh và ghi "nó giống cái này". Vectơ nằm trên cạnh khuất hoặc trên
+     một mặt đang quay lưng thì phải vẽ đứt như cạnh khuất. */
+  await T('Vectơ nằm ở phần khuất được vẽ nét đứt',function(){
+    var svg=buildSolidSVG({shape:'hinh-lap-phuong',vectors:[
+      {from:'A',to:'D',label:'\\\\vec{AD}'},      /* trùng cạnh khuất AD */
+      {from:'A',to:'D\'',label:'\\\\vec{AD\'}'},  /* đường chéo mặt trái đang quay lưng */
+      {from:'A',to:'C',label:'\\\\vec{AC}'}]});   /* đường chéo mặt đáy đang quay lưng */
+    if(!svg)return 'Không dựng được hình';
+    var dut=(svg.match(/class="hk-v-k"/g)||[]).length;
+    return dut===3||'Mới có '+dut+'/3 vectơ vẽ nét đứt';
+  });
+
+  await T('Đoạn thẳng phụ cũng tự theo nét khuất, vẫn ghi đè được bằng tay',function(){
+    var tu=buildSolidSVG({shape:'hinh-lap-phuong',segments:[{from:'A',to:'C'}]});
+    var deLien=buildSolidSVG({shape:'hinh-lap-phuong',segments:[{from:'A',to:'C',dash:false}]});
+    var dem=function(s,c){return (String(s).match(new RegExp('class="'+c+'"','g'))||[]).length};
+    /* Hình trần có 3 cạnh khuất; thêm AC (chéo mặt đáy khuất) phải thành 4. */
+    if(dem(tu,'hk-k')!==4)return 'Đoạn AC chưa tự nhận nét đứt (đếm được '+dem(tu,'hk-k')+', mong đợi 4)';
+    return dem(deLien,'hk-k')===3||'Khai dash:false mà vẫn bị ép vẽ đứt — mất quyền ghi đè';
+  });
+
+  /* PHÉP KIỂM NGƯỢC — không được vẽ đứt tràn lan: vectơ ở mặt trước và đường chéo xuyên
+     lòng khối vẫn phải là nét liền, đúng như SGK vẫn vẽ AC′. */
+  await T('KIỂM NGƯỢC: vectơ nhìn thấy được vẫn giữ nét liền',function(){
+    var svg=buildSolidSVG({shape:'hinh-hop',vectors:[
+      {from:'A',to:'B',label:'\\\\vec{AB}'},       /* cạnh trước, nhìn thấy */
+      {from:'A',to:'A\'',label:'\\\\vec{AA\'}'},   /* cạnh trước bên trái, nhìn thấy */
+      {from:'A',to:'C\'',label:'\\\\vec{AC\'}'}]}); /* chéo xuyên lòng khối */
+    if(!svg)return 'Không dựng được hình';
+    var dut=(svg.match(/class="hk-v-k"/g)||[]).length,lien=(svg.match(/class="hk-v"/g)||[]).length;
+    if(dut!==0)return dut+' vectơ bị vẽ đứt oan';
+    return lien===3||'Chỉ còn '+lien+'/3 vectơ nét liền';
+  });
+
+  await T('Tiêu đề hình không bị in lặp hai lần trong tệp Word',async function(){
+    var tieu='Hình lập phương ABCD.A′B′C′D′';
+    var md='# X\n```mathviz\n'+JSON.stringify({type:'solid',shape:'hinh-lap-phuong',title:tieu})+'\n```\n'
+      +'```mathviz\n'+JSON.stringify({type:'variation',title:'Bảng biến thiên hàm số y = x^2',
+         points:['-\\\\infty','0','+\\\\infty'],derivative:['-','0','+'],
+         values:['+\\\\infty','0','+\\\\infty']})+'\n```\n';
+    var parts=await buildDocxParts(md,'t');
+    var x=parts['word/document.xml'];
+    /* Tiêu đề nằm SẴN trong ảnh, nên không được xuất hiện thêm lần nào dưới dạng chữ. */
+    if(x.indexOf('Hình lập phương')>=0)return 'Tiêu đề hình khối vẫn bị in lặp ra ngoài ảnh';
+    return x.indexOf('Bảng biến thiên hàm số')<0||'Tiêu đề bảng biến thiên vẫn bị in lặp ra ngoài ảnh';
+  });
 
   await T('Dựng được cả 5 dạng khối, nét đứt tính đúng theo mặt khuất',function(){
     /* Số cạnh khuất mong đợi lấy theo lối vẽ của SGK: hình hộp khuất 3 cạnh qua đỉnh sau,
@@ -1026,7 +1080,7 @@ async function runAll(){
     return unbalancedMath('$\\dfrac{a}{b}+(x-1)$').length===0||'Báo nhầm công thức cân đối';
   });
 
-  await T('Chặn mã SP/TC bị đánh lại từ đầu ở mỗi hoạt động',function(){
+  await T('Chặn mã SẢN PHẨM bị đánh lại từ đầu ở mỗi hoạt động',function(){
     var trung=trungMaSanPham([
       {rows:[{product:['SP1: nội dung A'],assessment:['TC1: a']}]},
       {rows:[{product:['SP1: nội dung B hoàn toàn khác'],assessment:['TC2: b']}]}]);
@@ -1034,6 +1088,48 @@ async function runAll(){
     return trungMaSanPham([
       {rows:[{product:['SP1: a'],assessment:['TC1: a']}]},
       {rows:[{product:['SP2: b'],assessment:['TC2: b']}]}]).length===0||'Báo nhầm khi mã liên tục';
+  });
+
+  /* b23 — nới theo yêu cầu của thầy cô: dùng lại một TIÊU CHÍ đánh giá cho nhiều hoạt động là
+     chuyện bình thường trong nghề, không được chặn. Chỉ nhắc khi cùng một mã TC lại trỏ vào hai
+     tiêu chí khác nội dung. */
+  await T('Mã tiêu chí dùng lại chỉ cảnh báo, và chỉ khi nội dung khác nhau',function(){
+    var khac=trungMaTieuChi([
+      {rows:[{product:['SP1: a'],assessment:['TC2: quan sát thái độ hợp tác']}]},
+      {rows:[{product:['SP2: b'],assessment:['TC2: chấm bài viết trên giấy']}]}]);
+    return khac.indexOf('TC2')>=0||'Không nhận ra cùng mã TC2 trỏ hai tiêu chí khác nhau';
+  });
+
+  /* PHÉP KIỂM NGƯỢC — dùng lại đúng một tiêu chí thì phải IM LẶNG, kể cả khi hai chỗ viết khác
+     nhau về dấu tiếng Việt, chữ hoa hay dấu chấm cuối câu. */
+  await T('KIỂM NGƯỢC: dùng lại cùng một tiêu chí thì không báo gì',function(){
+    var y=trungMaTieuChi([
+      {rows:[{product:['SP1: a'],assessment:['TC2: quan sát thái độ hợp tác nhóm']}]},
+      {rows:[{product:['SP2: b'],assessment:['TC2: quan sát thái độ hợp tác nhóm']}]}]);
+    if(y.length)return 'Báo nhầm khi hai chỗ dùng đúng cùng một tiêu chí';
+    var z=trungMaTieuChi([
+      {rows:[{product:['SP1: a'],assessment:['TC2: Quan sát thảo luận']}]},
+      {rows:[{product:['SP2: b'],assessment:['TC2: quan sat thao luan.']}]}]);
+    return z.length===0||'Báo nhầm chỉ vì khác dấu tiếng Việt hoặc chữ hoa';
+  });
+
+  await T('Bản kế hoạch dùng lại mã TC không còn bị khoá xuất Word',function(){
+    /* Đúng tình huống trong ảnh chụp màn hình: TC2 dùng ở hai hoạt động, bản kế hoạch bị
+       KHÔNG ĐẠT KIỂM ĐỊNH. Nay chỉ được cảnh báo, không chặn. */
+    var f1=JSON.stringify({type:'lessonflow',rows:[1,2,3,4].map(function(i){
+      return {step:'Bước '+i,duration:10,goalIds:['MT1'],teacherActions:['GV giao nhiệm vụ'],
+        studentActions:['HS thực hiện'],
+        product:['SP'+i+': nội dung kiến thức viết ra đủ dài để không bị coi là sơ sài, gồm định nghĩa và ví dụ minh hoạ cụ thể.'],
+        assessment:['TC2: quan sát thái độ hợp tác nhóm'],competency:[]};})});
+    var f2=JSON.stringify({type:'lessonflow',rows:[5,6,7,8].map(function(i){
+      return {step:'Bước '+(i-4),duration:10,goalIds:['MT1'],teacherActions:['GV giao nhiệm vụ'],
+        studentActions:['HS thực hiện'],
+        product:['SP'+i+': nội dung kiến thức viết ra đủ dài để không bị coi là sơ sài, gồm định nghĩa và ví dụ minh hoạ cụ thể.'],
+        assessment:['TC2: quan sát thái độ hợp tác nhóm'],competency:[]};})});
+    var md=BASE+'\n```lessonflow\n'+f1+'\n```\n\n```lessonflow\n'+f2+'\n```\n'+DIEUCHINH;
+    var r=validatePlan(md,V,true);
+    return r.blockers.filter(function(b){return /TC2/.test(b)}).length===0
+      ||'Vẫn còn chặn vì mã TC dùng lại: '+r.blockers.filter(function(b){return /TC2/.test(b)})[0];
   });
 
   await T('Chặn cột NLS/NLAI ghi nhầm năng lực đặc thù môn học',function(){

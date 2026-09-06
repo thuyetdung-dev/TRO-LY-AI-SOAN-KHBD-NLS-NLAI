@@ -1,5 +1,5 @@
 TRỢ LÝ SOẠN KẾ HOẠCH BÀI DẠY 2026–2027
-BẢN CHUYÊN NGHIỆP – BƯỚC 4 · HIỆU CHỈNH b21
+BẢN CHUYÊN NGHIỆP – BƯỚC 4 · HIỆU CHỈNH b23
 
 ================================================================
 ĐIỀU KIỆN CẦN
@@ -140,7 +140,7 @@ XỬ LÝ SỰ CỐ THƯỜNG GẶP
 TỰ KIỂM TRA SAU KHI SỬA MÃ
 ================================================================
 Mở tệp test.html bằng Chrome hoặc Edge rồi bấm "Chạy kiểm tra". Trang
-này chạy 107 phép kiểm tra trên đúng các tệp đang nằm trong thư mục,
+này chạy 114 phép kiểm tra trên đúng các tệp đang nằm trong thư mục,
 không phải trên bản sao, nên kết quả phản ánh đúng tình trạng thật.
 
 - Toàn bộ xanh: phần mềm còn lành, dùng được.
@@ -397,3 +397,61 @@ nếu sách giáo khoa có hình minh hoạ thì kế hoạch soạn phải có 
 5. Bộ kiểm tra: 107 phép (106 đạt + 1 bỏ qua ngoài trình duyệt), thêm 8
    phép cho vòng này, trong đó có phép kiểm NGƯỢC bảo đảm không chặn oan
    bài đã có hình và không đòi hình khối ở bài giải tích.
+
+================================================================
+NHỮNG THAY ĐỔI CỦA b22 (so với b21)
+================================================================
+Căn cứ: ba ảnh chụp màn hình thầy cô gửi, có khoanh bút đỏ trực tiếp lên
+hai hình lập phương do phần mềm vẽ.
+
+1. VECTƠ NẰM Ở PHẦN KHUẤT NAY VẼ NÉT ĐỨT. Thầy cô ghi "vẽ nét đứt đoạn"
+   kèm mũi tên chỉ sang cạnh khuất bên cạnh: "nó giống cái này". Đúng —
+   b21 mới tính nét khuất cho các CẠNH của khối, còn vectơ và đoạn thẳng
+   phụ thì vẽ liền hết. Hệ quả: vectơ AD nằm ngay trên cạnh khuất AD lại
+   là nét liền, vectơ AC là đường chéo của mặt đáy đang quay lưng cũng
+   nét liền — hình sai quy ước, học sinh đọc ra một khối khác.
+   Quy tắc mới suy thẳng từ quy tắc cạnh khuất nên hai thứ không thể lệch
+   nhau: một đoạn bị che khi MỌI mặt chứa cả hai đầu của nó đều quay lưng.
+   Đoạn xuyên lòng khối như đường chéo AC' thì vẫn nét liền, đúng như SGK.
+   Đầu mũi tên luôn vẽ đặc, vì đứt cả đầu thì không còn đọc ra là vectơ.
+   Vẫn ghi đè được bằng tay: khai "dash": true hoặc false.
+
+2. TIÊU ĐỀ HÌNH KHÔNG CÒN IN HAI LẦN. Ảnh chụp cho thấy tiêu đề "Hình lập
+   phương ABCD.A'B'C'D'" hiện chồng nhau hai dòng. Nguyên nhân: chính ảnh
+   đã vẽ tiêu đề bên trong, mà phần mềm còn in thêm một dòng chữ ở ngoài.
+   Rà lại thì ĐỒ THỊ và BẢNG BIẾN THIÊN trong tệp Word cũng bị y hệt từ
+   b19 mà chưa ai để ý. Nay tiêu đề chỉ nằm một chỗ — ở trong ảnh — nên
+   bản trên màn hình và bản trong Word luôn giống nhau.
+
+3. Bộ kiểm tra: 111 phép (110 đạt + 1 bỏ qua ngoài trình duyệt), thêm 4
+   phép cho vòng này, trong đó có phép kiểm NGƯỢC bảo đảm vectơ ở mặt
+   trước và đường chéo xuyên lòng khối KHÔNG bị vẽ đứt oan.
+
+LƯU Ý VỀ MỘT PHÉP KIỂM TRA CŨ: phép "bảng biến thiên có trong tệp Word"
+trước đây chỉ dò chuỗi chữ "Bảng biến thiên", nên nó đạt được là nhờ đúng
+cái dòng tiêu đề bị in lặp. Bỏ dòng lặp thì phép hỏng — tức là nó đang đo
+nhầm thứ. Nay phép đó kiểm sự có mặt của ẢNH, hoặc của bảng ô dự phòng.
+
+================================================================
+NHỮNG THAY ĐỔI CỦA b23 (so với b22)
+================================================================
+1. MÃ TIÊU CHÍ DÙNG LẠI KHÔNG CÒN BỊ CHẶN. Trước đây phần mềm gộp mã sản
+   phẩm (SP) với mã tiêu chí (TC) vào cùng một phép đếm, nên một bản kế
+   hoạch bị KHÔNG ĐẠT KIỂM ĐỊNH và khoá nút xuất Word chỉ vì dùng "TC2" ở
+   hai hoạt động. Nhưng dùng lại một tiêu chí đánh giá cho nhiều hoạt động
+   là chuyện bình thường trong nghề: "TC2: quan sát thái độ hợp tác nhóm"
+   thì hoạt động nào cũng chấm được bằng nó.
+   Nay:
+   - Mã SẢN PHẨM vẫn phải duy nhất — hai sản phẩm khác nhau mang cùng mã
+     thì ma trận liên kết đầu bài không truy được về đâu. Vẫn CHẶN.
+   - Mã TIÊU CHÍ được phép dùng lại thoải mái. Phần mềm chỉ CẢNH BÁO khi
+     cùng một mã TC lại trỏ vào hai tiêu chí có nội dung KHÁC nhau, vì lúc
+     đó ma trận mới thật sự mơ hồ. Dùng lại đúng một tiêu chí thì im lặng,
+     kể cả khi hai chỗ viết khác nhau về dấu tiếng Việt hay chữ hoa.
+
+2. Lời nhắc gửi cho AI cũng được sửa cho khớp, để lần sau AI không tự đánh
+   lại mã TC một cách máy móc.
+
+3. Bộ kiểm tra: 114 phép (113 đạt + 1 bỏ qua ngoài trình duyệt), thêm 3
+   phép cho vòng này, trong đó có phép kiểm NGƯỢC bảo đảm việc dùng lại
+   cùng một tiêu chí không bị báo nhầm.

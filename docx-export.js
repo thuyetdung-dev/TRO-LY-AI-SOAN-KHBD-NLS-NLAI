@@ -700,10 +700,13 @@
   function layDoThiKemTheo(spec, images) {
     if (!(spec.expr && images.length && images[0] && images[0].loai === 'do-thi')) return '';
     const slot = images.shift();
-    const tieuDe = para(runsFrom(slot.spec && slot.spec.title ? slot.spec.title : 'Đồ thị hàm số',
-      { b: true }), { align: 'center', spaceAfter: 60 });
-    if (!slot.bytes) return tieuDe + para(runsFrom('*[Không dựng được đồ thị — xem bản trên màn hình]*', { i: true }), { align: 'center' });
-    return tieuDe + para(drawingXml(slot.index, slot.relId, slot.w, slot.h), { align: 'center' });
+    /* b22 — KHÔNG in dòng tiêu đề ở đây nữa: chính ảnh đã vẽ tiêu đề bên trong, nên tệp Word
+       hiện tiêu đề HAI LẦN liền nhau. Ảnh chụp màn hình thầy cô gửi cho thấy rõ điều đó ở hình
+       khối, và rà lại thì đồ thị với bảng biến thiên cũng bị y hệt từ b19 mà chưa ai để ý.
+       Giữ tiêu đề Ở TRONG ẢNH để bản trên màn hình và bản trong Word luôn giống nhau. */
+    if (!slot.bytes) return para(runsFrom((slot.spec && slot.spec.title ? slot.spec.title : 'Đồ thị hàm số'), { b: true }), { align: 'center' })
+      + para(runsFrom('*[Không dựng được đồ thị — xem bản trên màn hình]*', { i: true }), { align: 'center' });
+    return para(drawingXml(slot.index, slot.relId, slot.w, slot.h), { align: 'center' });
   }
 
   function mathvizXml(spec, images) {
@@ -711,8 +714,8 @@
     if (spec.type === 'solid' || spec.type === 'hinh-khong-gian') {
       const slot = images && images.shift();
       const title = spec.title ? para(runsFrom(spec.title, { b: true }), { align: 'center', spaceAfter: 60 }) : '';
-      if (slot && slot.bytes)
-        return title + para(drawingXml(slot.index, slot.relId, slot.w, slot.h, 0.62), { align: 'center' });
+      if (slot && slot.bytes)   /* b22: tiêu đề đã nằm trong ảnh, không in lại ở ngoài */
+        return para(drawingXml(slot.index, slot.relId, slot.w, slot.h, 0.62), { align: 'center' });
       /* Không bao giờ im lặng bỏ hình: nếu không raster được thì vẫn để lại một dòng nhắc. */
       return title + para(runsFrom('*[Không chuyển được hình không gian sang ảnh — xem bản trên màn hình hoặc in ra PDF]*', { i: true }), { align: 'center' });
     }
@@ -723,8 +726,8 @@
       const caption = legend.length
         ? para(runsFrom('*' + legend.map(t => t.includes('$') ? t : `$${t}$`).join(';  ') + '*', { small: true }), { align: 'center' })
         : '';
-      if (slot && slot.bytes) {
-        return title + para(drawingXml(slot.index, slot.relId, slot.w, slot.h), { align: 'center' }) + caption;
+      if (slot && slot.bytes) {   /* b22: tiêu đề đã nằm trong ảnh, không in lại ở ngoài */
+        return para(drawingXml(slot.index, slot.relId, slot.w, slot.h), { align: 'center' }) + caption;
       }
       return title + para(runsFrom('*[Không chuyển được đồ thị sang ảnh — xem bản trên màn hình hoặc in ra PDF]*', { i: true })) + caption;
     }
@@ -768,9 +771,8 @@
          ảnh phía sau sẽ lệch một nhịp và gán nhầm khối. */
       if (images.length && images[0] && images[0].loai === 'bbt') {
         const anh = images.shift();
-        if (anh.bytes) {
-          return (spec.title ? para(runsFrom(spec.title, { b: true }), { align: 'center', spaceAfter: 60 }) : '')
-            + para(drawingXml(anh.index, anh.relId, anh.w, anh.h), { align: 'center' })
+        if (anh.bytes) {   /* b22: tiêu đề đã nằm trong ảnh, không in lại ở ngoài */
+          return para(drawingXml(anh.index, anh.relId, anh.w, anh.h), { align: 'center' })
             + layDoThiKemTheo(spec, images);
         }
       }
