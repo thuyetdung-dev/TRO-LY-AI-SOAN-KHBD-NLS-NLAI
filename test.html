@@ -115,12 +115,12 @@ h2{font-size:.82rem;letter-spacing:.09em;text-transform:uppercase;color:var(--mu
 })();
 </script>
 
-<script src="standards.js?v=b20"></script>
-<script src="app.js?v=b20"></script>
-<script src="flow.js?v=b20"></script>
-<script src="professional.js?v=b20"></script>
+<script src="standards.js?v=b21"></script>
+<script src="app.js?v=b21"></script>
+<script src="flow.js?v=b21"></script>
+<script src="professional.js?v=b21"></script>
 <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
-<script src="docx-export.js?v=b20"></script>
+<script src="docx-export.js?v=b21"></script>
 
 <script>
 (function(){
@@ -760,6 +760,100 @@ async function runAll(){
   });
 
   /* ---------- b19: bản in Bài 4 (Khảo sát và vẽ đồ thị hàm số) ---------- */
+  /* ---------- b21: hình khối không gian (bản in Bài 6 — Vectơ trong không gian) ---------- */
+  group('b21 — Hình khối không gian');
+
+  function demNet(svg,lop){return (String(svg).match(new RegExp('class="'+lop+'"','g'))||[]).length}
+
+  await T('Dựng được cả 5 dạng khối, nét đứt tính đúng theo mặt khuất',function(){
+    /* Số cạnh khuất mong đợi lấy theo lối vẽ của SGK: hình hộp khuất 3 cạnh qua đỉnh sau,
+       tứ diện và chóp tam giác chỉ khuất 1 cạnh đáy, chóp tứ giác khuất 2 cạnh đáy + 1 cạnh bên,
+       lăng trụ tam giác khuất 3 cạnh qua đỉnh sau. */
+    var mong={'hinh-hop':3,'tu-dien':1,'hinh-chop-tu-giac':3,'hinh-chop-tam-giac':1,'lang-tru-tam-giac':3};
+    var hong=[];
+    Object.keys(mong).forEach(function(k){
+      var svg=buildSolidSVG({shape:k});
+      if(!svg){hong.push(k+': không dựng được');return}
+      var dut=demNet(svg,'hk-k'), lien=demNet(svg,'hk');
+      if(dut!==mong[k])hong.push(k+': '+dut+' nét đứt, mong đợi '+mong[k]);
+      if(lien<3)hong.push(k+': chỉ '+lien+' nét liền');
+      if(svg.indexOf('<svg')!==0)hong.push(k+': không phải SVG đứng riêng');
+    });
+    return hong.length===0||hong.join('; ');
+  });
+
+  await T('Điểm phụ nằm đúng trung điểm cạnh và có nhãn',function(){
+    var svg=buildSolidSVG({shape:'hinh-hop',points:[{name:'M',between:['A','B']}]});
+    if(!svg)return 'Không dựng được hình';
+    if(svg.indexOf('>M<')<0)return 'Không thấy nhãn điểm M';
+    /* Trung điểm AB phải nằm giữa hai đỉnh: lấy toạ độ ba nhãn rồi so. */
+    var t=[];svg.replace(/<text x="([0-9.\-]+)" y="([0-9.\-]+)"[^>]*class="hk-n">([^<]+)</g,
+      function(m,x,y,n){t.push({x:+x,y:+y,n:n});return m});
+    var A=t.filter(function(o){return o.n==='A'})[0],
+        B=t.filter(function(o){return o.n==='B'})[0],
+        M=t.filter(function(o){return o.n==='M'})[0];
+    if(!A||!B||!M)return 'Thiếu nhãn A, B hoặc M';
+    return Math.abs(M.x-(A.x+B.x)/2)<28||'M lệch khỏi trung điểm AB '+Math.abs(M.x-(A.x+B.x)/2).toFixed(1)+' px';
+  });
+
+  await T('Nhãn vectơ không in ra chữ "vec" và có dấu mũi tên',function(){
+    var svg=buildSolidSVG({shape:'tu-dien',vectors:[{from:'A',to:'B',label:'\\\\vec{a}'}]});
+    if(!svg)return 'Không dựng được hình';
+    if(/>[^<]*vec[^<]*</.test(svg))return 'Nhãn vẫn in ra nguyên văn lệnh LaTeX';
+    return svg.indexOf('url(#mhk2)')>0||'Thiếu dấu mũi tên trên đầu nhãn vectơ';
+  });
+
+  await T('Tiêu đề dài không tràn ra ngoài khung ảnh',function(){
+    var tieu='Hình chóp S.ABCD có đáy là hình bình hành tâm O';
+    var svg=buildSolidSVG({shape:'hinh-chop-tu-giac',title:tieu});
+    var W=parseFloat((svg.match(/width="([0-9.]+)"/)||[])[1]);
+    return W>=tieu.length*9||'Khung rộng '+W+' px, chưa đủ cho tiêu đề '+tieu.length+' ký tự';
+  });
+
+  await T('Hình khối vào tệp Word dưới dạng ảnh',async function(){
+    var md='# X\n```mathviz\n'+JSON.stringify({type:'solid',shape:'hinh-lap-phuong',
+      title:'Hình lập phương ABCD.A′B′C′D′'})+'\n```\n';
+    var parts=await buildDocxParts(md,'t');
+    var x=parts['word/document.xml'];
+    if(!/<w:drawing>/.test(x))return 'Không có ảnh nào trong tài liệu';
+    return !/Không chuyển được hình không gian/.test(x)||'Rơi vào nhánh dự phòng — ảnh chưa dựng được';
+  });
+
+  /* PHÉP KIỂM NGƯỢC 1 — tên khối lạ thì trả null, không được vẽ bừa một hình sai. */
+  await T('KIỂM NGƯỢC: tên khối không nhận ra thì không dựng hình bừa',function(){
+    var xau=['hinh-tron','abcxyz','',null];
+    var hong=[];
+    xau.forEach(function(s){if(buildSolidSVG({shape:s}))hong.push(JSON.stringify(s)+' vẫn ra hình')});
+    /* Nhưng các bí danh quen thuộc thì PHẢI nhận, nếu không lại chặn oan chiều ngược lại. */
+    ['hinh lap phuong','Hình hộp chữ nhật','tudien','chop-tu-giac','lang tru'].forEach(function(s){
+      if(!buildSolidSVG({shape:s}))hong.push('bí danh "'+s+'" bị bỏ sót');
+    });
+    return hong.length===0||hong.join('; ');
+  });
+
+  /* PHÉP KIỂM NGƯỢC 2 — không được chặn oan bài đã có hình, và không đụng bài giải tích. */
+  await T('KIỂM NGƯỢC: có hình rồi thì không bị chặn, bài giải tích không bị đòi hình khối',function(){
+    var than='\n```mathviz\n'+JSON.stringify({type:'solid',shape:'tu-dien',title:'Tứ diện ABCD'})+'\n```\n';
+    var VK={subject:'Toán',periods:'1',assessmentMode:'khong',grade:'12',lesson:'Vectơ trong không gian'};
+    var md=plan([4],10,'Cho tứ diện ABCD và hình lập phương ABCD.A\'B\'C\'D\'.'+than+DIEUCHINH);
+    var r1=validatePlan(md,VK,true).blockers.filter(function(b){return /không có một hình vẽ nào/.test(b)});
+    if(r1.length)return 'Chặn oan bài ĐÃ có hình khối';
+    /* Bài giải tích có đồ thị: không được đòi thêm hình khối. */
+    var g='\n```mathviz\n'+JSON.stringify({type:'graph',title:'Đồ thị',functions:[{expr:'x^2',label:'y=x^2'}]})+'\n```\n';
+    var VG={subject:'Toán',periods:'1',assessmentMode:'khong',grade:'12',lesson:'Khảo sát và vẽ đồ thị hàm số'};
+    var r2=validatePlan(plan([4],10,'Quan sát Hình 1.2 rồi nhận xét.'+g+DIEUCHINH),VG,true);
+    return r2.blockers.filter(function(b){return /hình khối không gian/.test(b)}).length===0
+      ||'Bài giải tích có đồ thị vẫn bị đòi hình khối';
+  });
+
+  await T('Bài hình học không gian không có hình nào thì bị chặn',function(){
+    var VK={subject:'Toán',periods:'1',assessmentMode:'khong',grade:'12',lesson:'Vectơ trong không gian'};
+    var md=plan([4],10,'Cho hình lập phương ABCD.A\'B\'C\'D\' và tứ diện ABCD. Quan sát Hình 2.2.'+DIEUCHINH);
+    var r=validatePlan(md,VK,true);
+    return r.blockers.filter(function(b){return /không có một hình vẽ nào/.test(b)}).length===1
+      ||'Không chặn bài hình học không gian thiếu hình';
+  });
+
   group('b19 — Bảng biến thiên dạng ảnh, khung đồ thị, hệ trục Oxy');
 
   await T('Hàm đơn điệu không còn bị bóp thành một vạch dọc',function(){

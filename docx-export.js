@@ -636,6 +636,13 @@
            làm được ba việc đó. Thứ tự đẩy vào đây phải khớp tuyệt đối với thứ tự lấy ra ở
            mathvizXml: bảng trước, đồ thị sau. */
         if (spec?.type === 'graph') specs.push({ loai: 'do-thi', spec });
+        /* b21 — HÌNH KHỐI KHÔNG GIAN cũng đi đường ảnh như đồ thị.
+           VÌ SAO: bản in Bài 6 "Vectơ trong không gian" của giáo viên không có lấy một hình
+           nào, vì trước đây phần mềm chỉ dựng được đồ thị và bảng biến thiên. Hình hộp, tứ
+           diện, hình chóp thì ô bảng Word không vẽ nổi — phải là ảnh. */
+        else if (spec?.type === 'solid' || spec?.type === 'hinh-khong-gian') {
+          if (typeof buildSolidSVG === 'function') specs.push({ loai: 'hinh-khoi', spec });
+        }
         else if (spec?.type === 'variation' && Array.isArray(spec.points)) {
           if (typeof buildVariationPrintSVG === 'function') specs.push({ loai: 'bbt', spec });
           if (spec.expr && typeof graphFromVariation === 'function') {
@@ -652,7 +659,9 @@
       try {
         const svg = it.loai === 'bbt'
           ? buildVariationPrintSVG(it.spec)
-          : buildGraphSVG(it.spec, { standalone: true });
+          : it.loai === 'hinh-khoi'
+            ? buildSolidSVG(it.spec)
+            : buildGraphSVG(it.spec, { standalone: true });
         if (!svg) throw new Error('không dựng được hình');
         const kt = svgSize(svg);
         const bytes = await window.rasterizeSVG(svg, kt.w, kt.h, 2);
@@ -665,8 +674,11 @@
     return out;
   }
 
-  function drawingXml(index, relId, w, h) {
-    const cx = CONTENT_TWIPS * EMU_PER_TWIP;
+  function drawingXml(index, relId, w, h, tiLe) {
+    /* b21 — tiLe: phần bề ngang vùng chữ mà ảnh chiếm. Đồ thị và bảng biến thiên trải hết
+       khổ giấy (tiLe = 1) vì chúng dàn ngang, còn hình khối không gian gần vuông nên để
+       nguyên bề ngang sẽ chiếm gần nửa trang giấy một cách vô ích. */
+    const cx = Math.round(CONTENT_TWIPS * EMU_PER_TWIP * (Number.isFinite(tiLe) && tiLe > 0 ? Math.min(1, tiLe) : 1));
     const cy = Math.round(cx * (h || GRAPH_H) / (w || GRAPH_W));
     const A = 'http://schemas.openxmlformats.org/drawingml/2006/main';
     return `<w:r><w:drawing><wp:inline distT="0" distB="0" distL="0" distR="0">` +
@@ -695,6 +707,15 @@
   }
 
   function mathvizXml(spec, images) {
+    /* b21 — hình khối không gian: một ảnh, có tiêu đề ở trên, giống cách đặt đồ thị. */
+    if (spec.type === 'solid' || spec.type === 'hinh-khong-gian') {
+      const slot = images && images.shift();
+      const title = spec.title ? para(runsFrom(spec.title, { b: true }), { align: 'center', spaceAfter: 60 }) : '';
+      if (slot && slot.bytes)
+        return title + para(drawingXml(slot.index, slot.relId, slot.w, slot.h, 0.62), { align: 'center' });
+      /* Không bao giờ im lặng bỏ hình: nếu không raster được thì vẫn để lại một dòng nhắc. */
+      return title + para(runsFrom('*[Không chuyển được hình không gian sang ảnh — xem bản trên màn hình hoặc in ra PDF]*', { i: true }), { align: 'center' });
+    }
     if (spec.type === 'graph') {
       const slot = images && images.shift();
       const title = spec.title ? para(runsFrom(spec.title, { b: true }), { align: 'center', spaceAfter: 60 }) : '';

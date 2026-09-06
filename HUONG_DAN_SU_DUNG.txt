@@ -1,5 +1,5 @@
 TRỢ LÝ SOẠN KẾ HOẠCH BÀI DẠY 2026–2027
-BẢN CHUYÊN NGHIỆP – BƯỚC 4 · HIỆU CHỈNH b20
+BẢN CHUYÊN NGHIỆP – BƯỚC 4 · HIỆU CHỈNH b21
 
 ================================================================
 ĐIỀU KIỆN CẦN
@@ -81,6 +81,9 @@ VỀ TỆP WORD XUẤT RA
 - Bản DOCX dựng từ nội dung AI trả về. Nếu thầy cô sửa tay trên màn
   hình, hãy bấm "Lưu phiên bản" trước, và lưu ý phần sửa tay có thể
   chưa vào tệp DOCX — phần mềm sẽ hỏi lại trước khi xuất.
+- Hình khối không gian (hình hộp, hình lập phương, tứ diện, hình chóp,
+  lăng trụ) được vẽ tự động và nhúng vào tệp Word dưới dạng ảnh. Nét khuất
+  do phần mềm tự tính nên luôn đúng quy ước vẽ hình của SGK.
 - Bảng biến thiên và bảng xét dấu được xuất thành BẢNG WORD thật, chỉnh
   sửa được (gõ đè, thêm cột, đổi mũi tên).
 - Đồ thị hàm số được nhúng vào tệp Word dưới dạng ẢNH, rộng đúng bằng
@@ -137,7 +140,7 @@ XỬ LÝ SỰ CỐ THƯỜNG GẶP
 TỰ KIỂM TRA SAU KHI SỬA MÃ
 ================================================================
 Mở tệp test.html bằng Chrome hoặc Edge rồi bấm "Chạy kiểm tra". Trang
-này chạy 99 phép kiểm tra trên đúng các tệp đang nằm trong thư mục,
+này chạy 107 phép kiểm tra trên đúng các tệp đang nằm trong thư mục,
 không phải trên bản sao, nên kết quả phản ánh đúng tình trạng thật.
 
 - Toàn bộ xanh: phần mềm còn lành, dùng được.
@@ -354,3 +357,43 @@ Căn cứ: thầy cô gửi kèm cùng một bài — bản xuất Word và bả
    cho vòng này, trong đó có HAI phép kiểm ngược: bảng không có gián đoạn
    thì không được vẽ vạch đôi, một gạch đứng đơn "|" (trị tuyệt đối) không
    bị hiểu nhầm, và chỗ chừa cho nhãn không được làm mất mũi tên.
+
+================================================================
+NHỮNG THAY ĐỔI CỦA b21 (so với b20)
+================================================================
+Căn cứ: thầy cô gửi bản Word và bản IN/PDF của Bài 6 "Vectơ trong không
+gian" kèm yêu cầu — "toán là phải có hình đính kèm; trong mỗi hoạt động
+nếu sách giáo khoa có hình minh hoạ thì kế hoạch soạn phải có hình".
+
+1. PHẦN MỀM NAY VẼ ĐƯỢC HÌNH KHỐI KHÔNG GIAN. Kiểm chứng bằng máy: cả tệp
+   Word lẫn bản IN của Bài 6 đều KHÔNG có lấy một ảnh nào, trong khi nội
+   dung liên tục nhắc "quan sát Hình 2.2", "cho hình lập phương
+   ABCD.A'B'C'D'". Nguyên nhân: cho tới b20 phần mềm mới dựng được đồ thị
+   hàm số, bảng biến thiên và bảng xét dấu — tức là toàn bộ mảng giải
+   tích. Bài hình học không gian rơi vào khoảng trống. Nay có thêm loại
+   hình thứ tư gồm năm khối: hình hộp (dùng chung cho hình lập phương,
+   hình hộp chữ nhật, lăng trụ tứ giác), tứ diện, hình chóp tứ giác, hình
+   chóp tam giác và lăng trụ tam giác.
+
+2. HÌNH VẼ ĐÚNG QUY ƯỚC SGK. Trên mỗi khối có thể đặt thêm: điểm phụ nằm
+   trên cạnh (trung điểm hoặc theo tỉ lệ), mũi tên vectơ có nhãn, đoạn
+   thẳng phụ như đường chéo, và mặt được tô nền để làm nổi mặt phẳng đang
+   xét. NÉT KHUẤT KHÔNG PHẢI DO KHAI BÁO TAY mà do phần mềm tự tính: một
+   cạnh chỉ bị vẽ đứt khi cả hai mặt kề nó đều quay lưng lại người xem.
+   Nhờ vậy cả năm khối dùng chung một quy tắc và không có hình nào bị vẽ
+   sai nét.
+
+3. VÀO TỆP WORD DƯỚI DẠNG ẢNH, rộng khoảng hai phần ba vùng chữ (hình
+   khối gần vuông nên để rộng hết khổ giấy sẽ chiếm gần nửa trang). Nếu
+   máy không dựng được ảnh, chỗ đó vẫn có một dòng nhắc — không bao giờ
+   mất nội dung âm thầm.
+
+4. PHẦN MỀM NHẮC KHI THIẾU HÌNH. Bài có nhắc tới hình khối không gian mà
+   cả bản kế hoạch không có một hình nào thì bị CHẶN. Bài có nhắc số hiệu
+   hình của sách ("Hình 2.2") mà thiếu hình thì chỉ CẢNH BÁO, vì có những
+   hình của sách là ảnh chụp thực tế (cần cẩu, biển chỉ đường) mà phần
+   mềm không dựng thay được — thầy cô chiếu thẳng hình trong sách.
+
+5. Bộ kiểm tra: 107 phép (106 đạt + 1 bỏ qua ngoài trình duyệt), thêm 8
+   phép cho vòng này, trong đó có phép kiểm NGƯỢC bảo đảm không chặn oan
+   bài đã có hình và không đòi hình khối ở bài giải tích.

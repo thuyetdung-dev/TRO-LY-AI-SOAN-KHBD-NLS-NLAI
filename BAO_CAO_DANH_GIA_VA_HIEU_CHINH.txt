@@ -1,5 +1,5 @@
 BÁO CÁO ĐÁNH GIÁ VÀ HIỆU CHỈNH TRỢ LÝ KHBD
-Phiên bản rà soát: 2026-09-05 · b20 (b15 → b16 → b17 → b18 → b19 → b20, mỗi vòng theo phản hồi thật)
+Phiên bản rà soát: 2026-09-06 · b21 (b15 → b16 → b17 → b18 → b19 → b20 → b21, mỗi vòng theo phản hồi thật)
 
 I. KẾT LUẬN NGẮN
 
@@ -367,8 +367,66 @@ XIII4. ĐO LẠI SAU KHI SỬA (dựng ảnh thật rồi nhìn tận mắt, kh�
 Bộ kiểm tra: 99 phép (98 đạt + 1 bỏ qua ngoài trình duyệt), thêm 4 phép cho vòng này,
 trong đó hai phép là kiểm NGƯỢC.
 
-XIV. VIỆC CÒN LẠI SAU SÁU VÒNG SỬA
-Sáu việc còn tồn vẫn nguyên, vòng này không đụng tới. Ba giới hạn ở mục V vẫn nguyên: nội dung sửa tay trên màn hình chưa vào được tệp Word;
+XV. ĐỢT SỬA b21 — MỘT KHOẢNG TRỐNG, KHÔNG PHẢI MỘT LỖI
+
+Căn cứ: bản Word và bản IN/PDF của Bài 6 "Vectơ trong không gian", kèm yêu cầu của thầy cô:
+"toán là phải có hình đính kèm; trong mỗi hoạt động nếu sách giáo khoa có hình minh hoạ thì kế
+hoạch soạn phải có hình". Đây không phải một lỗi vẽ sai như các vòng trước, mà là một mảng
+NĂNG LỰC CÒN THIẾU HẲN — đáng ghi lại vì hai loại vấn đề này cần cách xử lý khác nhau.
+
+XV0. ĐO TRƯỚC KHI LÀM.
+Đếm ảnh trong cả hai tệp bằng máy: bản Word 0 ảnh, bản IN/PDF 0 ảnh. Đối chiếu trang 5 bản IN
+thấy rõ hậu quả — hoạt động ghi "GV trình chiếu Hình 2.2 lên màn hình TV 32 inch" và "cho hình
+lập phương ABCD.A'B'C'D'" nhưng không có gì để chiếu. Rà lại mã: phần mềm nhận đúng ba loại
+khối mathviz — graph, sign, variation — tức toàn bộ mảng GIẢI TÍCH. Không có loại nào cho hình
+học không gian. Bài hình học vì thế không thể có hình, dù AI viết đúng đến đâu.
+
+XV1. CÁCH DỰNG — TÍNH NÉT KHUẤT, KHÔNG ĐOÁN.
+Thêm loại thứ tư "solid" với năm khối: hình hộp (dùng chung cho hình lập phương, hình hộp chữ
+nhật và lăng trụ tứ giác), tứ diện, hình chóp tứ giác, hình chóp tam giác, lăng trụ tam giác.
+Điểm đáng nói nhất là nét đứt: thay vì chép sẵn cho từng khối một bảng "cạnh nào đứt" — cách
+làm chắc chắn sẽ sai ở khối thứ tư hoặc thứ năm — phần mềm TÍNH. Với một khối lồi, một cạnh bị
+che khi và chỉ khi cả hai mặt kề nó đều quay lưng lại người xem. Quy tắc ấy đúng cho mọi khối
+lồi nên cả năm hình dùng chung đúng một đoạn mã. Pháp tuyến được tự lật ra ngoài bằng cách so
+với tâm khối, nên thứ tự liệt kê đỉnh của mỗi mặt không ảnh hưởng kết quả.
+
+XV2. MỘT ĐƯỜNG VẼ DUY NHẤT — ÁP DỤNG NGAY BÀI HỌC CỦA b20.
+Vòng trước hỏng vì bảng biến thiên có hai đường vẽ song song (màn hình và ảnh cho Word) và
+chúng lệch nhau. Hình khối vì thế được thiết kế chỉ dùng <text>, không dùng foreignObject, nên
+đổi thẳng sang PNG được và MÀN HÌNH VỚI WORD DÙNG CHUNG ĐÚNG MỘT HÀM. Hai nơi không thể khác
+nhau vì không có hai bản để mà khác.
+
+XV3. BỐN LỖI BẮT ĐƯỢC KHI THỬ BIÊN, TRƯỚC KHI KỊP COI LÀ XONG.
+Dựng ảnh thật rồi nhìn tận mắt, không chỉ đếm chuỗi:
+ - Nhãn vectơ in ra chữ "veca" vì bộ đổi LaTeX không biết lệnh \vec. Nay vẽ chữ rồi gạch một
+   mũi tên ngắn trên đầu — không phụ thuộc phông, khác với ký tự tổ hợp Unicode.
+ - TỨ DIỆN RA BA NÉT ĐỨT thay vì một, vì đỉnh sau chiếu LỌT VÀO TRONG tam giác mặt trước nên bị
+   che hoàn toàn. Đúng về hình học nhưng không phải lối vẽ của sách. Đã đặt lại toạ độ cho đỉnh
+   sau nhô hẳn ra ngoài; đo lại còn đúng một nét đứt, như SGK.
+ - Nhãn đỉnh đè lên góc hình. Cách cộng vector các cạnh kề KHÔNG đủ: ở đỉnh có ba cạnh toả đều
+   tổng triệt tiêu và nhãn lại rơi vào giữa. Nay quét 24 hướng, chọn hướng nằm giữa khe rộng
+   nhất giữa các cạnh — đúng cách người ta ghi nhãn bằng tay.
+ - Tiêu đề dài bị cắt cụt vì khung ảnh chỉ tính theo bao lồi của hình. Nay nới theo bề ngang
+   tiêu đề, và chỉ NỚI RỘNG chứ không bao giờ thu hẹp.
+Một lỗi thứ năm do chính PHÉP KIỂM NGƯỢC bắt được: bước chuẩn hoá tên khối mới bỏ dấu ở chữ
+"Hình" đứng đầu, nên "Hình hộp chữ nhật" không tra được bảng. Nay bỏ dấu cả chuỗi. Nếu không có
+phép kiểm ngược đó thì lỗi này chỉ lộ ra khi thầy cô dùng thật.
+
+XV4. KIỂM ĐỊNH ĐƯỢC SIẾT CHẶT ĐỂ KHÔNG LẶP LẠI b17.
+Chỉ CHẶN khi bài thực sự nhắc một khối không gian cụ thể VÀ cả bản kế hoạch không có bất kỳ
+hình nào — kể cả đồ thị. Nhắc số hiệu "Hình 2.x" mà thiếu hình thì chỉ CẢNH BÁO, vì nhiều hình
+của sách là ảnh chụp thực tế (cần cẩu, biển chỉ đường) mà phần mềm không dựng thay được; chặn
+những trường hợp đó là chặn oan.
+
+XV5. ĐO LẠI SAU KHI SỬA:
+   hình hộp / lăng trụ tam giác / chóp tứ giác : 3 nét đứt — đúng các cạnh qua đỉnh sau
+   tứ diện / chóp tam giác                     : 1 nét đứt — đúng lối vẽ SGK
+   tên khối viết có dấu, viết hoa, viết liền   : nhận hết; tên lạ thì trả về rỗng, không vẽ bừa
+   markdown 2 khối solid + 1 graph             : ra đúng 3 ảnh trong tệp Word, đúng thứ tự
+Bộ kiểm tra: 107 phép (106 đạt + 1 bỏ qua ngoài trình duyệt), thêm 8 phép cho vòng này.
+
+XVI. VIỆC CÒN LẠI SAU BẢY VÒNG SỬA
+Sáu việc còn tồn vẫn nguyên, hai vòng b20 và b21 không đụng tới. Ba giới hạn ở mục V vẫn nguyên: nội dung sửa tay trên màn hình chưa vào được tệp Word;
 tệp nguồn tải lên lại mỗi lần soạn; validatePlan còn đọc thẳng trạng thái ô nhập. Ngoài ra
 phần mềm vẫn không đối chiếu chéo được nội dung do AI viết ở hai chỗ khác nhau (ví dụ tiêu
 đề hình ghi một hàm còn chú thích dưới hình ghi hàm khác). Những việc đó nên làm thành một

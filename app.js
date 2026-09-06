@@ -1,7 +1,7 @@
 /* Mốc phiên bản — hiện ngay trên thanh tiêu đề. Sau nhiều vòng sửa, đã có lần trang web
    chạy bản cũ mà cả hai bên đều tưởng là bản mới, mất công đi tìm lỗi đã sửa xong rồi.
    Nhìn dòng chữ trên đầu trang là biết ngay đang chạy bản nào. */
-const APP_BUILD='2026-09-05 · b20';
+const APP_BUILD='2026-09-06 · b21';
 const $=id=>document.getElementById(id);let selectedFiles=[],rawMarkdown='',availableModels=[],scanTimer,draftTimer,lastValidation=null;
 const fields=['subject','grade','lesson','book','periods','students','classSize','equipment','notes','tableLayout','assessmentMode','lessonTemplate','sourceMode'];
 const toast=m=>{const t=$('toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2600)};
@@ -132,7 +132,7 @@ function buildStandardsBlock(v){
 /* Bản cũ chỉ khớp chữ "toán" đứng riêng nên bỏ sót "Đại số", "Hình học", "Giải tích",
    "Toán(nâng cao)" — giáo viên dạy các phân môn này mất luôn mô-đun bảng biến thiên/đồ thị. */
 function isMathSubject(v){return /toán|toan|đại\s*số|dai\s*so|hình\s*học|hinh\s*hoc|giải\s*tích|giai\s*tich|lượng\s*giác|luong\s*giac|mathematics|maths?\b/i.test(v.subject||'')}
-function mathRulesFor(v){if(!isMathSubject(v))return '6) Không áp dụng mô-đun biểu diễn Toán học vì môn đang soạn không phải môn Toán.';return `6) MÔ-ĐUN RIÊNG MÔN TOÁN — ba loại hình vẽ, viết trong khối mã có nhãn mathviz.
+function mathRulesFor(v){if(!isMathSubject(v))return '6) Không áp dụng mô-đun biểu diễn Toán học vì môn đang soạn không phải môn Toán.';return `6) MÔ-ĐUN RIÊNG MÔN TOÁN — bốn loại hình vẽ, viết trong khối mã có nhãn mathviz.
 
 6a) BẢNG BIẾN THIÊN: {"type":"variation","title":"...","expr":"...","points":[...],"derivative":[...],"values":[...]}
  - "points": các mốc x theo thứ tự tăng dần, luôn bắt đầu bằng "-\\\\infty" và kết thúc bằng "+\\\\infty". Gọi số mốc là N.
@@ -153,7 +153,13 @@ function mathRulesFor(v){if(!isMathSubject(v))return '6) Không áp dụng mô-�
  - "asymptotes": bắt buộc với hàm phân thức hoặc hàm có tiệm cận. Tính chính xác trước khi ghi: tiệm cận đứng dùng {"type":"vertical","value":a} cho $x=a$; tiệm cận ngang dùng {"type":"horizontal","value":b} cho $y=b$; tiệm cận xiên dùng {"type":"oblique","slope":m,"intercept":n} cho $y=mx+n$. Chỉ ghi các tiệm cận thực sự tồn tại, không đưa đồng thời ngang và xiên nếu không đúng.
  - BẮT BUỘC có ít nhất một đồ thị khi bài học có bất kỳ nội dung nào sau đây: nhận biết tính đơn điệu hoặc cực trị QUA HÌNH ẢNH ĐỒ THỊ, khảo sát và vẽ đồ thị hàm số, tương giao đồ thị, hoặc khi sách giáo khoa có hình vẽ đồ thị ở phần tương ứng. Yêu cầu cần đạt "nhận biết qua hình ảnh đồ thị" mà bản soạn không có đồ thị nào thì chưa dạy được mục tiêu đó.
 
-QUY TẮC CHUNG: mỗi khối mathviz đặt ngay dưới dòng văn bản dẫn vào nó. Chỉ dùng khi đúng nội dung bài, không ép dùng cho mọi bài Toán. Nhưng với bài về tính đơn điệu, cực trị hay khảo sát hàm số thì bảng biến thiên và đồ thị là bắt buộc, không được thay bằng lời mô tả suông.`}
+6d) HÌNH KHỐI KHÔNG GIAN: {"type":"solid","title":"Hình lập phương ABCD.A'B'C'D'","shape":"hinh-lap-phuong","points":[{"name":"M","between":["B","C"],"ratio":0.5}],"vectors":[{"from":"A","to":"B","label":"\\\\\\\\vec{a}"}],"segments":[{"from":"A","to":"C'"}],"planes":[["A","B","C","D"]]}
+ - "shape" chọn một trong: "hinh-hop" (dùng luôn cho hình lập phương, hình hộp chữ nhật, lăng trụ tứ giác — đỉnh A, B, C, D, A', B', C', D'), "tu-dien" (đỉnh A, B, C, D), "hinh-chop-tu-giac" (S.ABCD), "hinh-chop-tam-giac" (S.ABC), "lang-tru-tam-giac" (ABC.A'B'C').
+ - "points": điểm phụ nằm TRÊN một cạnh, ratio 0.5 là trung điểm. "vectors": mũi tên vectơ. "segments": đoạn thẳng phụ như đường chéo, thêm "dash":true nếu là nét khuất. "planes": mặt cần tô nền để làm nổi mặt phẳng đang xét.
+ - Phần mềm TỰ TÍNH nét khuất, tự đặt tên đỉnh và tự chọn góc nhìn — chỉ cần khai đúng tên đỉnh có sẵn của khối, không cần mô tả gì thêm.
+ - BẮT BUỘC: hoạt động nào dựa trên một hình vẽ của sách giáo khoa (câu chữ kiểu "quan sát Hình 2.2", "cho hình lập phương ABCD.A'B'C'D'", "cho tứ diện ABCD", "cho hình chóp S.ABCD") thì PHẢI kèm một khối mathviz "solid" đặt ngay dưới đoạn dẫn. Học sinh và giáo viên không thể làm việc với một hình chỉ được tả bằng lời.
+
+QUY TẮC CHUNG: mỗi khối mathviz đặt ngay dưới dòng văn bản dẫn vào nó. Chỉ dùng khi đúng nội dung bài, không ép dùng cho mọi bài Toán. Nhưng với bài về tính đơn điệu, cực trị hay khảo sát hàm số thì bảng biến thiên và đồ thị là bắt buộc; với bài hình học không gian thì mỗi hoạt động dựa trên hình của sách phải có hình khối kèm theo. Không được thay hình bằng lời mô tả suông.`}
 function promptFor(v){const grade=clampGrade(v.grade);return `Bạn là chuyên gia hàng đầu về xây dựng Kế hoạch bài dạy tại Việt Nam. Hãy soạn KHBD năm học 2026–2027, tuyệt đối dựa trên tài liệu nguồn nếu có.
 THÔNG TIN: Môn ${v.subject}; lớp ${grade}; bài ${v.lesson}; bộ sách ${v.book}; số tiết ${v.periods||'hãy xác định từ SGV/tài liệu'}; học sinh ${v.students}; sĩ số ${v.classSize}; thiết bị ${v.equipment}. Ghi chú: ${v.notes||'không'}.
 YÊU CẦU BẮT BUỘC:
@@ -844,6 +850,223 @@ function buildVariationPrintSVG(spec){
   return g+'</svg>';
 }
 
+/* ===== HÌNH KHỐI KHÔNG GIAN (thêm ở b21) =====
+   VÌ SAO cần: bản in Bài 6 "Vectơ trong không gian" của giáo viên không có LẤY MỘT HÌNH NÀO.
+   Kiểm chứng: cả tệp Word lẫn bản IN/PDF của bài đó đều chứa 0 ảnh, trong khi nội dung liên
+   tục nhắc "quan sát Hình 2.2", "cho hình lập phương ABCD.A'B'C'D'", "cho tứ diện ABCD".
+   Nguyên nhân: phần mềm mới chỉ dựng được ba loại hình — đồ thị hàm số, bảng biến thiên và
+   bảng xét dấu — tức là toàn bộ mảng GIẢI TÍCH. Bài hình học không gian rơi vào khoảng trống.
+   Với môn Toán, hoạt động dựa trên hình mà không có hình thì giáo viên không dạy được.
+
+   CÁCH DỰNG: phép chiếu song song như SGK. Điều đáng nói nhất là cách xác định NÉT ĐỨT:
+   không đoán theo từng khối, mà TÍNH. Với một khối lồi, một cạnh bị che khi và chỉ khi cả hai
+   mặt kề nó đều quay lưng lại người xem. Quy tắc đó đúng cho mọi khối lồi nên hình hộp, tứ
+   diện, hình chóp và lăng trụ đều ra đúng bằng cùng một đoạn mã, không cần bảng tra thủ công
+   dễ sai. Pháp tuyến được tự động lật cho hướng ra ngoài bằng cách so với tâm khối, nên thứ tự
+   liệt kê đỉnh của mỗi mặt không ảnh hưởng kết quả.
+
+   MỘT ĐƯỜNG VẼ DUY NHẤT cho cả màn hình và tệp Word — đây là bài học trực tiếp của b20, khi
+   bảng biến thiên có hai đường vẽ riêng và chúng lệch nhau. Hình khối chỉ dùng <text>, không
+   dùng foreignObject, nên đổi thẳng sang PNG được và hai nơi không thể khác nhau. */
+const SOLID_KHOI={
+  'hinh-hop':{d:['A','B','C','D','A2','B2','C2','D2'],
+    v:{A:[0,0,0],B:[1.7,0,0],C:[1.7,1.05,0],D:[0,1.05,0],
+       A2:[0,0,1.25],B2:[1.7,0,1.25],C2:[1.7,1.05,1.25],D2:[0,1.05,1.25]},
+    m:[['A','B','C','D'],['A2','B2','C2','D2'],['A','B','B2','A2'],
+       ['B','C','C2','B2'],['C','D','D2','C2'],['D','A','A2','D2']]},
+  /* VÌ SAO toạ độ tứ diện và chóp tam giác đặt như thế này: nếu đỉnh phía sau chiếu LỌT VÀO
+     TRONG tam giác mặt trước thì nó bị che hoàn toàn và CẢ BA cạnh nối tới nó đều thành nét
+     đứt — đúng về hình học nhưng không phải lối vẽ của SGK, nhìn rất khó đọc. Đã đo lại: với
+     bộ số dưới đây đỉnh sau nhô hẳn ra ngoài nên chỉ còn ĐÚNG MỘT cạnh đứt, như hình trong sách. */
+  'tu-dien':{d:['A','B','C','D'],
+    v:{B:[0,0,0],C:[1.75,0,0],D:[1.0,1.35,0],A:[0.6,0.45,1.15]},
+    m:[['B','C','D'],['A','B','C'],['A','C','D'],['A','D','B']]},
+  'hinh-chop-tu-giac':{d:['S','A','B','C','D'],
+    v:{A:[0,0,0],B:[1.75,0,0],C:[2.25,1.1,0],D:[0.5,1.1,0],S:[1.12,0.55,1.6]},
+    m:[['A','B','C','D'],['S','A','B'],['S','B','C'],['S','C','D'],['S','D','A']]},
+  'hinh-chop-tam-giac':{d:['S','A','B','C'],
+    v:{A:[0,0,0],B:[1.75,0,0],C:[1.0,1.35,0],S:[0.6,0.45,1.25]},
+    m:[['A','B','C'],['S','A','B'],['S','B','C'],['S','C','A']]},
+  'lang-tru-tam-giac':{d:['A','B','C','A2','B2','C2'],
+    v:{A:[0,0,0],B:[1.75,0,0],C:[0.95,1.1,0],
+       A2:[0,0,1.4],B2:[1.75,0,1.4],C2:[0.95,1.1,1.4]},
+    m:[['A','B','C'],['A2','B2','C2'],['A','B','B2','A2'],['B','C','C2','B2'],['C','A','A2','C2']]}
+};
+/* Bí danh: mô hình viết tên khối theo nhiều kiểu, chấp nhận hết thay vì bắt nhớ đúng một chuỗi. */
+const SOLID_BIDANH={'hinh-lap-phuong':'hinh-hop','lap-phuong':'hinh-hop','hop':'hinh-hop',
+  'hinh-hop-chu-nhat':'hinh-hop','lang-tru-tu-giac':'hinh-hop','tudien':'tu-dien','tu-dien-deu':'tu-dien',
+  'chop-tu-giac':'hinh-chop-tu-giac','hinh-chop':'hinh-chop-tu-giac','chop-tam-giac':'hinh-chop-tam-giac',
+  'hinh-chop-tam-giac-deu':'hinh-chop-tam-giac','lang-tru':'lang-tru-tam-giac','hinh-lang-tru':'lang-tru-tam-giac'};
+/* Tên đỉnh có dấu phẩy (A', B'...) được đưa về khoá nội bộ A2, B2 để tra bảng cho gọn. */
+const solidKhoa=t=>String(t??'').trim().replace(/[′']/g,'2').replace(/\s+/g,'');
+const solidHien=t=>String(t??'').trim().replace(/'/g,'′').replace(/2$/,'′');
+
+function buildSolidSVG(spec){
+  /* VÌ SAO phải bỏ dấu cả chuỗi: bản đầu chỉ gạt dấu ở chữ "Hình" đứng đầu, nên "Hình hộp chữ
+     nhật" thành "hinh-hộp-chữ-nhật" và không tra được bảng — phép kiểm ngược đã bắt đúng ca này.
+     Mô hình viết tên khối bằng tiếng Việt có dấu là chuyện bình thường, không thể bắt nó nhớ
+     đúng một chuỗi không dấu. */
+  const ten=(typeof deaccent==='function'?deaccent(String(spec.shape||spec.khoi||'')):String(spec.shape||spec.khoi||''))
+    .trim().toLowerCase().replace(/[\s_]+/g,'-');
+  const key=SOLID_KHOI[ten]?ten:(SOLID_BIDANH[ten]||'');
+  const mau=SOLID_KHOI[key];
+  if(!mau)return null;
+  /* Đổi tên đỉnh theo yêu cầu: {"A":"M"} — dùng khi bài đặt tên khác SGK. */
+  const doiTen=spec.labels||spec.ten||{};
+  const nhan=k=>solidHien(doiTen[solidHien(k)]||doiTen[k]||k);
+
+  const P={};Object.keys(mau.v).forEach(k=>P[k]=mau.v[k].slice());
+  /* Điểm phụ trên cạnh: {"name":"M","between":["B","C"],"ratio":0.5} — trung điểm là mặc định. */
+  const phu=[];
+  (Array.isArray(spec.points)?spec.points:[]).forEach(p=>{
+    const a=solidKhoa(p.between&&p.between[0]),b=solidKhoa(p.between&&p.between[1]);
+    if(!P[a]||!P[b])return;
+    const t=Number.isFinite(+p.ratio)?+p.ratio:0.5, ten=solidKhoa(p.name||'');
+    if(!ten)return;
+    P[ten]=[0,1,2].map(i=>P[a][i]+(P[b][i]-P[a][i])*t);
+    phu.push(ten);
+  });
+
+  /* Phép chiếu song song: trục sâu nghiêng 40°, hệ số 0,55 như lối vẽ hình không gian của SGK. */
+  const K=0.55,GOC=40*Math.PI/180,CX=Math.cos(GOC),SX=Math.sin(GOC),DV=92;
+  const chieu=p=>[(p[0]+K*CX*p[1])*DV,-(p[2]+K*SX*p[1])*DV];
+  /* Vectơ từ vật tới mắt, suy ra từ chính phép chiếu ở trên (xem chú thích đầu mục). */
+  const MAT=[K*CX,-1,K*SX];
+  const tru=(a,b)=>[a[0]-b[0],a[1]-b[1],a[2]-b[2]];
+  const cheo=(a,b)=>[a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]];
+  const cham=(a,b)=>a[0]*b[0]+a[1]*b[1]+a[2]*b[2];
+  const dinhKhoi=mau.d.map(k=>P[k]);
+  const tam=[0,1,2].map(i=>dinhKhoi.reduce((s,p)=>s+p[i],0)/dinhKhoi.length);
+
+  /* Mặt nào quay về phía người xem. Pháp tuyến tự lật ra ngoài bằng cách so với tâm khối,
+     nên không phụ thuộc thứ tự liệt kê đỉnh — chỗ này nếu làm sai thì nét đứt sẽ đảo ngược hết. */
+  const matHuong=mau.m.map(f=>{
+    const q=f.map(k=>P[k]);
+    let n=cheo(tru(q[1],q[0]),tru(q[2],q[0]));
+    const tf=[0,1,2].map(i=>q.reduce((s,p)=>s+p[i],0)/q.length);
+    if(cham(n,tru(tf,tam))<0)n=n.map(x=>-x);
+    return cham(n,MAT)>0;
+  });
+  /* Cạnh khuất = cả hai mặt kề đều quay lưng. Đúng cho mọi khối lồi. */
+  const canh=new Map();
+  mau.m.forEach((f,i)=>{
+    for(let j=0;j<f.length;j++){
+      const a=f[j],b=f[(j+1)%f.length],id=[a,b].sort().join('|');
+      if(!canh.has(id))canh.set(id,{a,b,hien:false});
+      if(matHuong[i])canh.get(id).hien=true;
+    }
+  });
+
+  /* Khung ảnh: lấy bao lồi của mọi điểm rồi chừa lề cho nhãn đỉnh và tiêu đề. */
+  const moiDiem=Object.keys(P).map(k=>chieu(P[k]));
+  const xs=moiDiem.map(p=>p[0]),ys=moiDiem.map(p=>p[1]);
+  const LE=34,tieuDe=spec.title?30:0;
+  const x0=Math.min(...xs)-LE,y0=Math.min(...ys)-LE-tieuDe;
+  let W=Math.max(...xs)-Math.min(...xs)+LE*2,H=Math.max(...ys)-Math.min(...ys)+LE*2+tieuDe;
+  /* VÌ SAO nới theo tiêu đề: khung ảnh vốn chỉ tính theo bao lồi của hình, nên một tiêu đề dài
+     như "Hình chóp S.ABCD có đáy là hình bình hành" bị cắt cụt hai đầu — đã thấy ở lần dựng thử.
+     Ước lượng 8,2 px một ký tự cho cỡ chữ 15 px in đậm, chỉ NỚI RỘNG chứ không bao giờ thu hẹp. */
+  if(spec.title){
+    const rongTieuDe=texToPlain(spec.title).length*9.4+30;
+    if(rongTieuDe>W)W=rongTieuDe;
+  }
+  const lech=(W-(Math.max(...xs)-Math.min(...xs)+LE*2))/2;
+  const toa=k=>{const p=chieu(P[k]);return [p[0]-x0+lech,p[1]-y0]};
+
+  let g=`<svg xmlns="http://www.w3.org/2000/svg" width="${W.toFixed(1)}" height="${H.toFixed(1)}" `+
+    `viewBox="0 0 ${W.toFixed(1)} ${H.toFixed(1)}">`+
+    `<style>.hk{stroke:#123252;stroke-width:1.6;fill:none;stroke-linecap:round}`+
+    `.hk-k{stroke:#123252;stroke-width:1.2;fill:none;stroke-dasharray:6 4;opacity:.75}`+
+    `.hk-n{font:italic 16px/1 "Times New Roman",Georgia,serif;fill:#123252}`+
+    `.hk-t{font:bold 15px/1 "Segoe UI",Arial,sans-serif;fill:#123252}`+
+    `.hk-v{stroke:#c0392b;stroke-width:2.1;fill:none}`+
+    `.hk-vn{font:italic bold 15px/1 "Times New Roman",Georgia,serif;fill:#c0392b}`+
+    `.hk-m{fill:#176fa8;fill-opacity:.13;stroke:none}</style>`+
+    `<rect width="${W.toFixed(1)}" height="${H.toFixed(1)}" fill="#ffffff"/>`;
+  if(spec.title)g+=`<text x="${(W/2).toFixed(1)}" y="20" text-anchor="middle" class="hk-t">${esc(texToPlain(spec.title))}</text>`;
+
+  /* Mặt được tô nền để làm nổi mặt phẳng đang xét, vẽ TRƯỚC các cạnh để không che nét. */
+  (Array.isArray(spec.planes)?spec.planes:[]).forEach(f=>{
+    const q=(Array.isArray(f)?f:f.face||[]).map(solidKhoa).filter(k=>P[k]);
+    if(q.length<3)return;
+    g+=`<polygon class="hk-m" points="${q.map(k=>toa(k).map(n=>n.toFixed(1)).join(',')).join(' ')}"/>`;
+  });
+  /* Nét đứt vẽ trước nét liền, để chỗ giao nhau nét liền nằm trên như hình vẽ tay của SGK. */
+  [...canh.values()].filter(c=>!c.hien).forEach(c=>{
+    const a=toa(c.a),b=toa(c.b);
+    g+=`<line x1="${a[0].toFixed(1)}" y1="${a[1].toFixed(1)}" x2="${b[0].toFixed(1)}" y2="${b[1].toFixed(1)}" class="hk-k"/>`;
+  });
+  [...canh.values()].filter(c=>c.hien).forEach(c=>{
+    const a=toa(c.a),b=toa(c.b);
+    g+=`<line x1="${a[0].toFixed(1)}" y1="${a[1].toFixed(1)}" x2="${b[0].toFixed(1)}" y2="${b[1].toFixed(1)}" class="hk"/>`;
+  });
+  /* Đoạn thẳng phụ do bài yêu cầu (đường chéo, trung tuyến...). */
+  (Array.isArray(spec.segments)?spec.segments:[]).forEach(s=>{
+    const a=solidKhoa(s.from),b=solidKhoa(s.to);
+    if(!P[a]||!P[b])return;
+    const p=toa(a),q=toa(b);
+    g+=`<line x1="${p[0].toFixed(1)}" y1="${p[1].toFixed(1)}" x2="${q[0].toFixed(1)}" y2="${q[1].toFixed(1)}" class="${s.dash?'hk-k':'hk'}"/>`;
+  });
+  /* Vectơ: mũi tên màu đỏ như SGK, lùi 4 px mỗi đầu để không dính vào chữ tên đỉnh. */
+  const vecto=(Array.isArray(spec.vectors)?spec.vectors:[]).filter(v=>P[solidKhoa(v.from)]&&P[solidKhoa(v.to)]);
+  vecto.forEach((v,i)=>{
+    const p=toa(solidKhoa(v.from)),q=toa(solidKhoa(v.to));
+    const dx=q[0]-p[0],dy=q[1]-p[1],L=Math.hypot(dx,dy)||1,u=[dx/L,dy/L],lui=Math.min(9,L/3);
+    const a=[p[0]+u[0]*lui,p[1]+u[1]*lui],b=[q[0]-u[0]*lui,q[1]-u[1]*lui];
+    g+=`<line x1="${a[0].toFixed(1)}" y1="${a[1].toFixed(1)}" x2="${b[0].toFixed(1)}" y2="${b[1].toFixed(1)}" class="hk-v" marker-end="url(#mhk)"/>`;
+    /* VÌ SAO tự vẽ dấu mũi tên: texToPlain không biết lệnh \vec nên nhãn "$\vec{a}$" in thẳng
+       ra chữ "veca" — đã thấy tận mắt ở lần dựng thử đầu tiên. Ký tự tổ hợp Unicode (a⃗) thì
+       phụ thuộc phông, in ra Word dễ lệch. Nên vẽ chữ rồi gạch một mũi tên ngắn ngay trên đầu:
+       cách này không phụ thuộc phông nào cả. */
+    const coVec=/\\(vec|overrightarrow)\b/.test(String(v.label||''));
+    const nh=v.label?texToPlain(String(v.label).replace(/\\(vec|overrightarrow)\s*/g,'')):'';
+    if(nh){
+      const gx=(a[0]+b[0])/2-u[1]*13,gy=(a[1]+b[1])/2+u[0]*13;
+      g+=`<text x="${gx.toFixed(1)}" y="${(gy+5).toFixed(1)}" text-anchor="middle" class="hk-vn">${esc(nh)}</text>`;
+      if(coVec){
+        const w=Math.max(7,nh.length*4.2);
+        g+=`<line x1="${(gx-w).toFixed(1)}" y1="${(gy-12).toFixed(1)}" x2="${(gx+w).toFixed(1)}" y2="${(gy-12).toFixed(1)}" `+
+           `stroke="#c0392b" stroke-width="1.3" marker-end="url(#mhk2)"/>`;
+      }
+    }
+  });
+  if(vecto.length)g+=`<defs><marker id="mhk" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto-start-reverse"><path d="M0,1 L10,5 L0,9 z" fill="#c0392b"/></marker>`+
+    `<marker id="mhk2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="4" markerHeight="4" orient="auto-start-reverse"><path d="M0,1 L10,5 L0,9 z" fill="#c0392b"/></marker></defs>`;
+  /* Nhãn đỉnh đẩy ra NGOÀI theo hướng từ tâm hình tới đỉnh, nếu không chữ sẽ nằm đè lên cạnh. */
+  /* Nhãn đỉnh phải đẩy ra NGOÀI, nếu không chữ nằm đè lên cạnh — đã thấy nhãn B′ dính vào
+     đúng góc hình ở lần dựng thử. Cách cộng vector các cạnh kề KHÔNG đủ: ở đỉnh có ba cạnh
+     toả đều (B′ của hình hộp) tổng gần triệt tiêu và nhãn lại rơi vào giữa. Nay quét 24 hướng
+     rồi chọn hướng nằm giữa KHE RỘNG NHẤT giữa các cạnh kề — đúng cách người ta ghi nhãn bằng
+     tay. Hướng ra xa tâm hình được cộng thêm một chút điểm để phá thế hoà. */
+  const tamAnh=[(Math.max(...xs)+Math.min(...xs))/2-x0+lech,(Math.max(...ys)+Math.min(...ys))/2-y0];
+  const ke={};
+  [...canh.values()].forEach(c=>{(ke[c.a]=ke[c.a]||[]).push(c.b);(ke[c.b]=ke[c.b]||[]).push(c.a)});
+  (Array.isArray(spec.segments)?spec.segments:[]).forEach(s=>{
+    const a=solidKhoa(s.from),b=solidKhoa(s.to);
+    if(P[a]&&P[b]){(ke[a]=ke[a]||[]).push(b);(ke[b]=ke[b]||[]).push(a)}
+  });
+  (Array.isArray(spec.points)?spec.points:[]).forEach(p=>{
+    const t=solidKhoa(p.name||'');if(!P[t])return;
+    ke[t]=(ke[t]||[]).concat([solidKhoa(p.between&&p.between[0]),solidKhoa(p.between&&p.between[1])].filter(k=>P[k]));
+  });
+  const gocCanh=(k,p)=>(ke[k]||[]).map(q=>{const t=toa(q);return Math.atan2(t[1]-p[1],t[0]-p[0])});
+  mau.d.concat(phu).forEach(k=>{
+    const p=toa(k),gc=gocCanh(k,p);
+    const raNgoai=Math.atan2(p[1]-tamAnh[1],p[0]-tamAnh[0]);
+    let tot=raNgoai,diem=-Infinity;
+    for(let i=0;i<24;i++){
+      const th=-Math.PI+i*Math.PI/12;
+      let d=Math.PI;
+      gc.forEach(a=>{let x=Math.abs(th-a);if(x>Math.PI)x=2*Math.PI-x;if(x<d)d=x});
+      let x=Math.abs(th-raNgoai);if(x>Math.PI)x=2*Math.PI-x;
+      const s=d+(Math.PI-x)*0.18;          /* thưởng nhẹ cho hướng quay ra ngoài hình */
+      if(s>diem){diem=s;tot=th}
+    }
+    g+=`<text x="${(p[0]+Math.cos(tot)*16).toFixed(1)}" y="${(p[1]+Math.sin(tot)*16+5).toFixed(1)}" text-anchor="middle" class="hk-n">${esc(nhan(k))}</text>`;
+  });
+  return g+'</svg>';
+}
+
 function buildVariationSVG(spec){
   const points=Array.isArray(spec.points)?spec.points:[];
   const N=points.length;
@@ -1067,7 +1290,15 @@ function buildGraphSVG(s,opt){
   if(!plotted)svg+=`<text x="${W/2}" y="${H/2}" text-anchor="middle" class="tick">Không dựng được đường cong — kiểm tra biểu thức</text>`;
   return svg+'</svg>';
 }
-function renderMathViz(){document.querySelectorAll('.mathviz').forEach(el=>{try{const s=JSON.parse(decodeURIComponent(el.dataset.spec));if(s.type==='graph'){el.innerHTML=`<div class="mathviz-title">${esc(s.title||'Đồ thị')}</div>`+buildGraphSVG(s)+`<div class="mathviz-legend">${(s.functions||[]).map(f=>`<span style="--c:${esc(f.color||'#176fa8')}">$${esc(f.label||f.expr)}$</span>`).join('')}</div>`}
+function renderMathViz(){document.querySelectorAll('.mathviz').forEach(el=>{try{const s=JSON.parse(decodeURIComponent(el.dataset.spec));
+  /* b21 — hình khối không gian. Dùng ĐÚNG hàm mà bộ xuất Word dùng, không dựng bản riêng:
+     b20 đã cho thấy hai đường vẽ song song thì sớm muộn cũng lệch nhau. */
+  if(s.type==='solid'||s.type==='hinhkhong gian'||s.type==='hinh-khong-gian'){
+    const svg=buildSolidSVG(s);
+    if(!svg)throw new Error('solid schema không hợp lệ');
+    el.innerHTML=`<div class="mathviz-title">${esc(s.title||'Hình không gian')}</div><div class="mathviz-scroll">${svg}</div>`;
+  }
+  else if(s.type==='graph'){el.innerHTML=`<div class="mathviz-title">${esc(s.title||'Đồ thị')}</div>`+buildGraphSVG(s)+`<div class="mathviz-legend">${(s.functions||[]).map(f=>`<span style="--c:${esc(f.color||'#176fa8')}">$${esc(f.label||f.expr)}$</span>`).join('')}</div>`}
   else if(s.type==='variation'&&Array.isArray(s.points)){const svg=buildVariationSVG(s);if(!svg)throw new Error('variation schema không hợp lệ');/* b18 — TÁCH ĐỒ THỊ RA MỘT KHUNG RIÊNG.
      Giáo viên đề nghị: "đồ thị vẽ riêng, không nằm chung với bảng biến thiên, ý là cắt ra
      làm 2 khung để đồ thị không bị co lại". Trước đây cả bảng lẫn đồ thị nhét chung một
@@ -1253,6 +1484,28 @@ if(aiGenerated&&isMathSubject(v)&&/don dieu|cuc tri|khao sat|do thi|bien thien/.
   const coGraph=/["']type["']\s*:\s*["']graph["']/i.test(text),
         coExpr=/["']expr["']\s*:/i.test(text);
   if(!coGraph&&!coExpr)blockers.push('Bài về đồ thị/tính đơn điệu/cực trị nhưng không có đồ thị hàm số nào. Mỗi khối bảng biến thiên phải khai báo thêm "expr" để phần mềm vẽ đồ thị, hoặc thêm khối mathviz type "graph".');
+}
+/* b21 — HÌNH HỌC KHÔNG GIAN PHẢI CÓ HÌNH.
+   VÌ SAO: bản in Bài 6 "Vectơ trong không gian" mà giáo viên gửi không có LẤY MỘT HÌNH NÀO —
+   đã kiểm chứng bằng máy, cả tệp Word lẫn bản IN/PDF đều chứa 0 ảnh — trong khi nội dung liên
+   tục nhắc "quan sát Hình 2.2", "cho hình lập phương ABCD.A'B'C'D'". Hoạt động dựa trên hình mà
+   chỉ tả bằng lời thì không dạy được, đúng như thầy cô nói: "toán là phải có hình đính kèm".
+   CHẶN OAN LÀ ĐIỀU PHẢI TRÁNH NHẤT (bài học b17), nên điều kiện được siết rất chặt: chỉ chặn khi
+   bài THỰC SỰ nhắc tới một khối không gian cụ thể VÀ cả bản kế hoạch không có bất kỳ hình nào —
+   kể cả đồ thị. Bài giải tích có nhắc "Hình 1.2" nhưng đã có đồ thị thì không bị đụng tới. */
+if(aiGenerated&&isMathSubject(v)){
+  const khoiKG=/\b(hinh lap phuong|hinh hop|tu dien|hinh chop|lang tru|hinh cau|hinh tru|hinh non)\b/.test(plain);
+  const coSolid=/["']type["']\s*:\s*["'](?:solid|hinh-khong-gian)["']/i.test(text);
+  const coHinhBatKy=coSolid||/["']type["']\s*:\s*["'](?:graph|variation)["']/i.test(text)||/["']expr["']\s*:/i.test(text);
+  if(khoiKG&&!coHinhBatKy)
+    blockers.push('Bài có hình khối không gian (hình hộp, tứ diện, hình chóp, lăng trụ...) nhưng cả bản kế hoạch không có một hình vẽ nào. Mỗi hoạt động dựa trên hình của sách giáo khoa phải kèm một khối mathviz type "solid".');
+  else if(khoiKG&&!coSolid)
+    warnings.push('Bài nhắc tới hình khối không gian nhưng chưa có khối mathviz type "solid" nào — hình khối đang được mô tả bằng lời, giáo viên sẽ phải tự vẽ lại.');
+  /* Nhắc đích danh số hiệu hình của sách mà không có hình kèm: cảnh báo, không chặn — vì có
+     những hình của sách (ảnh chụp thực tế, biển chỉ đường) mà phần mềm không dựng thay được. */
+  const soHieuHinh=[...new Set(text.match(/\bHình\s+\d+\.\d+/g)||[])];
+  if(soHieuHinh.length&&!coSolid&&!/["']type["']\s*:\s*["']graph["']/i.test(text))
+    warnings.push(`Bản kế hoạch nhắc ${soHieuHinh.length} hình của sách giáo khoa (${soHieuHinh.slice(0,3).join(', ')}${soHieuHinh.length>3?'...':''}) nhưng không kèm hình vẽ nào — hãy bổ sung hình hoặc chiếu trực tiếp hình trong sách.`);
 }
 if(aiGenerated&&text.length<12000)warnings.push(`Bản kế hoạch chỉ dài ${text.length} ký tự — giáo án đủ nội dung dạy thường dài hơn nhiều; hãy kiểm tra xem phần kiến thức và lời giải đã được viết ra đầy đủ chưa.`);
 if(v.assessmentMode==='day-du'&&!/bảng kiểm|bang kiem|rubric/.test(plain))blockers.push('Đã chọn đánh giá đầy đủ nhưng chưa có bảng kiểm hoặc rubric.');if(aiGenerated&&!/dieu chinh sau bai day/.test(plain))warnings.push('Thiếu mục “Điều chỉnh sau bài dạy” — Phụ lục IV Công văn 5512 có mục này để giáo viên ghi sau khi dạy thực tế.');if($('traceSources').checked&&!/dau vet nguon va trach nhiem giai trinh/.test(plain))blockers.push('Thiếu mục Dấu vết nguồn và trách nhiệm giải trình.');/* Than phiền có thật: bật "khóa nguồn tuyệt đối" mà bản soạn vẫn ghi số trang sai. Nếu không đính
