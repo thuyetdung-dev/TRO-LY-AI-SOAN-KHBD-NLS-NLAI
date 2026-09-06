@@ -115,12 +115,12 @@ h2{font-size:.82rem;letter-spacing:.09em;text-transform:uppercase;color:var(--mu
 })();
 </script>
 
-<script src="standards.js?v=b23"></script>
-<script src="app.js?v=b23"></script>
-<script src="flow.js?v=b23"></script>
-<script src="professional.js?v=b23"></script>
+<script src="standards.js?v=b24"></script>
+<script src="app.js?v=b24"></script>
+<script src="flow.js?v=b24"></script>
+<script src="professional.js?v=b24"></script>
 <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
-<script src="docx-export.js?v=b23"></script>
+<script src="docx-export.js?v=b24"></script>
 
 <script>
 (function(){
@@ -819,6 +819,36 @@ async function runAll(){
     return x.indexOf('Bảng biến thiên hàm số')<0||'Tiêu đề bảng biến thiên vẫn bị in lặp ra ngoài ảnh';
   });
 
+  /* b24 — thầy cô khoanh đỏ ba nhãn trên tứ diện Ví dụ 1 và ghi "bỏ ký hiệu vectơ trên cạnh,
+     nhìn nó rối quá — bỏ ở tất cả các hình vẽ". Hai vectơ AD và AC chiếu gần trùng nhau nên
+     hai nhãn chồng thành một đám chữ đỏ. */
+  await T('Mặc định không ghi ký hiệu vectơ lên hình, mũi tên vẫn còn nguyên',function(){
+    /* Chỉ dùng A→B và A→C vì đó là hai đỉnh CÓ Ở MỌI khối; chóp tam giác và lăng trụ tam giác
+       không có đỉnh D, khai A→D ở đó thì vectơ bị bỏ và phép kiểm tra tự báo sai. */
+    var V=[{from:'A',to:'B',label:'\\\\vec{AB}'},{from:'A',to:'C',label:'\\\\vec{AC}'}];
+    var hong=[];
+    ['tu-dien','hinh-hop','hinh-chop-tu-giac','hinh-chop-tam-giac','lang-tru-tam-giac'].forEach(function(k){
+      var svg=buildSolidSVG({shape:k,vectors:V});
+      if(!svg){hong.push(k+': không dựng được');return}
+      var nhan=(svg.match(/class="hk-vn"/g)||[]).length;
+      var mui=(svg.match(/class="hk-v"/g)||[]).length+(svg.match(/class="hk-v-k"/g)||[]).length;
+      if(nhan)hong.push(k+': còn '+nhan+' nhãn vectơ');
+      if(mui!==2)hong.push(k+': mất mũi tên, chỉ còn '+mui+'/2');
+    });
+    return hong.length===0||hong.join('; ');
+  });
+
+  /* PHÉP KIỂM NGƯỢC — bỏ nhãn là MẶC ĐỊNH, không phải xoá hẳn khả năng ghi nhãn. */
+  await T('KIỂM NGƯỢC: vẫn bật lại được nhãn vectơ khi cần',function(){
+    var V=[{from:'A',to:'B',label:'\\\\vec{AB}'},{from:'A',to:'C',label:'\\\\vec{AC}'}];
+    var caHinh=buildSolidSVG({shape:'tu-dien',vectors:V,vectorLabels:true});
+    if((caHinh.match(/class="hk-vn"/g)||[]).length!==2)return 'Bật vectorLabels mà nhãn không hiện';
+    var rieng=buildSolidSVG({shape:'tu-dien',vectors:[
+      {from:'A',to:'B',label:'\\\\vec{a}',showLabel:true},{from:'A',to:'C',label:'\\\\vec{AC}'}]});
+    return (rieng.match(/class="hk-vn"/g)||[]).length===1
+      ||'Bật nhãn cho riêng một vectơ không đúng số lượng';
+  });
+
   await T('Dựng được cả 5 dạng khối, nét đứt tính đúng theo mặt khuất',function(){
     /* Số cạnh khuất mong đợi lấy theo lối vẽ của SGK: hình hộp khuất 3 cạnh qua đỉnh sau,
        tứ diện và chóp tam giác chỉ khuất 1 cạnh đáy, chóp tứ giác khuất 2 cạnh đáy + 1 cạnh bên,
@@ -851,7 +881,9 @@ async function runAll(){
   });
 
   await T('Nhãn vectơ không in ra chữ "vec" và có dấu mũi tên',function(){
-    var svg=buildSolidSVG({shape:'tu-dien',vectors:[{from:'A',to:'B',label:'\\\\vec{a}'}]});
+    /* b24: nhãn vectơ nay mặc định TẮT, nên phải bật lên mới kiểm được cách vẽ nhãn. */
+    var svg=buildSolidSVG({shape:'tu-dien',vectorLabels:true,
+      vectors:[{from:'A',to:'B',label:'\\\\vec{a}'}]});
     if(!svg)return 'Không dựng được hình';
     if(/>[^<]*vec[^<]*</.test(svg))return 'Nhãn vẫn in ra nguyên văn lệnh LaTeX';
     return svg.indexOf('url(#mhk2)')>0||'Thiếu dấu mũi tên trên đầu nhãn vectơ';

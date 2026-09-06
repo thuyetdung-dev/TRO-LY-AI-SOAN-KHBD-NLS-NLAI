@@ -1,5 +1,5 @@
 TRỢ LÝ SOẠN KẾ HOẠCH BÀI DẠY 2026–2027
-BẢN CHUYÊN NGHIỆP – BƯỚC 4 · HIỆU CHỈNH b23
+BẢN CHUYÊN NGHIỆP – BƯỚC 4 · HIỆU CHỈNH b24
 
 ================================================================
 ĐIỀU KIỆN CẦN
@@ -140,7 +140,7 @@ XỬ LÝ SỰ CỐ THƯỜNG GẶP
 TỰ KIỂM TRA SAU KHI SỬA MÃ
 ================================================================
 Mở tệp test.html bằng Chrome hoặc Edge rồi bấm "Chạy kiểm tra". Trang
-này chạy 114 phép kiểm tra trên đúng các tệp đang nằm trong thư mục,
+này chạy 116 phép kiểm tra trên đúng các tệp đang nằm trong thư mục,
 không phải trên bản sao, nên kết quả phản ánh đúng tình trạng thật.
 
 - Toàn bộ xanh: phần mềm còn lành, dùng được.
@@ -455,3 +455,25 @@ NHỮNG THAY ĐỔI CỦA b23 (so với b22)
 3. Bộ kiểm tra: 114 phép (113 đạt + 1 bỏ qua ngoài trình duyệt), thêm 3
    phép cho vòng này, trong đó có phép kiểm NGƯỢC bảo đảm việc dùng lại
    cùng một tiêu chí không bị báo nhầm.
+
+================================================================
+NHỮNG THAY ĐỔI CỦA b24 (so với b23)
+================================================================
+1. BỎ KÝ HIỆU VECTƠ GHI TRÊN HÌNH. Thầy cô khoanh đỏ ba nhãn trên hình tứ
+   diện của Ví dụ 1 và ghi: "bỏ ký hiệu vectơ trên cạnh, nhìn nó rối quá —
+   bỏ ở tất cả các hình vẽ". Đúng vậy: khi hai vectơ xuất phát từ cùng một
+   đỉnh mà chiếu gần trùng nhau (như AD với AC trên tứ diện), hai nhãn
+   chồng lên nhau thành một đám chữ đỏ không đọc nổi. Tên đỉnh đã có sẵn
+   trên hình nên người đọc tự biết mũi tên nào là vectơ nào.
+   Từ nay MỌI hình đều chỉ vẽ mũi tên, không ghi tên vectơ. Mũi tên vẫn
+   giữ nguyên màu đỏ và vẫn theo nét khuất như b22.
+
+2. VẪN BẬT LẠI ĐƯỢC KHI CẦN. Thêm "vectorLabels": true cho cả hình, hoặc
+   "showLabel": true cho riêng một vectơ, thì nhãn hiện lại như cũ.
+
+3. Lời nhắc gửi cho AI cũng bỏ trường nhãn khỏi ví dụ, để AI không sinh ra
+   thứ mà phần mềm không vẽ nữa.
+
+4. Bộ kiểm tra: 116 phép (115 đạt + 1 bỏ qua ngoài trình duyệt), thêm 2
+   phép cho vòng này, trong đó có phép kiểm NGƯỢC bảo đảm nhãn vẫn bật lại
+   được — bỏ nhãn là MẶC ĐỊNH, không phải xoá hẳn khả năng ghi nhãn.

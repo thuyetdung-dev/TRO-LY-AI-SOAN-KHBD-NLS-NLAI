@@ -1,5 +1,5 @@
 BÁO CÁO ĐÁNH GIÁ VÀ HIỆU CHỈNH TRỢ LÝ KHBD
-Phiên bản rà soát: 2026-09-06 · b23 (b15 → ... → b22 → b23, mỗi vòng theo phản hồi thật)
+Phiên bản rà soát: 2026-09-06 · b24 (b15 → ... → b23 → b24, mỗi vòng theo phản hồi thật)
 
 I. KẾT LUẬN NGẮN
 
@@ -497,8 +497,35 @@ chặn nào liên quan tới TC2.
 Bộ kiểm tra: 114 phép (113 đạt + 1 bỏ qua ngoài trình duyệt), thêm 3 phép, trong đó có phép kiểm
 NGƯỢC bảo đảm dùng lại cùng một tiêu chí không bị báo nhầm.
 
-XX. VIỆC CÒN LẠI SAU CHÍN VÒNG SỬA
-Sáu việc còn tồn vẫn nguyên, bốn vòng b20 đến b23 không đụng tới. Ba giới hạn ở mục V vẫn nguyên: nội dung sửa tay trên màn hình chưa vào được tệp Word;
+XXI. ĐỢT SỬA b24 — MỘT CHI TIẾT ĐÚNG VỀ KỸ THUẬT NHƯNG SAI VỀ THỰC DỤNG
+
+Căn cứ: ảnh chụp hình tứ diện Ví dụ 1 do phần mềm vẽ, có bút đỏ khoanh ba nhãn vectơ và ghi
+"bỏ ký hiệu vectơ trên cạnh, nhìn nó rối quá — bỏ ở tất cả các hình vẽ".
+
+XXI0. TÁI HIỆN. Dựng lại đúng hình đó rồi kết xuất ra ảnh: nhãn AD và AC chồng lên nhau thành
+một cụm chữ đỏ, đúng chỗ bút đỏ khoanh. Nguyên nhân hình học: hai vectơ cùng xuất phát từ A,
+mà D và C chiếu gần nhau, nên hai nhãn rơi vào cùng một vùng nhỏ.
+
+XXI1. ĐÁNG GHI LẠI VÌ ĐÂY KHÔNG PHẢI LỖI SAI.
+Ba vòng trước đều là lỗi rõ ràng: vẽ thiếu vạch, vẽ sai nét, in lặp tiêu đề. Lần này chức năng
+chạy đúng như thiết kế — dấu mũi tên trên nhãn còn được làm khá công phu ở b21 để không phụ
+thuộc phông chữ. Nhưng thứ đúng về kỹ thuật vẫn có thể sai về thực dụng: trên một hình khổ nhỏ,
+thông tin thừa gây hại nhiều hơn lợi, vì tên đỉnh đã đủ để người đọc biết mũi tên nào là vectơ
+nào. Người dùng thật nhìn ra điều đó nhanh hơn bất kỳ phép kiểm định nào.
+Nay nhãn TẮT theo mặc định trên mọi hình, nhưng không xoá hẳn khả năng ghi nhãn: "vectorLabels":
+true cho cả hình, hoặc "showLabel": true cho riêng một vectơ, thì nhãn hiện lại. Bỏ hẳn một
+chức năng vì một lần góp ý là phản ứng thái quá; đặt lại mặc định mới là đúng mức.
+
+XXI2. HAI PHÉP KIỂM TRA HỎNG NGAY SAU KHI SỬA — CẢ HAI ĐỀU HỮU ÍCH.
+ - Phép mới do chính đợt này viết báo "chóp tam giác và lăng trụ tam giác mất mũi tên". Không
+   phải lỗi mã: hai khối ấy KHÔNG CÓ đỉnh D, nên vectơ A→D bị bỏ đúng như thiết kế. Lỗi nằm ở
+   phép kiểm tra, đã sửa để chỉ dùng những đỉnh có ở mọi khối.
+ - Phép cũ "nhãn vectơ có dấu mũi tên" hỏng vì nhãn nay mặc định tắt; đã bật cờ lên trong phép
+   đó để nó tiếp tục canh đúng cách vẽ nhãn.
+Bộ kiểm tra: 116 phép (115 đạt + 1 bỏ qua ngoài trình duyệt), thêm 2 phép cho vòng này.
+
+XXII. VIỆC CÒN LẠI SAU MƯỜI VÒNG SỬA
+Sáu việc còn tồn vẫn nguyên, năm vòng b20 đến b24 không đụng tới. Ba giới hạn ở mục V vẫn nguyên: nội dung sửa tay trên màn hình chưa vào được tệp Word;
 tệp nguồn tải lên lại mỗi lần soạn; validatePlan còn đọc thẳng trạng thái ô nhập. Ngoài ra
 phần mềm vẫn không đối chiếu chéo được nội dung do AI viết ở hai chỗ khác nhau (ví dụ tiêu
 đề hình ghi một hàm còn chú thích dưới hình ghi hàm khác). Những việc đó nên làm thành một

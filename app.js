@@ -1,7 +1,7 @@
 /* Mốc phiên bản — hiện ngay trên thanh tiêu đề. Sau nhiều vòng sửa, đã có lần trang web
    chạy bản cũ mà cả hai bên đều tưởng là bản mới, mất công đi tìm lỗi đã sửa xong rồi.
    Nhìn dòng chữ trên đầu trang là biết ngay đang chạy bản nào. */
-const APP_BUILD='2026-09-06 · b23';
+const APP_BUILD='2026-09-06 · b24';
 const $=id=>document.getElementById(id);let selectedFiles=[],rawMarkdown='',availableModels=[],scanTimer,draftTimer,lastValidation=null;
 const fields=['subject','grade','lesson','book','periods','students','classSize','equipment','notes','tableLayout','assessmentMode','lessonTemplate','sourceMode'];
 const toast=m=>{const t=$('toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2600)};
@@ -153,10 +153,10 @@ function mathRulesFor(v){if(!isMathSubject(v))return '6) Không áp dụng mô-�
  - "asymptotes": bắt buộc với hàm phân thức hoặc hàm có tiệm cận. Tính chính xác trước khi ghi: tiệm cận đứng dùng {"type":"vertical","value":a} cho $x=a$; tiệm cận ngang dùng {"type":"horizontal","value":b} cho $y=b$; tiệm cận xiên dùng {"type":"oblique","slope":m,"intercept":n} cho $y=mx+n$. Chỉ ghi các tiệm cận thực sự tồn tại, không đưa đồng thời ngang và xiên nếu không đúng.
  - BẮT BUỘC có ít nhất một đồ thị khi bài học có bất kỳ nội dung nào sau đây: nhận biết tính đơn điệu hoặc cực trị QUA HÌNH ẢNH ĐỒ THỊ, khảo sát và vẽ đồ thị hàm số, tương giao đồ thị, hoặc khi sách giáo khoa có hình vẽ đồ thị ở phần tương ứng. Yêu cầu cần đạt "nhận biết qua hình ảnh đồ thị" mà bản soạn không có đồ thị nào thì chưa dạy được mục tiêu đó.
 
-6d) HÌNH KHỐI KHÔNG GIAN: {"type":"solid","title":"Hình lập phương ABCD.A'B'C'D'","shape":"hinh-lap-phuong","points":[{"name":"M","between":["B","C"],"ratio":0.5}],"vectors":[{"from":"A","to":"B","label":"\\\\\\\\vec{a}"}],"segments":[{"from":"A","to":"C'"}],"planes":[["A","B","C","D"]]}
+6d) HÌNH KHỐI KHÔNG GIAN: {"type":"solid","title":"Hình lập phương ABCD.A'B'C'D'","shape":"hinh-lap-phuong","points":[{"name":"M","between":["B","C"],"ratio":0.5}],"vectors":[{"from":"A","to":"B"}],"segments":[{"from":"A","to":"C'"}],"planes":[["A","B","C","D"]]}
  - "shape" chọn một trong: "hinh-hop" (dùng luôn cho hình lập phương, hình hộp chữ nhật, lăng trụ tứ giác — đỉnh A, B, C, D, A', B', C', D'), "tu-dien" (đỉnh A, B, C, D), "hinh-chop-tu-giac" (S.ABCD), "hinh-chop-tam-giac" (S.ABC), "lang-tru-tam-giac" (ABC.A'B'C').
- - "points": điểm phụ nằm TRÊN một cạnh, ratio 0.5 là trung điểm. "vectors": mũi tên vectơ. "segments": đoạn thẳng phụ như đường chéo, thêm "dash":true nếu là nét khuất. "planes": mặt cần tô nền để làm nổi mặt phẳng đang xét.
- - Phần mềm TỰ TÍNH nét khuất, tự đặt tên đỉnh và tự chọn góc nhìn — chỉ cần khai đúng tên đỉnh có sẵn của khối, không cần mô tả gì thêm.
+ - "points": điểm phụ nằm TRÊN một cạnh, ratio 0.5 là trung điểm. "vectors": mũi tên vectơ, CHỈ CẦN "from" và "to" — KHÔNG ghi thêm nhãn tên vectơ lên hình, vì tên đỉnh đã có sẵn nên ghi thêm chỉ làm hình rối. "segments": đoạn thẳng phụ như đường chéo. "planes": mặt cần tô nền để làm nổi mặt phẳng đang xét.
+ - Phần mềm TỰ TÍNH nét khuất cho cả cạnh, vectơ lẫn đoạn phụ, tự đặt tên đỉnh và tự chọn góc nhìn — chỉ cần khai đúng tên đỉnh có sẵn của khối, không cần mô tả gì thêm.
  - BẮT BUỘC: hoạt động nào dựa trên một hình vẽ của sách giáo khoa (câu chữ kiểu "quan sát Hình 2.2", "cho hình lập phương ABCD.A'B'C'D'", "cho tứ diện ABCD", "cho hình chóp S.ABCD") thì PHẢI kèm một khối mathviz "solid" đặt ngay dưới đoạn dẫn. Học sinh và giáo viên không thể làm việc với một hình chỉ được tả bằng lời.
 
 QUY TẮC CHUNG: mỗi khối mathviz đặt ngay dưới dòng văn bản dẫn vào nó. Chỉ dùng khi đúng nội dung bài, không ép dùng cho mọi bài Toán. Nhưng với bài về tính đơn điệu, cực trị hay khảo sát hàm số thì bảng biến thiên và đồ thị là bắt buộc; với bài hình học không gian thì mỗi hoạt động dựa trên hình của sách phải có hình khối kèm theo. Không được thay hình bằng lời mô tả suông.`}
@@ -1045,6 +1045,16 @@ function buildSolidSVG(spec){
        không còn đọc ra là vectơ nữa, đó là điều thầy cô cần thấy rõ nhất trên hình. */
     const dut=v.dash===undefined?doanKhuat(solidKhoa(v.from),solidKhoa(v.to)):!!v.dash;
     g+=`<line x1="${a[0].toFixed(1)}" y1="${a[1].toFixed(1)}" x2="${b[0].toFixed(1)}" y2="${b[1].toFixed(1)}" class="${dut?'hk-v-k':'hk-v'}" marker-end="url(#mhk)"/>`;
+    /* b24 — MẶC ĐỊNH KHÔNG GHI KÝ HIỆU VECTƠ LÊN HÌNH.
+       VÌ SAO: thầy cô khoanh đỏ ba nhãn trên tứ diện và ghi "bỏ ký hiệu vectơ trên cạnh, nhìn
+       nó rối quá — bỏ ở tất cả các hình vẽ". Đúng vậy: khi hai vectơ xuất phát từ cùng một đỉnh
+       và chiếu gần trùng nhau (AD với AC trên tứ diện), hai nhãn chồng lên nhau thành một đám
+       chữ đỏ không đọc được. Tên đỉnh đã có sẵn trên hình nên người đọc tự biết mũi tên nào là
+       vectơ nào; ghi thêm chỉ làm rối.
+       Vẫn bật lại được khi thật sự cần, bằng "vectorLabels": true cho cả hình hoặc "showLabel":
+       true cho riêng một vectơ. */
+    const hienNhan=v.showLabel===undefined?spec.vectorLabels===true:!!v.showLabel;
+    if(hienNhan&&v.label){
     /* VÌ SAO tự vẽ dấu mũi tên: texToPlain không biết lệnh \vec nên nhãn "$\vec{a}$" in thẳng
        ra chữ "veca" — đã thấy tận mắt ở lần dựng thử đầu tiên. Ký tự tổ hợp Unicode (a⃗) thì
        phụ thuộc phông, in ra Word dễ lệch. Nên vẽ chữ rồi gạch một mũi tên ngắn ngay trên đầu:
@@ -1059,6 +1069,7 @@ function buildSolidSVG(spec){
         g+=`<line x1="${(gx-w).toFixed(1)}" y1="${(gy-12).toFixed(1)}" x2="${(gx+w).toFixed(1)}" y2="${(gy-12).toFixed(1)}" `+
            `stroke="#c0392b" stroke-width="1.3" marker-end="url(#mhk2)"/>`;
       }
+    }
     }
   });
   if(vecto.length)g+=`<defs><marker id="mhk" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto-start-reverse"><path d="M0,1 L10,5 L0,9 z" fill="#c0392b"/></marker>`+
