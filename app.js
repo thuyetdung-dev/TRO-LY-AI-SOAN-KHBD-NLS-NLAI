@@ -1,7 +1,7 @@
 /* Mốc phiên bản — hiện ngay trên thanh tiêu đề. Sau nhiều vòng sửa, đã có lần trang web
    chạy bản cũ mà cả hai bên đều tưởng là bản mới, mất công đi tìm lỗi đã sửa xong rồi.
    Nhìn dòng chữ trên đầu trang là biết ngay đang chạy bản nào. */
-const APP_BUILD='2026-09-14 · b27.5';
+const APP_BUILD='2026-09-14 · b27.6';
 const $=id=>document.getElementById(id);let selectedFiles=[],rawMarkdown='',availableModels=[],scanTimer,draftTimer,lastValidation=null;
 const fields=['subject','grade','lesson','book','periods','students','classSize','equipment','notes','tableLayout','assessmentMode','lessonTemplate','sourceMode'];
 const toast=m=>{const t=$('toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2600)};
@@ -436,6 +436,33 @@ async function callGemini(v,key){
   }
   throw new Error(`Đã thử ${candidates.length} mô hình nhưng đều chưa phản hồi${skipped?` (còn ${skipped} mô hình chưa thử, hãy chọn thủ công ở mục nâng cao)`:''}. ${errors.slice(0,2).join(' · ')}`);
 }
+async function callOpenAI(v){
+  const total=selectedFiles.reduce((n,f)=>n+f.size,0);
+  if(selectedFiles.length>5||total>3*1024*1024)throw new Error('OpenAI an toàn qua Vercel nhận tối đa 5 tệp, tổng khoảng 3 MB. Hãy giảm tệp hoặc dán phần cần dùng vào ô Nội dung bổ sung.');
+  setProgress(48,'Đang soạn bài bằng OpenAI...','Khóa API được bảo vệ trên máy chủ Vercel');
+  const files=[];
+  for(const file of selectedFiles)files.push({name:file.name,type:file.type||mime(file.name),data:bytesToBase64(await file.arrayBuffer())});
+  const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),180000);
+  try{
+    const res=await fetch('/api/openai',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({prompt:promptFor(v),files}),signal:controller.signal});
+    const data=await res.json().catch(()=>({}));
+    if(!res.ok){const err=new Error(data.error||('OpenAI chưa phản hồi (HTTP '+res.status+')'));err.status=res.status;throw err}
+    setModelStatus('Đang dùng '+(data.model||'OpenAI'),'ok');
+    return String(data.text||'').trim();
+  }catch(err){
+    if(err.name==='AbortError')throw new Error('OpenAI phản hồi quá lâu. Hãy giảm tài liệu hoặc thử lại.');
+    if(err instanceof TypeError)throw new Error('Không kết nối được API OpenAI trên Vercel.');
+    throw err;
+  }finally{clearTimeout(timer)}
+}
+function syncProvider(){
+  const openai=$('aiProvider')?.value==='openai';
+  $('geminiKeyFields').hidden=openai;$('openaiServerStatus').hidden=!openai;
+  $('aiProviderNote').textContent=openai?'OpenAI dùng khóa bí mật đã lưu trong Environment Variables của Vercel.':'Gemini có bậc miễn phí; khóa chỉ dùng trong phiên trình duyệt.';
+  $('scanModels').disabled=openai;
+}
+$('aiProvider')?.addEventListener('change',syncProvider);syncProvider();
+
 function fallback(v){const p=v.periods||'…',g=clampGrade(v.grade);return `# KẾ HOẠCH BÀI DẠY\n## ${v.subject.toUpperCase()} ${g} — ${v.lesson}\n**Bộ sách:** ${v.book}  \n**Thời lượng:** ${p} tiết ${v.periods?'':'(cần xác định từ SGV)'}  \n**Đối tượng:** ${v.students}; **Sĩ số:** ${v.classSize}  \n**Thiết bị:** ${v.equipment}\n\n> Đây là khung dự thảo tạo không dùng AI (chưa gắn mã NLS/NLAI vì không tra được bảng mã ở chế độ này). Hãy bổ sung API key miễn phí để hệ thống đọc sâu tài liệu, tạo nội dung đặc thù và gắn đúng mã NLS/NLAI theo lớp ${g}.\n\n## I. MỤC TIÊU\n### 1. Về kiến thức\n- Nội dung kiến thức cốt lõi của bài ${v.lesson} theo đúng yêu cầu cần đạt của chương trình môn học.\n### 2. Về năng lực\n- Năng lực chung: tự chủ và tự học; giao tiếp và hợp tác; giải quyết vấn đề và sáng tạo.\n- Năng lực đặc thù môn học cần phát triển qua bài học.\n### 3. Về phẩm chất\n- Chăm chỉ, trung thực, trách nhiệm trong học tập và hợp tác.\n\n## II. THIẾT BỊ DẠY HỌC VÀ HỌC LIỆU\n- Giáo viên: SGK, SGV, phiếu học tập, ${v.equipment}.\n- Học sinh: SGK, vở ghi, dụng cụ học tập.\n\n## III. TIẾN TRÌNH DẠY HỌC\n### 1. Hoạt động 1: Xác định vấn đề/nhiệm vụ học tập/Mở đầu\na) Mục tiêu — b) Nội dung — c) Sản phẩm — d) Tổ chức thực hiện (Giao nhiệm vụ → Thực hiện nhiệm vụ → Báo cáo, thảo luận → Kết luận, nhận định).\n\n### 2. Hoạt động 2: Hình thành kiến thức mới\na) Mục tiêu — b) Nội dung — c) Sản phẩm — d) Tổ chức thực hiện (4 bước như trên).\n\n### 3. Hoạt động 3: Luyện tập\na) Mục tiêu — b) Nội dung: hệ thống câu hỏi/bài tập phân hoá cho học sinh ${v.students} — c) Sản phẩm: đáp án, lời giải — d) Tổ chức thực hiện (4 bước như trên).\n\n### 4. Hoạt động 4: Vận dụng\na) Mục tiêu — b) Nội dung: vận dụng kiến thức vào tình huống thực tiễn — c) Sản phẩm: báo cáo — d) Tổ chức thực hiện: thường giao ngoài giờ học trên lớp, nộp báo cáo vào thời điểm phù hợp.\n\n*(Đánh giá thường xuyên được lồng ngay trong mục d) Tổ chức thực hiện của từng hoạt động — hỏi–đáp, viết, thực hành, sản phẩm học tập — theo đúng Phụ lục IV, Công văn 5512/BGDĐT-GDTrH; không lập cột điểm/đầu điểm riêng cho NLS/NLAI.)*\n\n## ĐIỀU CHỈNH SAU BÀI DẠY\n........................................................................`}
 // Phòng hờ: model đôi khi làm mất dấu "\" của lệnh LaTeX khi viết văn xuôi (mục a/b/c ngoài
 // bảng tổ chức thực hiện) — ví dụ "$\vec{a}=k\vec{b}$" bị trả về thành "$veca=kvecb$". Bên trong
@@ -1795,7 +1822,7 @@ function renderValidation(report){lastValidation=report;const el=$('validationRe
     : '<span>Đủ cấu trúc, liên kết mục tiêu, thời lượng, đánh giá và mã tham chiếu.</span>';
   const approval=report.codes.length?`<label class="check competency-approval"><input id="approveCompetencies" type="checkbox"> Tôi đã đọc, đối chiếu và duyệt các mã NLS/NLAI: ${report.codes.map(esc).join(', ')}</label>`:'';el.innerHTML=`<strong>${esc(title)}</strong>${time}${than}${approval}`;$('approveCompetencies')?.addEventListener('change',syncExportLock);syncExportLock()}
 function showResult(md,report){rawMarkdown=md;$('progress').hidden=true;$('emptyState').hidden=true;$('result').innerHTML=mdToHtml(md);renderMathViz();$('result').hidden=false;$('resultActions').hidden=false;$('draftNotice').hidden=false;renderValidation(report||validatePlan(md,values(),false));const typeset=()=>window.MathJax?.typesetPromise?window.MathJax.typesetPromise([$('result')]).catch(()=>{}):null;typeset()||setTimeout(typeset,800);$('validationReport').scrollIntoView({behavior:'smooth',block:'start'});saveDraft()}
-$('lessonForm').onsubmit=async e=>{e.preventDefault();const v=values(),key=$('apiKey').value.trim();if(selectedFiles.length&&!$('privacyConfirm').checked){toast('Vui lòng xác nhận tài liệu đã được ẩn danh và có quyền sử dụng');$('privacyConfirm').focus();return}$('generateBtn').disabled=true;try{setProgress(10,'Đang kiểm tra nguồn...','Chuẩn bị dữ liệu bài dạy');let md;if(key){md=await callGemini(v,key);if(!md)throw new Error('AI chưa trả về nội dung')}else{await new Promise(r=>setTimeout(r,350));setProgress(70,'Đang tạo khung dự thảo...','Dùng chế độ cơ bản không cần API key');md=fallback(v)}setProgress(94,'Đang kiểm định đầu ra...','Đối chiếu cấu trúc, lessonflow và mã NLS/NLAI');const report=validatePlan(md,v,!!key);showResult(md,report);toast(report.blockers.length?'Bản dự thảo chưa đạt kiểm định':report.warnings.length?'Đã tạo – cần rà soát cảnh báo':'Đã tạo và đạt kiểm định tự động')}catch(err){$('progress').hidden=true;$('emptyState').hidden=false;toast(err.message||'Có lỗi xảy ra')}finally{$('generateBtn').disabled=false}}
+$('lessonForm').onsubmit=async e=>{e.preventDefault();const v=values(),key=$('apiKey').value.trim(),provider=$('aiProvider')?.value||'gemini';if(selectedFiles.length&&!$('privacyConfirm').checked){toast('Vui lòng xác nhận tài liệu đã được ẩn danh và có quyền sử dụng');$('privacyConfirm').focus();return}$('generateBtn').disabled=true;try{setProgress(10,'Đang kiểm tra nguồn...','Chuẩn bị dữ liệu bài dạy');let md,usedAI=false;if(provider==='openai'){md=await callOpenAI(v);usedAI=true}else if(key){md=await callGemini(v,key);usedAI=true}else{await new Promise(r=>setTimeout(r,350));setProgress(70,'Đang tạo khung dự thảo...','Dùng chế độ cơ bản không cần API key');md=fallback(v)}if(!md)throw new Error('AI chưa trả về nội dung');setProgress(94,'Đang kiểm định đầu ra...','Đối chiếu cấu trúc, lessonflow và mã NLS/NLAI');const report=validatePlan(md,v,usedAI);showResult(md,report);toast(report.blockers.length?'Bản dự thảo chưa đạt kiểm định':report.warnings.length?'Đã tạo – cần rà soát cảnh báo':'Đã tạo và đạt kiểm định tự động')}catch(err){$('progress').hidden=true;$('emptyState').hidden=false;toast(err.message||'Có lỗi xảy ra')}finally{$('generateBtn').disabled=false}}
 $('lessonForm').addEventListener('submit',e=>{if($('sourceMode').value==='strict'&&!selectedFiles.length&&!$('notes').value.trim()){e.preventDefault();e.stopImmediatePropagation();toast('Chế độ khóa nguồn tuyệt đối yêu cầu ít nhất một tài liệu hoặc nội dung nguồn');$('dropZone').focus()}},true);
 $('copyBtn').onclick=async()=>{await navigator.clipboard.writeText(rawMarkdown);toast('Đã sao chép nội dung')};
 $('printBtn').onclick=()=>window.print();
