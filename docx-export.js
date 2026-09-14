@@ -524,8 +524,10 @@
       }).join('');
       return `<w:tr>${head ? '<w:trPr><w:tblHeader/></w:trPr>' : ''}${tds}</w:tr>`;
     }).join('');
-    // Trình tự bắt buộc của w:tblPr: tblW → tblBorders → tblLayout.
-    return `<w:tbl><w:tblPr><w:tblW w:w="${FULL}" w:type="dxa"/><w:tblBorders>` +
+    // Bảng dùng cỡ 11 pt riêng: đủ đọc khi in nhưng giảm nguy cơ công thức OMML tràn
+    // khỏi ô ở LibreOffice. Văn bản thường vẫn giữ cỡ 13 pt theo mẫu hành chính.
+    // Trình tự bắt buộc của w:tblPr: tblStyle → tblW → tblBorders → tblLayout.
+    return `<w:tbl><w:tblPr><w:tblStyle w:val="KhbdTable"/><w:tblW w:w="${FULL}" w:type="dxa"/><w:tblBorders>` +
       ['top', 'left', 'bottom', 'right', 'insideH', 'insideV']
         .map(s => `<w:${s} w:val="single" w:sz="6" w:color="595959"/>`).join('') +
       `</w:tblBorders><w:tblLayout w:type="fixed"/></w:tblPr><w:tblGrid>${grid}</w:tblGrid>${body}</w:tbl>`;
@@ -915,6 +917,7 @@
     '<w:style w:type="paragraph" w:styleId="Title"><w:name w:val="Title"/><w:basedOn w:val="Normal"/><w:rPr><w:b/><w:sz w:val="32"/><w:color w:val="16436B"/></w:rPr></w:style>' +
     '<w:style w:type="paragraph" w:styleId="Heading1"><w:name w:val="heading 1"/><w:basedOn w:val="Normal"/><w:rPr><w:b/><w:sz w:val="28"/><w:color w:val="16436B"/></w:rPr></w:style>' +
     '<w:style w:type="paragraph" w:styleId="Heading2"><w:name w:val="heading 2"/><w:basedOn w:val="Normal"/><w:rPr><w:b/><w:sz w:val="26"/><w:color w:val="1F4E79"/></w:rPr></w:style>' +
+    '<w:style w:type="table" w:styleId="KhbdTable"><w:name w:val="KHBD Table"/><w:tblStylePr w:type="wholeTable"><w:rPr><w:sz w:val="22"/><w:szCs w:val="22"/></w:rPr><w:pPr><w:spacing w:after="20"/></w:pPr></w:tblStylePr></w:style>' +
     '</w:styles>';
 
   function coreXml(title) {
