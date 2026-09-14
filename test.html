@@ -83,7 +83,8 @@ h2{font-size:.82rem;letter-spacing:.09em;text-transform:uppercase;color:var(--mu
     <select id="model"><option value="auto" selected>auto</option></select>
     <button id="scanModels" type="button"></button><small id="modelStatus"></small>
     <input id="includeDigital" type="checkbox" checked>
-    <input id="includeAI" type="checkbox">
+    <select id="aiIntegrationMode"><option value="auto" selected>auto</option><option value="required">required</option><option value="off">off</option></select>
+    <input id="includeAI" type="checkbox" checked hidden>
     <input id="traceSources" type="checkbox" checked>
     <button id="generateBtn" type="submit"></button>
   </form>
@@ -97,6 +98,7 @@ h2{font-size:.82rem;letter-spacing:.09em;text-transform:uppercase;color:var(--mu
   <article id="result"></article>
   <p id="draftNotice"></p>
   <dialog id="historyDialog"><div id="historyList"></div><div id="compareView"></div></dialog>
+  <dialog id="sourceEditorDialog"></dialog><textarea id="sourceEditor"></textarea><button id="applySourceEdit"></button><button id="cancelSourceEdit"></button>
   <div id="toast"></div>
 </div>
 
@@ -1069,9 +1071,8 @@ async function runAll(){
       ||'Tỉ lệ trong Word ('+tWord.toFixed(3)+') khác tỉ lệ ảnh ('+tAnh.toFixed(3)+') — ô lưới sẽ méo';
   });
 
-  await T('Chặn mục Năng lực AI ghi "không tích hợp trong bài này"',function(){
-    /* Ảnh 2: giáo viên khoanh đúng dòng đó và ghi "lỗi" — quy định là bài nào cũng phải
-       có nội dung năng lực AI. b17 lại coi câu từ chối này là hợp lệ. */
+  await T('Chế độ bắt buộc chặn mục Năng lực AI ghi "không tích hợp"',function(){
+    document.getElementById('aiIntegrationMode').value='required';
     document.getElementById('includeAI').checked=true;
     try{
       var md=plan([4],11,'\n## NĂNG LỰC AI (NLAI)\n- Không tích hợp trong bài này.\n')
@@ -1079,7 +1080,7 @@ async function runAll(){
       var r=validatePlan(md,V,true);
       return r.blockers.join(' ').indexOf('không tích hợp trong bài này')>=0
         ||'Không chặn. Các mục chặn: '+r.blockers.join(' | ');
-    }finally{document.getElementById('includeAI').checked=false}
+    }finally{document.getElementById('aiIntegrationMode').value='auto';document.getElementById('includeAI').checked=true}
   });
 
   /* ---------- Các phép kiểm tra thêm ở b17 (lấy từ bản in giáo viên rà bút đỏ) ---------- */
