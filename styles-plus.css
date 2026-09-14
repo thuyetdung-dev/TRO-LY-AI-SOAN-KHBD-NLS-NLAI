@@ -115,3 +115,4 @@ input:focus-visible, select:focus-visible, textarea:focus-visible {
 #mathEditorJson{height:230px;font:13px/1.45 Consolas,monospace;resize:vertical}.math-editor-preview{min-height:360px;overflow:auto;background:#fff;border:1px solid var(--line);border-radius:9px;padding:10px}
 .math-editor-preview svg{max-width:100%;height:auto}.dark .math-editor-dialog{background:var(--paper);color:var(--ink)}
 @media(max-width:900px){.math-editor-layout{grid-template-columns:1fr}.math-editor-layout .grid.four{grid-template-columns:1fr 1fr}}
+.math-object-toolbar{display:grid;grid-template-columns:minmax(220px,1fr) minmax(170px,.65fr) auto auto auto;gap:8px;align-items:end;margin-bottom:12px}.math-object-toolbar label{margin:0}.math-object-toolbar button{height:43px}.secondary.danger{color:#a12e36;border-color:#d9a9ad}.secondary.danger:hover{background:#fff1f2}@media(max-width:900px){.math-object-toolbar{grid-template-columns:1fr 1fr}.math-object-toolbar button{width:100%}}
