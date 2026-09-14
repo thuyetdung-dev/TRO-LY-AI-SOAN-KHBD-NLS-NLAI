@@ -996,9 +996,6 @@
       alert('Chưa có nội dung để xuất. Hãy soạn kế hoạch bài dạy trước.');
       return;
     }
-    if ($('result')?.classList.contains('edited-by-hand')) {
-      if (!confirm('Bạn đã sửa tay trên màn hình. Bản DOCX được dựng từ nội dung AI trả về nên có thể chưa gồm các sửa đổi đó.\n\nVẫn tiếp tục xuất?')) return;
-    }
     const errors = finalAudit(md);
     if (errors.length) {
       alert('CHƯA THỂ XUẤT DOCX:\n\n- ' + errors.join('\n- '));
@@ -1042,5 +1039,4 @@
   }
 
   if ($('wordBtn')) $('wordBtn').onclick = exportDocx;
-  $('result')?.addEventListener('input', () => $('result').classList.add('edited-by-hand'));
 })();
