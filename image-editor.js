@@ -7,7 +7,7 @@ const okTypes=new Set(['image/png','image/jpeg','image/webp']);
 const xml=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&apos;'}[c]));
 function notify(m){if(typeof toast==='function')toast(m);else{const t=$('toast');if(t){t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2600)}}}
 function findTargets(){
-  targets=[...document.querySelectorAll('#result .mathviz svg, #result img')].filter(el=>!el.closest('.image-replacement'));
+  targets=[...document.querySelectorAll('#result .mathviz svg, #result img')];
   targets.forEach((el,i)=>{el.dataset.imageEditIndex=i;el.classList.add('editable-illustration')});
   return targets;
 }
@@ -28,12 +28,12 @@ function fileToPng(file){
 async function useFile(file){try{const p=await fileToPng(file);pending=p.dataUrl;preview(pending);$('imagePreview').dataset.w=p.width;$('imagePreview').dataset.h=p.height;notify('Đã nạp ảnh — hãy kiểm tra bản xem trước')}catch(e){notify(e.message)}}
 function apply(){
  const el=targets[selected];if(!el||!pending)return notify('Hãy chọn hoặc dán một ảnh trước.');
- const img=new Image();img.onload=()=>{const rec={dataUrl:pending,description:$('imageDescription').value.trim(),caption:$('imageCaption').value.trim(),width:Math.min(100,Math.max(30,+$('imageWidth').value||80)),pixelWidth:img.naturalWidth,pixelHeight:img.naturalHeight};
+ const img=new Image();img.onload=()=>{const previous=state.get(selected);const rec={original:previous?.original||el.outerHTML,dataUrl:pending,description:$('imageDescription').value.trim(),caption:$('imageCaption').value.trim(),width:Math.min(100,Math.max(30,+$('imageWidth').value||80)),pixelWidth:img.naturalWidth,pixelHeight:img.naturalHeight};
  state.set(selected,rec);let box=el.closest('.image-replacement');if(!box){box=document.createElement('figure');box.className='image-replacement';el.replaceWith(box)}
  box.innerHTML='<img src="'+rec.dataUrl+'" alt="'+rec.description.replace(/"/g,'&quot;')+'" style="width:'+rec.width+'%"><figcaption '+(rec.caption?'':'hidden')+'>'+rec.caption.replace(/[<>&]/g,s=>({'<':'&lt;','>':'&gt;','&':'&amp;'}[s]))+'</figcaption>';
  targets[selected]=box.querySelector('img');targets[selected].dataset.imageEditIndex=selected;targets[selected].classList.add('editable-illustration','selected-illustration');notify('Đã thay hình trên bản kế hoạch');};img.src=pending;
 }
-function restore(){const rec=state.get(selected);if(!rec)return notify('Hình này đang là hình tự động ban đầu.');state.delete(selected);if(typeof showResult==='function'&&typeof rawMarkdown==='string')showResult(rawMarkdown,lastValidation);notify('Đã khôi phục hình tự động ban đầu');setTimeout(list,50)}
+function restore(){const rec=state.get(selected);if(!rec)return notify('Hình này đang là hình tự động ban đầu.');const el=targets[selected],box=el?.closest('.image-replacement');if(box)box.outerHTML=rec.original;else if(el)el.outerHTML=rec.original;state.delete(selected);notify('Đã khôi phục hình tự động ban đầu');setTimeout(list,20)}
 $('imageEditBtn')?.addEventListener('click',()=>{list();$('imageEditorDialog').showModal()});
 $('imageTargetSelect')?.addEventListener('change',e=>select(e.target.value));
 $('imageFile')?.addEventListener('change',e=>e.target.files[0]&&useFile(e.target.files[0]));
