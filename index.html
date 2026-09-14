@@ -112,15 +112,15 @@
         <section class="ai-source-card" aria-labelledby="aiSourceTitle">
           <h3 id="aiSourceTitle">Nguồn AI</h3>
           <label class="sr-only" for="aiProvider">Nhà cung cấp AI</label>
-          <select id="aiProvider"><option value="gemini">Google Gemini</option></select>
-          <p class="ai-free-note">Có bậc miễn phí, đủ dùng để soạn bài hằng ngày.</p>
+          <select id="aiProvider"><option value="gemini">Google Gemini — nhập khóa tại trình duyệt</option><option value="openai">OpenAI — khóa bảo vệ trên Vercel</option></select>
+          <p id="aiProviderNote" class="ai-free-note">Gemini có bậc miễn phí; khóa chỉ dùng trong phiên trình duyệt.</p>
           <label class="check shared-key-option" title="Cần máy chủ bảo vệ khóa trước khi sử dụng"><input id="useSharedKey" type="checkbox" disabled> Dùng khóa chung của nhà trường <small>Chưa cấu hình</small></label>
-          <label for="apiKey" class="api-key-label">🔑 Khóa API Google Gemini</label>
+          <div id="geminiKeyFields"><label for="apiKey" class="api-key-label">🔑 Khóa API Google Gemini</label>
           <div class="password-row compact-key-row"><input id="apiKey" type="password" autocomplete="off" placeholder="Dán khóa API"><button type="button" id="showKey" class="mini-btn">Hiện</button><button type="button" id="clearKey" class="mini-btn">Xóa</button></div>
           <p class="key-link">Lấy khóa tại <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener">aistudio.google.com → Get API key</a></p>
           <div class="model-row compact-model-row"><select id="model" aria-label="Mô hình AI"><option value="auto">Tự động chọn mô hình</option></select><button type="button" id="scanModels" class="mini-btn">Dò</button></div>
           <small id="modelStatus" class="model-status" aria-live="polite">Dán khóa API rồi bấm “Dò” để kiểm tra mô hình.</small>
-          <p class="privacy">Khóa chỉ nằm trong trình duyệt của bạn, không được lưu vào bản nháp hoặc gửi về máy chủ của phần mềm.</p>
+          <p class="privacy">Khóa Gemini chỉ nằm trong trình duyệt, không được lưu vào bản nháp hoặc gửi về máy chủ phần mềm.</p></div><div id="openaiServerStatus" class="image-privacy" hidden>🔒 OpenAI dùng khóa bí mật trên máy chủ Vercel. Giáo viên không cần nhập khóa vào trang web.</div>
           <label>Phong cách bài soạn<select id="style"><option value="day-du">Đầy đủ, chi tiết</option><option value="gon">Gọn, dễ triển khai</option><option value="sang-tao">Tích cực, sáng tạo</option></select></label>
         </section>
 
