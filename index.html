@@ -134,7 +134,14 @@
         </details>
 
         <label class="check"><input id="includeDigital" type="checkbox" checked> Đề xuất NLS khi hoạt động thực sự phù hợp</label>
-        <label class="check"><input id="includeAI" type="checkbox"> Đề xuất NLAI khi học sinh thực sự tìm hiểu/sử dụng/kiểm chứng AI</label>
+        <label>Chế độ tích hợp năng lực AI
+          <select id="aiIntegrationMode">
+            <option value="auto">Đề xuất khi hoạt động thực sự phù hợp</option>
+            <option value="required">Bắt buộc thiết kế ít nhất một hoạt động AI</option>
+            <option value="off">Không tích hợp năng lực AI</option>
+          </select>
+          <input id="includeAI" type="checkbox" checked hidden aria-hidden="true" tabindex="-1">
+        </label>
         <label class="check"><input id="traceSources" type="checkbox" checked> Phân biệt nội dung theo tài liệu nguồn và phần AI đề xuất</label>
         <button id="generateBtn" class="primary" type="submit"><span>✦</span> Soạn kế hoạch bài dạy</button>
       </form>
@@ -171,6 +178,13 @@
   </main>
 
   <dialog id="historyDialog" class="history-dialog"><form method="dialog"><button class="dialog-close" aria-label="Đóng">×</button></form><h2>Lịch sử phiên bản</h2><div id="historyList"></div><div id="compareView" class="compare-view" hidden></div></dialog>
+  <dialog id="sourceEditorDialog" class="source-editor-dialog">
+    <form method="dialog"><button class="dialog-close" aria-label="Đóng trình chỉnh sửa">×</button></form>
+    <h2>Chỉnh sửa nội dung kế hoạch</h2>
+    <p>Sửa nội dung Markdown gốc. Bản xem trước, lịch sử và tệp Word sẽ cùng sử dụng nội dung này.</p>
+    <textarea id="sourceEditor" spellcheck="true" aria-label="Nội dung kế hoạch bài dạy"></textarea>
+    <div class="editor-actions"><button id="cancelSourceEdit" type="button" class="secondary">Hủy</button><button id="applySourceEdit" type="button" class="primary">Áp dụng và kiểm định lại</button></div>
+  </dialog>
 
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
   <script src="standards.js?v=b26"></script>
