@@ -16,6 +16,7 @@
   <link rel="preconnect" href="https://generativelanguage.googleapis.com" crossorigin>
   <link rel="stylesheet" href="styles.css?v=b26">
   <link rel="stylesheet" href="styles-plus.css?v=b27.3">
+  <link rel="stylesheet" href="image-editor.css?v=b27.5">
   <script>window.MathJax={tex:{inlineMath:[['$','$'],['\\(','\\)']],displayMath:[['$$','$$'],['\\[','\\]']],processEscapes:true},svg:{fontCache:'global'},options:{skipHtmlTags:['script','noscript','style','textarea','pre','code']}};</script>
   <script defer src="https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-svg.js" integrity="sha384-KKWa9jJ1MZvssLeOoXG6FiOAZfAgmzsIIfw8BXwI9+kYm0lPCbC6yTQPBC00F1/L" crossorigin="anonymous"></script>
 </head>
@@ -143,6 +144,7 @@
         <div id="resultActions" class="actions" hidden>
           <button id="editBtn" class="secondary">Chỉnh sửa</button>
           <button id="mathEditBtn" class="secondary">Chỉnh hình Toán</button>
+          <button id="imageEditBtn" class="secondary">Sửa hình</button>
           <button id="saveVersionBtn" class="secondary">Lưu phiên bản</button>
           <button id="historyBtn" class="secondary">Lịch sử</button>
           <button id="copyBtn" class="secondary">Sao chép</button>
@@ -184,16 +186,41 @@
     <div class="editor-actions"><button id="cancelMathEdit" type="button" class="secondary">Hủy</button><button id="previewMathEdit" type="button" class="secondary">Cập nhật xem trước</button><button id="applyMathEdit" type="button" class="primary">Áp dụng vào KHBD</button></div>
   </dialog>
 
+  <dialog id="imageEditorDialog" class="image-editor-dialog">
+    <form method="dialog"><button class="dialog-close" aria-label="Đóng trình sửa hình">×</button></form>
+    <h2>Sửa hoặc thay hình minh họa</h2>
+    <p>Chọn đúng hình, đưa ảnh mới vào và xem trước trước khi áp dụng. Ảnh chỉ được xử lý trong trình duyệt.</p>
+    <label>Hình cần sửa<select id="imageTargetSelect"></select></label>
+    <div class="image-editor-layout">
+      <section>
+        <div id="imageDropZone" class="image-drop-zone" tabindex="0">
+          <input id="imageFile" type="file" accept="image/png,image/jpeg,image/webp,.png,.jpg,.jpeg,.webp" hidden>
+          <img id="imagePreview" alt="Bản xem trước ảnh thay thế" hidden>
+          <div id="imageDropHint"><strong>Kéo-thả hoặc Ctrl+V để dán ảnh</strong><br><small>PNG, JPG, WebP · tối đa 20 MB</small></div>
+          <button id="imageChooseBtn" type="button" class="secondary">Chọn tệp ảnh</button>
+        </div>
+        <p class="image-privacy">✓ Ảnh được xử lý tại máy của giáo viên, không gửi lên máy chủ phần mềm.</p>
+      </section>
+      <section class="image-editor-fields">
+        <label>Mô tả ảnh<textarea id="imageDescription" placeholder="Nội dung và mục đích của hình"></textarea></label>
+        <label>Chú thích<textarea id="imageCaption" placeholder="Chú thích hiển thị dưới hình (có thể để trống)"></textarea></label>
+        <label>Chiều rộng (30%–100%)<span class="image-width-row"><input id="imageWidth" type="range" min="30" max="100" step="5" value="80"><output id="imageWidthValue">80%</output></span></label>
+      </section>
+    </div>
+    <div class="editor-actions"><button id="cancelImageEdit" type="button" class="secondary">Đóng</button><button id="imageRestoreBtn" type="button" class="secondary">Khôi phục hình tự động ban đầu</button><button id="imageApplyBtn" type="button" class="primary">Áp dụng hình</button></div>
+  </dialog>
+
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
   <script src="standards.js?v=b26"></script>
-  <script src="app.js?v=b27.4"></script>
+  <script src="app.js?v=b27.5"></script>
   <script src="flow.js?v=b26"></script>
   <!-- integrity: nếu tệp trên CDN bị đổi nội dung, trình duyệt sẽ từ chối nạp thay vì chạy mã lạ.
        MathJax đã có từ trước; JSZip trước đây thiếu, trong khi hướng dẫn lại khuyên đưa cả thư
        mục lên dịch vụ lưu trữ web để chia sẻ cho đồng nghiệp. -->
   <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js" integrity="sha384-+mbV2IY1Zk/X1p/nWllGySJSUN8uMs+gUAN10Or95UBH0fpj6GfKgPmgC5EXieXG" crossorigin="anonymous"></script>
   <script src="professional.js?v=b26"></script>
-  <script src="docx-export.js?v=b27.4"></script>
+  <script src="docx-export.js?v=b27.5"></script>
+  <script src="image-editor.js?v=b27.5"></script>
   <script src="math-editor.js?v=b27.2"></script>
   <script>
   /* Hiện mốc phiên bản của app.js đang thực sự chạy. Nếu con số này không khớp với bản vừa
