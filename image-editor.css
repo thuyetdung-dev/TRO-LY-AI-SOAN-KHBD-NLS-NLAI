@@ -1,0 +1,12 @@
+/* V27.5 — trình sửa/thay hình minh họa cục bộ. */
+.image-editor-dialog{width:min(1050px,96vw);max-height:92vh;border:0;border-radius:16px;padding:22px;box-shadow:0 24px 80px #10283f55}
+.image-editor-dialog::backdrop{background:#0e223477}.image-editor-dialog h2{margin:0 0 6px;color:var(--navy)}
+.image-editor-layout{display:grid;grid-template-columns:minmax(300px,40%) minmax(380px,60%);gap:16px;max-height:67vh;overflow:auto;margin-top:14px}
+.image-editor-layout section{border:1px solid var(--line);border-radius:11px;padding:14px;min-width:0}
+.image-drop-zone{min-height:210px;border:2px dashed #8ba8bf;border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;padding:14px;text-align:center;cursor:pointer;background:#f7fbfe}
+.image-drop-zone.over{border-color:#176fa8;background:#eaf6fc}.image-drop-zone img{max-width:100%;max-height:300px;object-fit:contain}.image-drop-zone small{color:var(--muted)}
+.image-editor-fields{display:grid;gap:10px}.image-editor-fields textarea{min-height:76px}.image-width-row{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center}.image-width-row output{min-width:46px;font-weight:700}
+.editable-illustration{cursor:pointer;outline:2px solid transparent;outline-offset:3px}.editable-illustration:hover{outline-color:#65a9d1}.selected-illustration{outline:3px solid #176fa8!important}
+.image-replacement{text-align:center;margin:14px auto}.image-replacement img{height:auto;max-width:100%;display:inline-block}.image-replacement figcaption{font-style:italic;color:#526575;margin-top:6px}
+.image-privacy{padding:8px 10px;border-radius:8px;background:#edf8f1;color:#24623b;font-size:.9rem}
+@media(max-width:800px){.image-editor-layout{grid-template-columns:1fr}.image-editor-dialog{padding:15px}}
