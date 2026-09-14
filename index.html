@@ -189,7 +189,7 @@
   <dialog id="mathEditorDialog" class="math-editor-dialog">
     <form method="dialog"><button class="dialog-close" aria-label="Đóng trình chỉnh hình Toán">×</button></form>
     <h2>Chỉnh sửa hình Toán</h2>
-    <label>Đối tượng cần chỉnh<select id="mathBlockSelect"></select></label>
+    <div class="math-object-toolbar"><label>Đối tượng cần chỉnh<select id="mathBlockSelect"></select></label><label>Thêm mới<select id="newMathType"><option value="graph">Đồ thị</option><option value="variation">Bảng biến thiên</option><option value="sign">Bảng xét dấu</option></select></label><button id="addMathObject" type="button" class="secondary">Thêm</button><button id="duplicateMathObject" type="button" class="secondary">Nhân bản</button><button id="deleteMathObject" type="button" class="secondary danger">Xóa</button></div>
     <div class="math-editor-layout"><section><div id="mathEditorFields"></div><details><summary>JSON nâng cao</summary><textarea id="mathEditorJson" spellcheck="false"></textarea><button id="applyMathJson" type="button" class="secondary">Nạp JSON</button></details></section><section><h3>Xem trước</h3><div id="mathEditorPreview" class="math-editor-preview"></div></section></div>
     <div class="editor-actions"><button id="cancelMathEdit" type="button" class="secondary">Hủy</button><button id="previewMathEdit" type="button" class="secondary">Cập nhật xem trước</button><button id="applyMathEdit" type="button" class="primary">Áp dụng vào KHBD</button></div>
   </dialog>
@@ -204,7 +204,7 @@
   <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js" integrity="sha384-+mbV2IY1Zk/X1p/nWllGySJSUN8uMs+gUAN10Or95UBH0fpj6GfKgPmgC5EXieXG" crossorigin="anonymous"></script>
   <script src="professional.js?v=b26"></script>
   <script src="docx-export.js?v=b26"></script>
-  <script src="math-editor.js?v=b27.1"></script>
+  <script src="math-editor.js?v=b27.2"></script>
   <script>
   /* Hiện mốc phiên bản của app.js đang thực sự chạy. Nếu con số này không khớp với bản vừa
      tải lên thì trình duyệt còn giữ bản cũ trong bộ nhớ đệm — bấm Ctrl+Shift+R. */
