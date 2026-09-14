@@ -1,7 +1,6 @@
 (function(){
   'use strict';
   const $=id=>document.getElementById(id),KEY='khbd_versions_v3',MAX=10;
-  let editing=false,dirty=false;
   const notify=m=>{const t=$('toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2600)};
   const xml=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&apos;'}[c]));
   const versions=()=>{try{return JSON.parse(localStorage.getItem(KEY)||'[]')}catch(_){return []}};
@@ -26,9 +25,28 @@ function putVersions(v){
         Khôi phục và so sánh đều đã dựng lại từ markdown, nên HTML chỉ còn cần cho các
         phiên bản lưu từ bản cũ. */
     html:(typeof rawMarkdown==='string'&&rawMarkdown.trim())?'':($('result').innerHTML.length<120000?$('result').innerHTML:''),meta:meta()});putVersions(v);renderHistory();if(!auto)notify('Đã lưu phiên bản hiện tại')}
-  function setEditing(on){editing=on;$('result').contentEditable=on?'true':'false';$('result').classList.toggle('editing',on);$('editBtn').textContent=on?'Kết thúc sửa':'Chỉnh sửa';if(on){$('result').focus();notify('Có thể sửa trực tiếp nội dung. Hãy lưu phiên bản sau khi sửa.')}else if(dirty){saveVersion(true);dirty=false;notify('Đã kết thúc sửa và lưu một phiên bản')}}
-  $('editBtn').onclick=()=>setEditing(!editing);
-  $('result').addEventListener('input',()=>{if(editing)dirty=true});
+  /* Sửa markdown gốc thay vì HTML đã render. Bản cũ cho phép sửa contentEditable nhưng
+     bộ xuất Word đọc rawMarkdown, vì vậy nội dung giáo viên sửa không đi vào DOCX. */
+  function openSourceEditor(){
+    if(typeof rawMarkdown!=='string'||!rawMarkdown.trim())return notify('Chưa có nội dung để chỉnh sửa');
+    $('sourceEditor').value=rawMarkdown;
+    $('sourceEditorDialog').showModal();
+    requestAnimationFrame(()=>$('sourceEditor').focus());
+  }
+  function applySourceEditor(){
+    const md=$('sourceEditor').value.trim();
+    if(!md)return notify('Nội dung kế hoạch không được để trống');
+    if(typeof showResult!=='function')return notify('Không thể cập nhật bản xem trước');
+    showResult(md,typeof validatePlan==='function'?validatePlan(md,values(),false):undefined);
+    $('sourceEditorDialog').close();
+    saveVersion(true);
+    notify('Đã đồng bộ chỉnh sửa với bản xem trước và tệp Word');
+  }
+  $('editBtn').onclick=openSourceEditor;
+  $('applySourceEdit').onclick=applySourceEditor;
+  $('cancelSourceEdit').onclick=()=>$('sourceEditorDialog').close();
+  window.khbdOpenSourceEditor=openSourceEditor;
+  window.khbdApplySourceEditor=applySourceEditor;
   $('saveVersionBtn').onclick=()=>saveVersion(false);
   function restore(id){const v=versions().find(x=>x.id===id);if(!v)return;
   /* Ưu tiên dựng lại từ markdown gốc: giữ đúng công thức và cho phép xuất DOCX chuẩn.
