@@ -15,7 +15,7 @@
   <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
   <link rel="preconnect" href="https://generativelanguage.googleapis.com" crossorigin>
   <link rel="stylesheet" href="styles.css?v=b26">
-  <link rel="stylesheet" href="styles-plus.css?v=b26">
+  <link rel="stylesheet" href="styles-plus.css?v=b27.1">
   <script>window.MathJax={tex:{inlineMath:[['$','$'],['\\(','\\)']],displayMath:[['$$','$$'],['\\[','\\]']],processEscapes:true},svg:{fontCache:'global'},options:{skipHtmlTags:['script','noscript','style','textarea','pre','code']}};</script>
   <script defer src="https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-svg.js" integrity="sha384-KKWa9jJ1MZvssLeOoXG6FiOAZfAgmzsIIfw8BXwI9+kYm0lPCbC6yTQPBC00F1/L" crossorigin="anonymous"></script>
 </head>
@@ -152,6 +152,7 @@
         <div><span class="step">03</span><h2 id="resultTitle" tabindex="-1">Bản kế hoạch</h2></div>
         <div id="resultActions" class="actions" hidden>
           <button id="editBtn" class="secondary">Chỉnh sửa</button>
+          <button id="mathEditBtn" class="secondary">Chỉnh hình Toán</button>
           <button id="saveVersionBtn" class="secondary">Lưu phiên bản</button>
           <button id="historyBtn" class="secondary">Lịch sử</button>
           <button id="copyBtn" class="secondary">Sao chép</button>
@@ -185,10 +186,17 @@
     <textarea id="sourceEditor" spellcheck="true" aria-label="Nội dung kế hoạch bài dạy"></textarea>
     <div class="editor-actions"><button id="cancelSourceEdit" type="button" class="secondary">Hủy</button><button id="applySourceEdit" type="button" class="primary">Áp dụng và kiểm định lại</button></div>
   </dialog>
+  <dialog id="mathEditorDialog" class="math-editor-dialog">
+    <form method="dialog"><button class="dialog-close" aria-label="Đóng trình chỉnh hình Toán">×</button></form>
+    <h2>Chỉnh sửa hình Toán</h2>
+    <label>Đối tượng cần chỉnh<select id="mathBlockSelect"></select></label>
+    <div class="math-editor-layout"><section><div id="mathEditorFields"></div><details><summary>JSON nâng cao</summary><textarea id="mathEditorJson" spellcheck="false"></textarea><button id="applyMathJson" type="button" class="secondary">Nạp JSON</button></details></section><section><h3>Xem trước</h3><div id="mathEditorPreview" class="math-editor-preview"></div></section></div>
+    <div class="editor-actions"><button id="cancelMathEdit" type="button" class="secondary">Hủy</button><button id="previewMathEdit" type="button" class="secondary">Cập nhật xem trước</button><button id="applyMathEdit" type="button" class="primary">Áp dụng vào KHBD</button></div>
+  </dialog>
 
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
   <script src="standards.js?v=b26"></script>
-  <script src="app.js?v=b26"></script>
+  <script src="app.js?v=b27.1"></script>
   <script src="flow.js?v=b26"></script>
   <!-- integrity: nếu tệp trên CDN bị đổi nội dung, trình duyệt sẽ từ chối nạp thay vì chạy mã lạ.
        MathJax đã có từ trước; JSZip trước đây thiếu, trong khi hướng dẫn lại khuyên đưa cả thư
@@ -196,6 +204,7 @@
   <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js" integrity="sha384-+mbV2IY1Zk/X1p/nWllGySJSUN8uMs+gUAN10Or95UBH0fpj6GfKgPmgC5EXieXG" crossorigin="anonymous"></script>
   <script src="professional.js?v=b26"></script>
   <script src="docx-export.js?v=b26"></script>
+  <script src="math-editor.js?v=b27.1"></script>
   <script>
   /* Hiện mốc phiên bản của app.js đang thực sự chạy. Nếu con số này không khớp với bản vừa
      tải lên thì trình duyệt còn giữ bản cũ trong bộ nhớ đệm — bấm Ctrl+Shift+R. */
