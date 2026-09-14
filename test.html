@@ -119,11 +119,11 @@ h2{font-size:.82rem;letter-spacing:.09em;text-transform:uppercase;color:var(--mu
 </script>
 
 <script src="standards.js?v=b26"></script>
-<script src="app.js?v=b27.3"></script>
+<script src="app.js?v=b27.4"></script>
 <script src="flow.js?v=b26"></script>
 <script src="professional.js?v=b26"></script>
 <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
-<script src="docx-export.js?v=b26"></script>
+<script src="docx-export.js?v=b27.4"></script>
 <script src="math-editor.js?v=b27.2"></script>
 
 <script>
@@ -292,6 +292,29 @@ async function runAll(){
   await T('Một bản kế hoạch hợp lệ thì ĐẠT kiểm định',function(){
     var r=validatePlan(plan([4,4,4,4],11)+DIEUCHINH,{subject:'Toán',periods:'4',assessmentMode:'khong'},true);
     return r.passed||'Bị chặn bởi: '+r.blockers.join(' | ');
+  });
+
+  await T('Kiểm thời lượng theo từng tiết, không chỉ kiểm tổng toàn bài',function(){
+    var md='## TIẾT 1: A\n### HOẠT ĐỘNG KHỞI ĐỘNG\n(Thời lượng: 5 phút)\n```lessonflow\n'+flowJson(4,10,0)+'\n```\n'
+      +'## TIẾT 2: B\n### TỔNG KẾT VÀ KIỂM TRA ĐẦU GIỜ\n(5 PHÚT)\n```lessonflow\n'+flowJson(4,10,10)+'\n```\n'
+      +'## TIẾT 3: C\n### HOẠT ĐỘNG LUYỆN TẬP\n(Thời lượng: 10 phút)\n```lessonflow\n'+flowJson(4,7,20)+'\n```\n### HOẠT ĐỘNG VẬN DỤNG\n(Thời lượng: 7 phút)\n';
+    var a=auditPeriodDurations(md,3);
+    return a&&a.minutes===135&&a.rows.every(function(x){return x.minutes===45})
+      ||'Tính sai: '+JSON.stringify(a);
+  });
+
+  await T('Phát hiện tiết thiếu phút dù tổng cuối bài ghi đủ',function(){
+    var md='## TIẾT 1: A\n### HOẠT ĐỘNG KHỞI ĐỘNG\n```lessonflow\n'+flowJson(4,11,0)+'\n```\n'
+      +'## TIẾT 2: B\n(Thời lượng: 1 phút)\n```lessonflow\n'+flowJson(4,11,10)+'\n```\n'
+      +'## TIẾT 3: C\n(Thời lượng: 1 phút)\n```lessonflow\n'+flowJson(4,10,20)+'\n```\n';
+    var a=auditPeriodDurations(md,3);
+    return a&&a.rows[0].missing.length&&a.rows[2].minutes===41
+      ||'Không phát hiện: '+JSON.stringify(a);
+  });
+
+  await T('Chặn khẳng định nguồn đã được đối chiếu tuyệt đối khi chưa có bằng chứng',function(){
+    var r=validatePlan(plan([4],11)+DIEUCHINH+'\nTài liệu được trích dẫn chính xác nguyên văn.\n',V,true);
+    return r.blockers.some(function(x){return /đoạn-với-đoạn/.test(x)})||'Khẳng định quá mức vẫn lọt qua';
   });
 
   await T('Nhận diện 44 phút Hình thành kiến thức thì cảnh báo đối chiếu, không chặn',function(){
