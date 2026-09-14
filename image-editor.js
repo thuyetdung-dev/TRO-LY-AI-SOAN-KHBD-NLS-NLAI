@@ -7,7 +7,7 @@ const okTypes=new Set(['image/png','image/jpeg','image/webp']);
 const xml=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&apos;'}[c]));
 function notify(m){if(typeof toast==='function')toast(m);else{const t=$('toast');if(t){t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2600)}}}
 function findTargets(){
-  targets=[...document.querySelectorAll('#result .mathviz svg, #result img')];
+  targets=[...document.querySelectorAll('#result .mathviz svg, #result img')].filter(el=>!el.closest('mjx-container')&&!el.closest('mjx-assistive-mml'));
   targets.forEach((el,i)=>{el.dataset.imageEditIndex=i;el.classList.add('editable-illustration')});
   return targets;
 }
