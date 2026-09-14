@@ -1,7 +1,7 @@
 /* Mốc phiên bản — hiện ngay trên thanh tiêu đề. Sau nhiều vòng sửa, đã có lần trang web
    chạy bản cũ mà cả hai bên đều tưởng là bản mới, mất công đi tìm lỗi đã sửa xong rồi.
    Nhìn dòng chữ trên đầu trang là biết ngay đang chạy bản nào. */
-const APP_BUILD='2026-09-14 · b27.2';
+const APP_BUILD='2026-09-14 · b27.2.1';
 const $=id=>document.getElementById(id);let selectedFiles=[],rawMarkdown='',availableModels=[],scanTimer,draftTimer,lastValidation=null;
 const fields=['subject','grade','lesson','book','periods','students','classSize','equipment','notes','tableLayout','assessmentMode','lessonTemplate','sourceMode'];
 const toast=m=>{const t=$('toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2600)};
@@ -234,8 +234,18 @@ function thinkingFor(model){return /gemini-(?:2\.5|[3-9])/i.test(model)?{thinkin
    Hai hàm dưới đây cố ý viết THUẦN (không đụng mạng, không đụng DOM) để kiểm thử được ngoài
    trình duyệt — phần gọi API thì môi trường kiểm thử không có fetch nên không chạm tới được. */
 const MAX_VIET_TIEP=3;
+/* Gemini đôi khi trả finishReason=STOP dù văn bản mới chỉ có phần đầu. Không thể chỉ tin
+   finishReason; phải nhìn cấu trúc KHBD trước khi coi là hoàn chỉnh. */
+function planLooksComplete(text){
+  const s=String(text||''),p=deaccent(s);
+  if(s.length<4000||!balancedFences(s))return false;
+  return /iii\. tien trinh day hoc/.test(p)
+    &&/huong dan ve nha/.test(p)
+    &&/dieu chinh sau bai day/.test(p)
+    &&/dau vet nguon va trach nhiem giai trinh/.test(p);
+}
 function promptVietTiep(){
-  return `Phần kế hoạch bài dạy ở trên bị DỪNG GIỮA CHỪNG vì hết hạn mức token, KHÔNG phải vì đã viết xong. Hãy VIẾT TIẾP, nối liền mạch từ đúng ký tự cuối cùng.
+  return `Phần kế hoạch bài dạy ở trên bị DỪNG GIỮA CHỪNG, KHÔNG phải vì đã viết xong. Hãy VIẾT TIẾP, nối liền mạch từ đúng ký tự cuối cùng.
 - TUYỆT ĐỐI KHÔNG chào hỏi, không xin lỗi, không tóm tắt, không mở đầu lại, không lặp lại bất kỳ phần nào đã viết.
 - Bắt đầu ngay bằng ký tự tiếp theo của văn bản. Nếu đang viết dở một khối mã lessonflow hay mathviz thì viết tiếp đúng cú pháp JSON rồi đóng khối lại cho hợp lệ.
 - Viết cho tới HẾT bài, không được bỏ sót các mục cuối: HOẠT ĐỘNG LUYỆN TẬP, HOẠT ĐỘNG VẬN DỤNG, HƯỚNG DẪN VỀ NHÀ, ĐIỀU CHỈNH SAU BÀI DẠY, PHỤ LỤC CÔNG CỤ ĐÁNH GIÁ và DẤU VẾT NGUỒN VÀ TRÁCH NHIỆM GIẢI TRÌNH.
@@ -379,7 +389,8 @@ async function callGemini(v,key){
            bộ phần đã viết — với bài 5–6 tiết môn Toán thì gần như lần nào cũng vậy. Nay giữ phần
            đã có rồi gửi tiếp một lượt "viết tiếp từ chỗ đang dừng", tối đa 3 lượt. */
         let luot=0;
-        while(finish==='MAX_TOKENS'&&luot<MAX_VIET_TIEP){
+        while(!['SAFETY','RECITATION','BLOCKLIST','PROHIBITED_CONTENT','SPII'].includes(finish)
+          &&(finish==='MAX_TOKENS'||!planLooksComplete(text))&&luot<MAX_VIET_TIEP){
           luot++;
           setProgress(Math.min(94,80+luot*4),'Bài dài, đang xin AI viết tiếp...',
             `${model} · lượt viết tiếp ${luot}/${MAX_VIET_TIEP} · đã có ${text.length.toLocaleString('vi-VN')} ký tự`);
@@ -395,6 +406,8 @@ async function callGemini(v,key){
         }
         if(finish==='MAX_TOKENS')
           throw new Error(`Bài soạn dài hơn hạn mức của ${model} (${maxTokensFor(fullName)} token). Đã tự xin viết tiếp ${MAX_VIET_TIEP} lượt mà vẫn chưa hết bài. Hãy giảm số tiết mỗi lần soạn, chọn phong cách “Gọn, dễ triển khai”, hoặc tách bài thành 2 lần soạn.`);
+        if(!planLooksComplete(text))
+          throw new Error(`Phản hồi của ${model} dừng sớm dù máy chủ báo đã xong. Phần mềm đã tự xin viết tiếp ${MAX_VIET_TIEP} lượt nhưng KHBD vẫn thiếu phần cuối; đang chuyển sang mô hình dự phòng.`);
         if(['SAFETY','RECITATION','BLOCKLIST','PROHIBITED_CONTENT','SPII'].includes(finish))
           throw new Error(`Phản hồi bị chặn (${finish}). Hãy giảm số tài liệu hoặc tạo lại.`);
         setModelStatus(`Đang dùng ${model}`,'ok');
