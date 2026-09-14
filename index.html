@@ -15,7 +15,7 @@
   <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
   <link rel="preconnect" href="https://generativelanguage.googleapis.com" crossorigin>
   <link rel="stylesheet" href="styles.css?v=b26">
-  <link rel="stylesheet" href="styles-plus.css?v=b27.1">
+  <link rel="stylesheet" href="styles-plus.css?v=b27.3">
   <script>window.MathJax={tex:{inlineMath:[['$','$'],['\\(','\\)']],displayMath:[['$$','$$'],['\\[','\\]']],processEscapes:true},svg:{fontCache:'global'},options:{skipHtmlTags:['script','noscript','style','textarea','pre','code']}};</script>
   <script defer src="https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-svg.js" integrity="sha384-KKWa9jJ1MZvssLeOoXG6FiOAZfAgmzsIIfw8BXwI9+kYm0lPCbC6yTQPBC00F1/L" crossorigin="anonymous"></script>
 </head>
@@ -108,30 +108,20 @@
           </label>
         </div>
 
-        <details class="ai-settings" open>
-          <summary>Kết nối Gemini bằng khóa API <span>để AI đọc sâu tài liệu và soạn bài tự động</span></summary>
-          <div class="settings-body">
-            <ol class="key-steps">
-              <li>Bấm <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener">lấy mã miễn phí tại đây ↗</a>, đăng nhập bằng tài khoản Google.</li>
-              <li>Bấm nút <strong>“Create API key”</strong> trên trang đó, rồi bấm biểu tượng sao chép.</li>
-              <li>Dán mã vừa sao chép vào ô bên dưới.</li>
-            </ol>
-            <label>Khóa API Gemini – thông tin bí mật
-              <div class="password-row"><input id="apiKey" type="password" autocomplete="off" placeholder="Dán khóa API từ Google AI Studio"><button type="button" id="showKey" class="mini-btn">Hiện</button><button type="button" id="clearKey" class="mini-btn">Xóa</button></div>
-            </label>
-            <label>Phong cách bài soạn
-              <select id="style"><option value="day-du">Đầy đủ, chi tiết</option><option value="gon">Gọn, dễ triển khai</option><option value="sang-tao">Tích cực, sáng tạo</option></select>
-            </label>
-            <p class="privacy">Khóa API chỉ tồn tại trong ô nhập của phiên trình duyệt, được gửi trực tiếp đến Google và không được lưu trong bản nháp — mỗi lần mở lại phần mềm bạn cần dán lại, đây là chủ ý để bảo vệ khóa. Không chia sẻ khóa này cho người khác.</p>
-            <details class="advanced-settings">
-              <summary>Tuỳ chọn nâng cao <span>không bắt buộc</span></summary>
-              <label>Mô hình AI
-                <div class="model-row"><select id="model"><option value="auto">Tự động dò mô hình phù hợp (Khuyên dùng)</option></select><button type="button" id="scanModels" class="mini-btn">Dò lại</button></div>
-                <small id="modelStatus" class="model-status" aria-live="polite">Nhập mã kích hoạt để hệ thống tự dò mô hình đang hoạt động.</small>
-              </label>
-            </details>
-          </div>
-        </details>
+        <section class="ai-source-card" aria-labelledby="aiSourceTitle">
+          <h3 id="aiSourceTitle">Nguồn AI</h3>
+          <label class="sr-only" for="aiProvider">Nhà cung cấp AI</label>
+          <select id="aiProvider"><option value="gemini">Google Gemini</option></select>
+          <p class="ai-free-note">Có bậc miễn phí, đủ dùng để soạn bài hằng ngày.</p>
+          <label class="check shared-key-option" title="Cần máy chủ bảo vệ khóa trước khi sử dụng"><input id="useSharedKey" type="checkbox" disabled> Dùng khóa chung của nhà trường <small>Chưa cấu hình</small></label>
+          <label for="apiKey" class="api-key-label">🔑 Khóa API Google Gemini</label>
+          <div class="password-row compact-key-row"><input id="apiKey" type="password" autocomplete="off" placeholder="Dán khóa API"><button type="button" id="showKey" class="mini-btn">Hiện</button><button type="button" id="clearKey" class="mini-btn">Xóa</button></div>
+          <p class="key-link">Lấy khóa tại <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener">aistudio.google.com → Get API key</a></p>
+          <div class="model-row compact-model-row"><select id="model" aria-label="Mô hình AI"><option value="auto">Tự động chọn mô hình</option></select><button type="button" id="scanModels" class="mini-btn">Dò</button></div>
+          <small id="modelStatus" class="model-status" aria-live="polite">Dán khóa API rồi bấm “Dò” để kiểm tra mô hình.</small>
+          <p class="privacy">Khóa chỉ nằm trong trình duyệt của bạn, không được lưu vào bản nháp hoặc gửi về máy chủ của phần mềm.</p>
+          <label>Phong cách bài soạn<select id="style"><option value="day-du">Đầy đủ, chi tiết</option><option value="gon">Gọn, dễ triển khai</option><option value="sang-tao">Tích cực, sáng tạo</option></select></label>
+        </section>
 
         <label class="check"><input id="includeDigital" type="checkbox" checked> Đề xuất NLS khi hoạt động thực sự phù hợp</label>
         <label>Chế độ tích hợp năng lực AI
@@ -196,7 +186,7 @@
 
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
   <script src="standards.js?v=b26"></script>
-  <script src="app.js?v=b27.2.1"></script>
+  <script src="app.js?v=b27.3"></script>
   <script src="flow.js?v=b26"></script>
   <!-- integrity: nếu tệp trên CDN bị đổi nội dung, trình duyệt sẽ từ chối nạp thay vì chạy mã lạ.
        MathJax đã có từ trước; JSZip trước đây thiếu, trong khi hướng dẫn lại khuyên đưa cả thư
