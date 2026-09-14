@@ -89,7 +89,7 @@ h2{font-size:.82rem;letter-spacing:.09em;text-transform:uppercase;color:var(--mu
     <button id="generateBtn" type="submit"></button>
   </form>
   <div id="resultActions">
-    <button id="editBtn"></button><button id="saveVersionBtn"></button><button id="historyBtn"></button>
+    <button id="editBtn"></button><button id="mathEditBtn"></button><button id="saveVersionBtn"></button><button id="historyBtn"></button>
     <button id="copyBtn"></button><button id="wordBtn"></button><button id="printBtn"></button>
   </div>
   <div id="emptyState"></div>
@@ -99,6 +99,7 @@ h2{font-size:.82rem;letter-spacing:.09em;text-transform:uppercase;color:var(--mu
   <p id="draftNotice"></p>
   <dialog id="historyDialog"><div id="historyList"></div><div id="compareView"></div></dialog>
   <dialog id="sourceEditorDialog"></dialog><textarea id="sourceEditor"></textarea><button id="applySourceEdit"></button><button id="cancelSourceEdit"></button>
+  <dialog id="mathEditorDialog"></dialog><select id="mathBlockSelect"></select><div id="mathEditorFields"></div><textarea id="mathEditorJson"></textarea><div id="mathEditorPreview"></div><button id="applyMathJson"></button><button id="previewMathEdit"></button><button id="applyMathEdit"></button><button id="cancelMathEdit"></button>
   <div id="toast"></div>
 </div>
 
@@ -118,11 +119,12 @@ h2{font-size:.82rem;letter-spacing:.09em;text-transform:uppercase;color:var(--mu
 </script>
 
 <script src="standards.js?v=b26"></script>
-<script src="app.js?v=b26"></script>
+<script src="app.js?v=b27.1"></script>
 <script src="flow.js?v=b26"></script>
 <script src="professional.js?v=b26"></script>
 <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
 <script src="docx-export.js?v=b26"></script>
+<script src="math-editor.js?v=b27.1"></script>
 
 <script>
 (function(){
