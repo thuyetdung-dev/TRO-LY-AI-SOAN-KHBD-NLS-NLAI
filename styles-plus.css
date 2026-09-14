@@ -105,3 +105,13 @@ input:focus-visible, select:focus-visible, textarea:focus-visible {
    loại nằm chung một danh sách phẳng nên giáo viên tưởng cảnh báo cũng khóa xuất Word. */
 .validation-report .vr-nhom{margin:.6rem 0 .15rem;font-weight:600;font-size:.93em;opacity:.85}
 .validation-report .vr-nhom:first-of-type{margin-top:.2rem}
+
+/* V27.1 — trình chỉnh sửa trực quan hình Toán. */
+.math-editor-dialog{width:min(1280px,96vw);max-height:92vh;border:0;border-radius:16px;padding:22px;box-shadow:0 24px 80px #10283f55}
+.math-editor-dialog::backdrop{background:#0e223477}.math-editor-dialog h2{margin:0 0 12px;color:var(--navy)}
+.math-editor-layout{display:grid;grid-template-columns:minmax(360px,42%) minmax(420px,58%);gap:16px;max-height:64vh;overflow:auto}
+.math-editor-layout section{border:1px solid var(--line);border-radius:11px;padding:14px;min-width:0}.math-editor-layout .grid.four{grid-template-columns:repeat(4,1fr)}
+.math-editor-layout details{margin-top:12px}.math-editor-layout summary{cursor:pointer;font-weight:700;color:var(--navy)}
+#mathEditorJson{height:230px;font:13px/1.45 Consolas,monospace;resize:vertical}.math-editor-preview{min-height:360px;overflow:auto;background:#fff;border:1px solid var(--line);border-radius:9px;padding:10px}
+.math-editor-preview svg{max-width:100%;height:auto}.dark .math-editor-dialog{background:var(--paper);color:var(--ink)}
+@media(max-width:900px){.math-editor-layout{grid-template-columns:1fr}.math-editor-layout .grid.four{grid-template-columns:1fr 1fr}}
