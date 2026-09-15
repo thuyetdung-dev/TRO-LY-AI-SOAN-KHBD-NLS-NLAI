@@ -18,6 +18,7 @@
   <link rel="stylesheet" href="styles-plus.css?v=b27.3">
   <link rel="stylesheet" href="image-editor.css?v=b27.5">
   <link rel="stylesheet" href="math-audit.css?v=V27.5.1">
+  <link rel="stylesheet" href="validation-ux.css?v=V27.5.2">
   <script>window.MathJax={tex:{inlineMath:[['$','$'],['\\(','\\)']],displayMath:[['$$','$$'],['\\[','\\]']],processEscapes:true},svg:{fontCache:'global'},options:{skipHtmlTags:['script','noscript','style','textarea','pre','code']}};</script>
   <script defer src="https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-svg.js" integrity="sha384-KKWa9jJ1MZvssLeOoXG6FiOAZfAgmzsIIfw8BXwI9+kYm0lPCbC6yTQPBC00F1/L" crossorigin="anonymous"></script>
 </head>
@@ -142,16 +143,26 @@
     <section class="panel result-panel" aria-labelledby="resultTitle">
       <div class="panel-head sticky">
         <div><span class="step">03</span><h2 id="resultTitle" tabindex="-1">Bản kế hoạch</h2></div>
-        <div id="resultActions" class="actions" hidden>
-          <button id="editBtn" class="secondary">Chỉnh sửa</button>
-          <button id="mathEditBtn" class="secondary">Chỉnh hình Toán</button>
-          <button id="imageEditBtn" class="secondary">Sửa hình</button>
-          <button id="mathAuditBtn" class="secondary">Kiểm định Toán</button>
-          <button id="saveVersionBtn" class="secondary">Lưu phiên bản</button>
-          <button id="historyBtn" class="secondary">Lịch sử</button>
-          <button id="copyBtn" class="secondary">Sao chép</button>
-          <button id="wordBtn" class="secondary accent">Tải DOCX</button>
-          <button id="printBtn" class="secondary">In/PDF</button>
+        <div id="resultActions" class="actions validation-actions" hidden>
+          <div class="action-group" aria-label="Chỉnh nội dung">
+            <span class="action-group-label">Chỉnh nội dung</span>
+            <button id="editBtn" class="secondary">Chỉnh sửa</button>
+            <button id="mathEditBtn" class="secondary">Chỉnh hình Toán</button>
+            <button id="imageEditBtn" class="secondary">Sửa hình</button>
+          </div>
+          <div class="action-group" aria-label="Kiểm tra và quản lý">
+            <span class="action-group-label">Kiểm tra và quản lý</span>
+            <button id="mathAuditBtn" class="secondary">Kiểm định Toán</button>
+            <button id="saveVersionBtn" class="secondary">Lưu phiên bản</button>
+            <button id="historyBtn" class="secondary">Lịch sử</button>
+          </div>
+          <div class="action-group" aria-label="Sao chép và xuất">
+            <span class="action-group-label">Sao chép và xuất</span>
+            <button id="copyBtn" class="secondary">Sao chép</button>
+            <button id="wordBtn" class="secondary accent">Tải DOCX</button>
+            <button id="printBtn" class="secondary">In/PDF</button>
+          </div>
+          <p id="exportStatus" class="export-status" role="status" aria-live="polite"></p>
         </div>
       </div>
       <div id="emptyState" class="empty-state">
@@ -222,8 +233,8 @@
 
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
   <script src="standards.js?v=b26"></script>
-  <script src="app.js?v=V27.5.1"></script>
-  <script src="math-audit.js?v=V27.5.1"></script>
+  <script src="app.js?v=V27.5.2"></script>
+  <script src="math-audit.js?v=V27.5.2"></script>
   <script src="flow.js?v=b26"></script>
   <!-- integrity: nếu tệp trên CDN bị đổi nội dung, trình duyệt sẽ từ chối nạp thay vì chạy mã lạ.
        MathJax đã có từ trước; JSZip trước đây thiếu, trong khi hướng dẫn lại khuyên đưa cả thư
