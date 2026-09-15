@@ -5,7 +5,8 @@ function allow(ip){const now=Date.now(),b=buckets.get(ip)||{start:now,count:0};i
 function textFrom(data){if(typeof data.output_text==='string')return data.output_text;return (data.output||[]).flatMap(x=>x.content||[]).filter(x=>x.type==='output_text').map(x=>x.text||'').join('\n')}
 export default async function handler(req,res){
  res.setHeader('Cache-Control','no-store');
- if(req.method!=='POST')return res.status(405).json({error:'Chỉ hỗ trợ POST'});\n if(!verify(read(req)))return res.status(401).json({error:'Phiên đăng nhập đã hết hạn. Hãy đăng nhập lại.'});
+ if(req.method!=='POST')return res.status(405).json({error:'Chỉ hỗ trợ POST'});
+ if(!verify(read(req)))return res.status(401).json({error:'Phiên đăng nhập đã hết hạn. Hãy đăng nhập lại.'});
  if(!process.env.OPENAI_API_KEY)return res.status(503).json({error:'Máy chủ chưa cấu hình OPENAI_API_KEY'});
  const ip=String(req.headers['x-forwarded-for']||req.socket?.remoteAddress||'unknown').split(',')[0].trim();
  if(!allow(ip))return res.status(429).json({error:'Bạn thao tác quá nhanh. Hãy chờ một phút rồi thử lại.'});
