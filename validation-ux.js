@@ -1,4 +1,4 @@
-/* validation-ux.js — V27.5.3: giao diện kiểm định, không can thiệp luồng gửi tài liệu. */
+/* validation-ux.js — V27.5.4: giao diện kiểm định, không can thiệp luồng gửi tài liệu. */
 (function(){
 'use strict';
 const $=id=>document.getElementById(id);
@@ -16,11 +16,11 @@ function addJumps(){
 function status(){
  const out=$('exportStatus'),word=$('wordBtn'),approval=$('approveCompetencies'),report=$('validationReport');if(!out||!word)return;
  const mathCount=window.khbdMathAudit?.blockers?.length||0,generalBlocked=report?.classList.contains('block'),waiting=!!approval&&!approval.checked;
- const cls='export-status '+(mathCount||generalBlocked?'blocked':waiting?'waiting':'ready'),message=mathCount?'Chưa thể tải DOCX: hình hoặc công thức Toán còn '+mathCount+' lỗi.':generalBlocked?'Chưa thể tải DOCX: kiểm định chung còn lỗi phải sửa.':waiting?'Đang chờ giáo viên duyệt mã NLS/NLAI bên dưới.':'Sẵn sàng tải DOCX.';
+ const cls='export-status '+(mathCount||generalBlocked?'blocked':waiting?'waiting':'ready'),message=mathCount?'Chưa thể tải DOCX: hình hoặc công thức Toán còn '+mathCount+' lỗi.':generalBlocked?'Có lỗi bắt buộc – chưa thể tải DOCX.':waiting?'Có cảnh báo – vẫn tải được nhưng nên duyệt mã NLS/NLAI.':report?.querySelector('li')?'Có cảnh báo – vẫn tải được nhưng nên rà soát.':'Đạt hoàn toàn – sẵn sàng tải DOCX.';
  if(out.className!==cls)out.className=cls;if(out.textContent!==message)out.textContent=message;
  const audit=$('mathAuditBtn');if(audit&&audit.textContent.trim()==='Kiểm định Toán ✓')audit.textContent='Hình và công thức Toán: Đạt ✓';
 }
-function refresh(){addJumps();status();const tag=$('buildTag'),label='2026-09-15 · V27.5.3';if(tag&&tag.textContent!==label)tag.textContent=label}
+function refresh(){addJumps();status();const tag=$('buildTag'),label='2026-09-15 · V27.5.4';if(tag&&tag.textContent!==label)tag.textContent=label}
 document.addEventListener('change',e=>{if(e.target?.id==='approveCompetencies')status()});
 const observer=new MutationObserver(refresh);observer.observe(document.body,{subtree:true,childList:true,attributes:true,attributeFilter:['class','disabled']});
 refresh();
