@@ -2,7 +2,7 @@
 (function(){
 'use strict';
 const $=id=>document.getElementById(id);
-const state={issue:null,previous:'',preview:''};
+const state={issue:null,previous:'',preview:'',batch:false,processed:0,total:0};
 const notify=message=>{const el=$('toast');if(!el)return;el.textContent=message;el.classList.add('show');setTimeout(()=>el.classList.remove('show'),2800)};
 const clean=s=>String(s||'').replace(/\s+/g,' ').trim();
 
@@ -51,14 +51,14 @@ function setMode(kind){
   else if(kind==='math')$('guidedFixMathActions').hidden=false;
   else $('guidedFixAdvancedActions').hidden=false;
 }
-function openFix(message){
+function issueMessages(){\n  const report=$('validationReport');if(!report)return [];\n  return [...report.querySelectorAll('li')].map(li=>[...li.childNodes].filter(n=>!(n.nodeType===1&&n.matches('button'))).map(n=>n.textContent).join(' ').trim()).filter(Boolean);\n}\nfunction progress(){\n  const el=$('guidedFixProgress');if(!el)return;\n  el.hidden=!state.batch;el.textContent=state.batch?'Đang xử lý '+Math.min(state.processed+1,state.total)+'/'+state.total+' cảnh báo':'';\n}\nfunction openFix(message,fromBatch){
   if(typeof rawMarkdown!=='string'||!rawMarkdown.trim())return notify('Hãy soạn kế hoạch trước khi chỉnh sửa');
-  const issue=classify(message);state.issue=issue;state.preview='';
+  const issue=classify(message);state.issue=issue;state.preview='';if(fromBatch)state.batch=true;progress();
   $('guidedFixTitle').textContent=issue.title;
   $('guidedFixExplanation').textContent=issue.plain;
   $('guidedFixTechnical').textContent=issue.message;
   $('guidedFixPreview').hidden=true;
-  $('guidedFixApply').hidden=issue.kind!=='product';
+  $('guidedFixApply').hidden=issue.kind!=='product';$('guidedFixApply').disabled=true;
   $('guidedFixPreviewBtn').hidden=issue.kind!=='product';
   setMode(issue.kind);
   if(issue.kind==='product'){
@@ -69,17 +69,17 @@ function openFix(message){
   $('guidedFixDialog').showModal();
   if(issue.kind==='product')requestAnimationFrame(()=>$('guidedFixProduct').focus());
 }
-function preview(){
+async function suggest(){\n  if(!state.issue||state.issue.kind!=='product')return;\n  const button=$('guidedFixSuggest'),original=button.textContent;button.disabled=true;button.textContent='AI đang đề xuất…';\n  const prompt='Bạn là chuyên gia giáo dục Toán THPT. Viết lại mục Sản phẩm dự kiến cho '+$('guidedFixLocation').textContent+'. Tên bài: '+($('lesson')?.value||'')+'. Nội dung hiện tại: '+$('guidedFixProduct').value+'. Yêu cầu: 80–150 từ, nêu rõ kết quả học sinh tạo ra, lập luận hoặc cách kiểm tra; chỉ trả về nội dung tiếng Việt, không Markdown, không JSON.';\n  try{const response=await fetch('/api/openai',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({prompt,files:[]})});const data=await response.json();if(!response.ok)throw new Error(data.error||'AI chưa phản hồi');$('guidedFixProduct').value=String(data.text||'').trim();$('guidedFixPreview').hidden=true;$('guidedFixApply').disabled=true;notify('AI đã tạo bản nháp. Giáo viên hãy đọc và bấm Xem trước.')}catch(error){notify(error.message||'Không tạo được gợi ý AI')}finally{button.disabled=false;button.textContent=original}\n}\nfunction preview(){
   const value=$('guidedFixProduct').value.trim();
   if(!value)return notify('Hãy nhập nội dung sản phẩm dự kiến');
-  state.preview=value;
+  state.preview=value;$('guidedFixApply').disabled=false;
   $('guidedFixPreviewText').textContent=value;
   $('guidedFixPreview').hidden=false;
 }
 function apply(){
   if(!state.issue||state.issue.kind!=='product')return;
   const value=$('guidedFixProduct').value.trim();
-  if(value.length<40)return notify('Nội dung còn quá ngắn; hãy nêu rõ kết quả hoặc lời giải học sinh phải tạo ra');
+  if(value.length<80)return notify('Nội dung còn quá ngắn; hãy nêu rõ kết quả hoặc lời giải học sinh phải tạo ra');
   try{
     const before=rawMarkdown,next=replaceProduct(before,state.issue.flow,state.issue.row,value);
     state.previous=before;
@@ -95,7 +95,7 @@ function undo(){
   showResult(prior,typeof validatePlan==='function'?validatePlan(prior,values(),false):undefined);
   $('guidedFixDialog').close();notify('Đã hoàn tác lần sửa gần nhất');
 }
-function addButtons(){
+function nextIssue(){\n  const messages=issueMessages();\n  if(!messages.length){state.batch=false;notify('Đã xử lý xong các cảnh báo.');return}\n  openFix(messages[0],true);\n}\nfunction startBatch(){const messages=issueMessages();if(!messages.length)return notify('Không còn cảnh báo cần sửa');state.batch=true;state.processed=0;state.total=messages.length;openFix(messages[0],true)}\nfunction addSummary(){\n  const report=$('validationReport');if(!report)return;const messages=issueMessages();let box=$('guidedFixSummary');\n  if(!messages.length){box?.remove();return}\n  if(!box){box=document.createElement('div');box.id='guidedFixSummary';box.className='guided-fix-summary';report.prepend(box)}\n  box.innerHTML='<strong>Còn '+messages.length+' nội dung nên rà soát.</strong><button type="button" class="secondary">Sửa lần lượt '+messages.length+' cảnh báo</button>';box.querySelector('button').onclick=startBatch;\n}\nfunction addButtons(){
   const report=$('validationReport');if(!report)return;
   report.querySelectorAll('li').forEach(li=>{
     if(li.querySelector('.guided-fix-open'))return;
@@ -115,13 +115,13 @@ function init(){
   const tag=$('buildTag');if(tag)tag.textContent='2026-09-15 · V27.5.3';
   const edit=$('editBtn');if(edit){edit.textContent='Sửa không cần mã';edit.onclick=firstIssue}
   $('guidedFixCancel').onclick=()=>$('guidedFixDialog').close();
-  $('guidedFixPreviewBtn').onclick=preview;$('guidedFixApply').onclick=apply;$('guidedFixUndo').onclick=undo;
+  $('guidedFixPreviewBtn').onclick=preview;$('guidedFixApply').onclick=apply;$('guidedFixUndo').onclick=undo;$('guidedFixSuggest').onclick=suggest;
   $('guidedFixAddSource').onclick=()=>{$('guidedFixDialog').close();$('dropZone')?.scrollIntoView({behavior:'smooth',block:'center'});setTimeout(()=>$('files')?.click(),450)};
   $('guidedFixOpenMath').onclick=()=>{$('guidedFixDialog').close();$('mathAuditBtn')?.click()};
   $('guidedFixOpenAdvanced').onclick=()=>{$('guidedFixDialog').close();window.khbdOpenSourceEditor?.()};
   $('guidedFixOpenAdvanced2').onclick=()=>{$('guidedFixDialog').close();window.khbdOpenSourceEditor?.()};
-  const observer=new MutationObserver(addButtons);observer.observe(document.body,{subtree:true,childList:true});addButtons();
+  const refresh=()=>{addButtons();addSummary()};const observer=new MutationObserver(refresh);observer.observe(document.body,{subtree:true,childList:true});refresh();
 }
-window.khbdGuidedFix={lessonflows,replaceProduct,classify,openFix};
+window.khbdGuidedFix={lessonflows,replaceProduct,classify,openFix,issueMessages};
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
 })();
