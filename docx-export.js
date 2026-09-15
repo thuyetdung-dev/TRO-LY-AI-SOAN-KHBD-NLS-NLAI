@@ -979,6 +979,8 @@
     if (!String(md || '').trim()) errors.push('Bản kế hoạch đang trống.');
     if ($('validationReport')?.classList.contains('block'))
       errors.push('Bản kế hoạch còn lỗi kiểm định chuyên môn chưa xử lý.');
+    if (window.khbdMathAudit?.blockers?.length)
+      errors.push('Kiểm định Toán còn '+window.khbdMathAudit.blockers.length+' lỗi phải sửa. Hãy mở nút “Kiểm định Toán”.');
     /* PHẢI đổi đ/Đ thành d/D TRƯỚC khi normalize('NFD'): chữ đ (U+0111) là một ký tự
        riêng, không phải d + dấu, nên NFD không tách nó ra. Ba từ khoá hiện tại tình cờ
        không chứa đ nên chưa lộ lỗi, nhưng chỉ cần thêm một từ khoá như "dieu chinh" là
