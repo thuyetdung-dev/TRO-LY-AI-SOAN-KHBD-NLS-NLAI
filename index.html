@@ -18,7 +18,8 @@
   <link rel="stylesheet" href="styles-plus.css?v=b27.3">
   <link rel="stylesheet" href="image-editor.css?v=b27.5">
   <link rel="stylesheet" href="math-audit.css?v=V27.5.1">
-  <link rel="stylesheet" href="validation-ux.css?v=V27.5.2">\n  <link rel="stylesheet" href="guided-fix.css?v=V27.5.4">
+  <link rel="stylesheet" href="validation-ux.css?v=V27.5.2">
+  <link rel="stylesheet" href="guided-fix.css?v=V27.5.4">
   <script>window.MathJax={tex:{inlineMath:[['$','$'],['\\(','\\)']],displayMath:[['$$','$$'],['\\[','\\]']],processEscapes:true},svg:{fontCache:'global'},options:{skipHtmlTags:['script','noscript','style','textarea','pre','code']}};</script>
   <script defer src="https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-svg.js" integrity="sha384-KKWa9jJ1MZvssLeOoXG6FiOAZfAgmzsIIfw8BXwI9+kYm0lPCbC6yTQPBC00F1/L" crossorigin="anonymous"></script>
 </head>
@@ -234,13 +235,16 @@
   <dialog id="guidedFixDialog" class="guided-fix-dialog">
     <form method="dialog"><button class="dialog-close" aria-label="Đóng trợ lý sửa lỗi">×</button></form>
     <h2 id="guidedFixTitle">Trợ lý sửa lỗi</h2>
-    <p id="guidedFixExplanation" class="guided-fix-lead"></p>\n    <p id="guidedFixProgress" class="guided-fix-progress" hidden></p>
+    <p id="guidedFixExplanation" class="guided-fix-lead"></p>
+    <p id="guidedFixProgress" class="guided-fix-progress" hidden></p>
     <section id="guidedFixProductBox" hidden>
       <strong id="guidedFixLocation" class="guided-fix-location"></strong>
       <label>Nội dung giáo viên muốn học sinh tạo ra
         <textarea id="guidedFixProduct" spellcheck="true" placeholder="Ví dụ: Học sinh trình bày lời giải, nêu kết quả và giải thích cách kiểm tra..."></textarea>
       </label>
-      <button id="guidedFixSuggest" type="button" class="secondary guided-fix-suggest">AI đề xuất bản nháp</button>\n      <small class="guided-fix-ai-note">AI chỉ tạo bản nháp; giáo viên cần đọc, xem trước và quyết định áp dụng.</small>\n      <div id="guidedFixPreview" class="guided-fix-preview" hidden><h3>Xem trước nội dung mới</h3><p id="guidedFixPreviewText"></p></div>
+      <button id="guidedFixSuggest" type="button" class="secondary guided-fix-suggest">AI đề xuất bản nháp</button>
+      <small class="guided-fix-ai-note">AI chỉ tạo bản nháp; giáo viên cần đọc, xem trước và quyết định áp dụng.</small>
+      <div id="guidedFixPreview" class="guided-fix-preview" hidden><h3>Xem trước nội dung mới</h3><p id="guidedFixPreviewText"></p></div>
     </section>
     <section id="guidedFixSourceActions" class="guided-fix-action-card" hidden><p>Chọn đúng SGK, SGV hoặc tài liệu có các trang đang được trích dẫn.</p><button id="guidedFixAddSource" type="button" class="primary">Bổ sung tài liệu nguồn</button></section>
     <section id="guidedFixMathActions" class="guided-fix-action-card" hidden><p>Mở kiểm định Toán để xem lỗi công thức, đồ thị hoặc bảng.</p><button id="guidedFixOpenMath" type="button" class="primary">Mở kiểm định Toán</button></section>
@@ -268,6 +272,7 @@
   (function(){var el=document.getElementById('buildTag');
     if(el)el.textContent=(typeof APP_BUILD!=='undefined')?APP_BUILD:'không rõ';})();
   </script>
-  <script src="validation-ux.js?v=V27.5.2"></script>\n  <script src="guided-fix.js?v=V27.5.4"></script>
+  <script src="validation-ux.js?v=V27.5.2"></script>
+  <script src="guided-fix.js?v=V27.5.4"></script>
 </body>
 </html>
