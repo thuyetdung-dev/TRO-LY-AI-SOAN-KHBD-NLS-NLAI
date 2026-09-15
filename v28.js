@@ -53,7 +53,7 @@ function init(){
  $('v28AiFixBtn').onclick=aiFix;$('v28AiApplyBtn').onclick=applyAi;$('v28AiCancel').onclick=()=>$('v28AiDialog').close();$('v28TestAiBtn').onclick=testAI;
  $('v28PreflightBtn').onclick=preflight;$('v28PreflightClose').onclick=()=>$('v28PreflightDialog').close();$('v28RestoreDraftBtn').onclick=restore;$('v28HelpBtn').onclick=()=>$('v28WelcomeDialog').showModal();
  $('v28WelcomeClose').onclick=()=>{localStorage.setItem(WELCOME,'1');$('v28WelcomeDialog').close()};$('v28LargeTextBtn').onclick=()=>{document.body.classList.toggle('v28-large');localStorage.setItem('khbd_v28_large',document.body.classList.contains('v28-large')?'1':'0')};
- if(localStorage.getItem('khbd_v28_large')==='1')document.body.classList.add('v28-large');const ob=new MutationObserver(autoSave);if($('result'))ob.observe($('result'),{subtree:true,childList:true,characterData:true});if(!localStorage.getItem(WELCOME))setTimeout(()=>$('v28WelcomeDialog').showModal(),500);
+ if(localStorage.getItem('khbd_v28_large')==='1')document.body.classList.add('v28-large');const ob=new MutationObserver(autoSave);if($('result'))ob.observe($('result'),{subtree:true,childList:true,characterData:true});const showWelcome=()=>{const d=$('v28WelcomeDialog');if(!localStorage.getItem(WELCOME)&&d&&!d.open)d.showModal()};if(document.body.classList.contains('authenticated'))setTimeout(showWelcome,500);window.addEventListener('khbd:authenticated',()=>setTimeout(showWelcome,300));
 }
 window.khbdV28={sections,flows,targets,preflight};if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
 })();
