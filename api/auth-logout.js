@@ -1,0 +1,1 @@
+import {cookie} from './_auth.js';export default function handler(req,res){res.setHeader('Cache-Control','no-store');if(req.method!=='POST')return res.status(405).json({error:'Chỉ hỗ trợ POST'});res.setHeader('Set-Cookie',cookie('',0));return res.status(200).json({ok:true})}
