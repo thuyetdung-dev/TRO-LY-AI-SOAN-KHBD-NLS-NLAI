@@ -17,6 +17,7 @@
   <link rel="stylesheet" href="styles.css?v=b26">
   <link rel="stylesheet" href="styles-plus.css?v=b27.3">
   <link rel="stylesheet" href="image-editor.css?v=b27.5">
+  <link rel="stylesheet" href="math-audit.css?v=V27.5.1">
   <script>window.MathJax={tex:{inlineMath:[['$','$'],['\\(','\\)']],displayMath:[['$$','$$'],['\\[','\\]']],processEscapes:true},svg:{fontCache:'global'},options:{skipHtmlTags:['script','noscript','style','textarea','pre','code']}};</script>
   <script defer src="https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-svg.js" integrity="sha384-KKWa9jJ1MZvssLeOoXG6FiOAZfAgmzsIIfw8BXwI9+kYm0lPCbC6yTQPBC00F1/L" crossorigin="anonymous"></script>
 </head>
@@ -145,6 +146,7 @@
           <button id="editBtn" class="secondary">Chỉnh sửa</button>
           <button id="mathEditBtn" class="secondary">Chỉnh hình Toán</button>
           <button id="imageEditBtn" class="secondary">Sửa hình</button>
+          <button id="mathAuditBtn" class="secondary">Kiểm định Toán</button>
           <button id="saveVersionBtn" class="secondary">Lưu phiên bản</button>
           <button id="historyBtn" class="secondary">Lịch sử</button>
           <button id="copyBtn" class="secondary">Sao chép</button>
@@ -210,16 +212,25 @@
     <div class="editor-actions"><button id="cancelImageEdit" type="button" class="secondary">Đóng</button><button id="imageRestoreBtn" type="button" class="secondary">Khôi phục hình tự động ban đầu</button><button id="imageApplyBtn" type="button" class="primary">Áp dụng hình</button></div>
   </dialog>
 
+  <dialog id="mathAuditDialog" class="math-audit-dialog">
+    <form method="dialog"><button class="dialog-close" aria-label="Đóng kiểm định Toán">×</button></form>
+    <h2>Kiểm định Toán THPT</h2>
+    <p>Kiểm tra công thức, đồ thị, bảng biến thiên, bảng xét dấu và cấu trúc hình trước khi xuất Word.</p>
+    <div id="mathAuditSummary" class="math-audit-summary"></div>
+    <div class="editor-actions"><button id="closeMathAudit" type="button" class="secondary">Đóng</button><button id="rerunMathAudit" type="button" class="primary">Kiểm tra lại</button></div>
+  </dialog>
+
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
   <script src="standards.js?v=b26"></script>
-  <script src="app.js?v=V27.5"></script>
+  <script src="app.js?v=V27.5.1"></script>
+  <script src="math-audit.js?v=V27.5.1"></script>
   <script src="flow.js?v=b26"></script>
   <!-- integrity: nếu tệp trên CDN bị đổi nội dung, trình duyệt sẽ từ chối nạp thay vì chạy mã lạ.
        MathJax đã có từ trước; JSZip trước đây thiếu, trong khi hướng dẫn lại khuyên đưa cả thư
        mục lên dịch vụ lưu trữ web để chia sẻ cho đồng nghiệp. -->
   <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js" integrity="sha384-+mbV2IY1Zk/X1p/nWllGySJSUN8uMs+gUAN10Or95UBH0fpj6GfKgPmgC5EXieXG" crossorigin="anonymous"></script>
   <script src="professional.js?v=b26"></script>
-  <script src="docx-export.js?v=b27.5"></script>
+  <script src="docx-export.js?v=V27.5.1"></script>
   <script src="image-editor.js?v=b27.5"></script>
   <script src="math-editor.js?v=b27.2"></script>
   <script>

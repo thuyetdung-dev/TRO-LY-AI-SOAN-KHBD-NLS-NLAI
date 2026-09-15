@@ -1,0 +1,9 @@
+/* V27.5.1 — giao diện kiểm định Toán THPT. */
+.math-audit-dialog{width:min(900px,95vw);max-height:90vh;border:0;border-radius:16px;padding:22px;box-shadow:0 24px 80px #10283f55}
+.math-audit-dialog::backdrop{background:#0e223477}.math-audit-dialog h2{margin:0 0 6px;color:var(--navy)}
+.math-audit-summary{margin:16px 0;padding:16px;border:1px solid var(--line);border-radius:12px;max-height:60vh;overflow:auto}
+.math-audit-summary.ok{background:#edf8f1;border-color:#9ed6ae}.math-audit-summary.warn{background:#fff8e8;border-color:#e4c477}.math-audit-summary.block{background:#fff0f1;border-color:#dfa0a5}
+.math-audit-summary section{margin-top:14px}.math-audit-summary h3{font-size:1rem;margin:0 0 6px}.math-audit-summary ul{margin:0;padding-left:22px}.math-audit-summary li{margin:6px 0}
+.audit-jump{border:1px solid #6d96b5;border-radius:6px;background:#fff;color:#124c73;padding:3px 7px;cursor:pointer;font-weight:700}
+.audit-focus{outline:4px solid #e7a516!important;outline-offset:5px;transition:outline-color .3s}
+#mathAuditBtn.audit-blocked{border-color:#c84c58;color:#a42531}#mathAuditBtn.audit-passed{border-color:#2c9650;color:#24743f}
