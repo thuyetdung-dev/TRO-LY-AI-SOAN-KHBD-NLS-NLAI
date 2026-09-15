@@ -18,7 +18,7 @@
   <link rel="stylesheet" href="styles-plus.css?v=b27.3">
   <link rel="stylesheet" href="image-editor.css?v=b27.5">
   <link rel="stylesheet" href="math-audit.css?v=V27.5.1">
-  <link rel="stylesheet" href="validation-ux.css?v=V27.5.2">
+  <link rel="stylesheet" href="validation-ux.css?v=V27.5.2">\n  <link rel="stylesheet" href="guided-fix.css?v=V27.5.3">
   <script>window.MathJax={tex:{inlineMath:[['$','$'],['\\(','\\)']],displayMath:[['$$','$$'],['\\[','\\]']],processEscapes:true},svg:{fontCache:'global'},options:{skipHtmlTags:['script','noscript','style','textarea','pre','code']}};</script>
   <script defer src="https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-svg.js" integrity="sha384-KKWa9jJ1MZvssLeOoXG6FiOAZfAgmzsIIfw8BXwI9+kYm0lPCbC6yTQPBC00F1/L" crossorigin="anonymous"></script>
 </head>
@@ -146,7 +146,7 @@
         <div id="resultActions" class="actions validation-actions" hidden>
           <div class="action-group" aria-label="Chỉnh nội dung">
             <span class="action-group-label">Chỉnh nội dung</span>
-            <button id="editBtn" class="secondary">Chỉnh sửa</button>
+            <button id="editBtn" class="secondary">Sửa không cần mã</button>
             <button id="mathEditBtn" class="secondary">Chỉnh hình Toán</button>
             <button id="imageEditBtn" class="secondary">Sửa hình</button>
           </div>
@@ -231,6 +231,24 @@
     <div class="editor-actions"><button id="closeMathAudit" type="button" class="secondary">Đóng</button><button id="rerunMathAudit" type="button" class="primary">Kiểm tra lại</button></div>
   </dialog>
 
+  <dialog id="guidedFixDialog" class="guided-fix-dialog">
+    <form method="dialog"><button class="dialog-close" aria-label="Đóng trợ lý sửa lỗi">×</button></form>
+    <h2 id="guidedFixTitle">Trợ lý sửa lỗi</h2>
+    <p id="guidedFixExplanation" class="guided-fix-lead"></p>
+    <section id="guidedFixProductBox" hidden>
+      <strong id="guidedFixLocation" class="guided-fix-location"></strong>
+      <label>Nội dung giáo viên muốn học sinh tạo ra
+        <textarea id="guidedFixProduct" spellcheck="true" placeholder="Ví dụ: Học sinh trình bày lời giải, nêu kết quả và giải thích cách kiểm tra..."></textarea>
+      </label>
+      <div id="guidedFixPreview" class="guided-fix-preview" hidden><h3>Xem trước nội dung mới</h3><p id="guidedFixPreviewText"></p></div>
+    </section>
+    <section id="guidedFixSourceActions" class="guided-fix-action-card" hidden><p>Chọn đúng SGK, SGV hoặc tài liệu có các trang đang được trích dẫn.</p><button id="guidedFixAddSource" type="button" class="primary">Bổ sung tài liệu nguồn</button></section>
+    <section id="guidedFixMathActions" class="guided-fix-action-card" hidden><p>Mở kiểm định Toán để xem lỗi công thức, đồ thị hoặc bảng.</p><button id="guidedFixOpenMath" type="button" class="primary">Mở kiểm định Toán</button></section>
+    <section id="guidedFixAdvancedActions" class="guided-fix-action-card" hidden><button id="guidedFixOpenAdvanced" type="button" class="secondary">Mở chỉnh sửa nâng cao</button></section>
+    <details><summary>Thông tin kỹ thuật (dành cho người hỗ trợ)</summary><p id="guidedFixTechnical"></p><button id="guidedFixOpenAdvanced2" type="button" class="text-btn">Mở Markdown/JSON nâng cao</button></details>
+    <div class="guided-fix-actions"><button id="guidedFixCancel" type="button" class="secondary">Đóng</button><button id="guidedFixUndo" type="button" class="secondary" disabled>Hoàn tác lần sửa gần nhất</button><button id="guidedFixPreviewBtn" type="button" class="secondary">Xem trước</button><button id="guidedFixApply" type="button" class="primary">Áp dụng và kiểm định lại</button></div>
+  </dialog>
+
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
   <script src="standards.js?v=b26"></script>
   <script src="app.js?v=V27.5.2"></script>
@@ -250,6 +268,6 @@
   (function(){var el=document.getElementById('buildTag');
     if(el)el.textContent=(typeof APP_BUILD!=='undefined')?APP_BUILD:'không rõ';})();
   </script>
-  <script src="validation-ux.js?v=V27.5.2"></script>
+  <script src="validation-ux.js?v=V27.5.2"></script>\n  <script src="guided-fix.js?v=V27.5.3"></script>
 </body>
 </html>

@@ -1,4 +1,4 @@
-/* validation-ux.js — V27.5.2: giao diện kiểm định, không can thiệp luồng gửi tài liệu. */
+/* validation-ux.js — V27.5.3: giao diện kiểm định, không can thiệp luồng gửi tài liệu. */
 (function(){
 'use strict';
 const $=id=>document.getElementById(id);
@@ -20,7 +20,7 @@ function status(){
  if(out.className!==cls)out.className=cls;if(out.textContent!==message)out.textContent=message;
  const audit=$('mathAuditBtn');if(audit&&audit.textContent.trim()==='Kiểm định Toán ✓')audit.textContent='Hình và công thức Toán: Đạt ✓';
 }
-function refresh(){addJumps();status();const tag=$('buildTag'),label='2026-09-15 · V27.5.2';if(tag&&tag.textContent!==label)tag.textContent=label}
+function refresh(){addJumps();status();const tag=$('buildTag'),label='2026-09-15 · V27.5.3';if(tag&&tag.textContent!==label)tag.textContent=label}
 document.addEventListener('change',e=>{if(e.target?.id==='approveCompetencies')status()});
 const observer=new MutationObserver(refresh);observer.observe(document.body,{subtree:true,childList:true,attributes:true,attributeFilter:['class','disabled']});
 refresh();
