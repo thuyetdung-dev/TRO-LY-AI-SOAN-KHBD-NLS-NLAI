@@ -95,7 +95,7 @@ function undo(){
   showResult(prior,typeof validatePlan==='function'?validatePlan(prior,values(),false):undefined);
   $('guidedFixDialog').close();notify('Đã hoàn tác lần sửa gần nhất');
 }
-function nextIssue(){\n  const messages=issueMessages();\n  if(!messages.length){state.batch=false;notify('Đã xử lý xong các cảnh báo.');return}\n  openFix(messages[0],true);\n}\nfunction startBatch(){const messages=issueMessages();if(!messages.length)return notify('Không còn cảnh báo cần sửa');state.batch=true;state.processed=0;state.total=messages.length;openFix(messages[0],true)}\nfunction addSummary(){\n  const report=$('validationReport');if(!report)return;const messages=issueMessages();let box=$('guidedFixSummary');\n  if(!messages.length){box?.remove();return}\n  if(!box){box=document.createElement('div');box.id='guidedFixSummary';box.className='guided-fix-summary';report.prepend(box)}\n  box.innerHTML='<strong>Còn '+messages.length+' nội dung nên rà soát.</strong><button type="button" class="secondary">Sửa lần lượt '+messages.length+' cảnh báo</button>';box.querySelector('button').onclick=startBatch;\n}\nfunction addButtons(){
+function nextIssue(){\n  const messages=issueMessages();\n  if(!messages.length){state.batch=false;notify('Đã xử lý xong các cảnh báo.');return}\n  openFix(messages[0],true);\n}\nfunction startBatch(){const messages=issueMessages();if(!messages.length)return notify('Không còn cảnh báo cần sửa');state.batch=true;state.processed=0;state.total=messages.length;openFix(messages[0],true)}\nfunction addSummary(){\n  const report=$('validationReport');if(!report)return;const messages=issueMessages();let box=$('guidedFixSummary');\n  if(!messages.length){box?.remove();return}\n  if(!box){box=document.createElement('div');box.id='guidedFixSummary';box.className='guided-fix-summary';report.prepend(box)}\n  if(box.dataset.count===String(messages.length))return;box.dataset.count=String(messages.length);\n  box.innerHTML='<strong>Còn '+messages.length+' nội dung nên rà soát.</strong><button type="button" class="secondary">Sửa lần lượt '+messages.length+' cảnh báo</button>';box.querySelector('button').onclick=startBatch;\n}\nfunction addButtons(){
   const report=$('validationReport');if(!report)return;
   report.querySelectorAll('li').forEach(li=>{
     if(li.querySelector('.guided-fix-open'))return;
@@ -115,7 +115,7 @@ function init(){
   const tag=$('buildTag');if(tag)tag.textContent='2026-09-15 · V27.5.3';
   const edit=$('editBtn');if(edit){edit.textContent='Sửa không cần mã';edit.onclick=firstIssue}
   $('guidedFixCancel').onclick=()=>$('guidedFixDialog').close();
-  $('guidedFixPreviewBtn').onclick=preview;$('guidedFixApply').onclick=apply;$('guidedFixUndo').onclick=undo;$('guidedFixSuggest').onclick=suggest;
+  $('guidedFixPreviewBtn').onclick=preview;$('guidedFixApply').onclick=apply;$('guidedFixUndo').onclick=undo;$('guidedFixSuggest').onclick=suggest;$('guidedFixProduct').addEventListener('input',()=>{$('guidedFixPreview').hidden=true;$('guidedFixApply').disabled=true});
   $('guidedFixAddSource').onclick=()=>{$('guidedFixDialog').close();$('dropZone')?.scrollIntoView({behavior:'smooth',block:'center'});setTimeout(()=>$('files')?.click(),450)};
   $('guidedFixOpenMath').onclick=()=>{$('guidedFixDialog').close();$('mathAuditBtn')?.click()};
   $('guidedFixOpenAdvanced').onclick=()=>{$('guidedFixDialog').close();window.khbdOpenSourceEditor?.()};
