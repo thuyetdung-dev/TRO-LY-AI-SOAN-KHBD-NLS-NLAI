@@ -1,0 +1,15 @@
+/* V27.5.2 — thanh công cụ và điều hướng cảnh báo rõ ràng hơn. */
+.result-panel .panel-head.sticky{align-items:flex-start;gap:14px}
+.result-panel .panel-head.sticky>div:first-child{flex:0 0 auto;min-width:112px}
+#resultTitle{white-space:nowrap}
+.validation-actions{display:grid!important;grid-template-columns:repeat(3,minmax(190px,1fr));gap:8px 10px;align-items:start;flex:1}
+.validation-actions[hidden]{display:none!important}
+.action-group{display:flex;flex-wrap:wrap;gap:7px;padding:7px;border:1px solid var(--line);border-radius:10px;background:color-mix(in srgb,var(--paper) 92%,#dcecf6)}
+.action-group-label{flex-basis:100%;font-size:.72rem;font-weight:800;letter-spacing:.03em;text-transform:uppercase;color:var(--muted)}
+.action-group button{margin:0;white-space:nowrap}
+.export-status{grid-column:1/-1;margin:0;padding:7px 10px;border-radius:8px;font-size:.86rem;font-weight:700;background:#edf8f1;color:#24623b}
+.export-status.blocked{background:#fff0f1;color:#9e2631}.export-status.waiting{background:#fff8e8;color:#805600}
+.validation-report li{padding-right:4px}.validation-jump{margin:2px 7px 2px 0;border:1px solid currentColor;border-radius:6px;background:#fff;padding:3px 7px;font:inherit;font-weight:700;cursor:pointer}
+.validation-target{outline:4px solid #e7a516!important;outline-offset:5px;transition:outline-color .3s}
+@media(max-width:1180px){.validation-actions{grid-template-columns:1fr 1fr}.validation-actions .action-group:last-of-type{grid-column:1/-1}}
+@media(max-width:760px){.result-panel .panel-head.sticky{display:block}.validation-actions{grid-template-columns:1fr;margin-top:10px}.validation-actions .action-group:last-of-type{grid-column:auto}#resultTitle{white-space:normal}}
