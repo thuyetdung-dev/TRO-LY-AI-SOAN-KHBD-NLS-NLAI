@@ -16,11 +16,11 @@ function addJumps(){
 function status(){
  const out=$('exportStatus'),word=$('wordBtn'),approval=$('approveCompetencies'),report=$('validationReport');if(!out||!word)return;
  const mathCount=window.khbdMathAudit?.blockers?.length||0,generalBlocked=report?.classList.contains('block'),waiting=!!approval&&!approval.checked;
- out.className='export-status '+(mathCount||generalBlocked?'blocked':waiting?'waiting':'ready');
- out.textContent=mathCount?'Chưa thể tải DOCX: hình hoặc công thức Toán còn '+mathCount+' lỗi.':generalBlocked?'Chưa thể tải DOCX: kiểm định chung còn lỗi phải sửa.':waiting?'Đang chờ giáo viên duyệt mã NLS/NLAI bên dưới.':'Sẵn sàng tải DOCX.';
+ const cls='export-status '+(mathCount||generalBlocked?'blocked':waiting?'waiting':'ready'),message=mathCount?'Chưa thể tải DOCX: hình hoặc công thức Toán còn '+mathCount+' lỗi.':generalBlocked?'Chưa thể tải DOCX: kiểm định chung còn lỗi phải sửa.':waiting?'Đang chờ giáo viên duyệt mã NLS/NLAI bên dưới.':'Sẵn sàng tải DOCX.';
+ if(out.className!==cls)out.className=cls;if(out.textContent!==message)out.textContent=message;
  const audit=$('mathAuditBtn');if(audit&&audit.textContent.trim()==='Kiểm định Toán ✓')audit.textContent='Hình và công thức Toán: Đạt ✓';
 }
-function refresh(){addJumps();status();const tag=$('buildTag');if(tag)tag.textContent='2026-09-15 · V27.5.2'}
+function refresh(){addJumps();status();const tag=$('buildTag'),label='2026-09-15 · V27.5.2';if(tag&&tag.textContent!==label)tag.textContent=label}
 document.addEventListener('change',e=>{if(e.target?.id==='approveCompetencies')status()});
 const observer=new MutationObserver(refresh);observer.observe(document.body,{subtree:true,childList:true,attributes:true,attributeFilter:['class','disabled']});
 refresh();
