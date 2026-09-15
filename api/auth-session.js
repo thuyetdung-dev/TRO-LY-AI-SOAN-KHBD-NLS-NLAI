@@ -1,0 +1,1 @@
+import {read,verify} from './_auth.js';export default function handler(req,res){res.setHeader('Cache-Control','no-store');if(req.method!=='GET')return res.status(405).json({error:'Chỉ hỗ trợ GET'});const s=verify(read(req));return s?res.status(200).json({authenticated:true,role:s.role,user:s.user}):res.status(401).json({authenticated:false})}
