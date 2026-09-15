@@ -1,4 +1,4 @@
-/* V27.5.3 — Trợ lý sửa lỗi không cần lập trình */
+/* V27.5.4 — Trợ lý sửa lỗi không cần lập trình */
 .guided-fix-open{margin-left:8px;border:1px solid #0f6b4f;border-radius:7px;background:#effbf6;color:#07543d;font-weight:700;padding:4px 9px;cursor:pointer}
 .guided-fix-open:hover{background:#dcf6ea}
 .guided-fix-dialog{width:min(680px,calc(100vw - 28px));border:0;border-radius:16px;padding:24px;color:#123252;box-shadow:0 22px 70px #09233c55}
@@ -10,3 +10,4 @@
 .guided-fix-dialog details{margin-top:14px;color:#617386}.guided-fix-dialog details p{word-break:break-word}
 .guided-fix-action-card{padding:14px;border:1px solid #d0dce6;border-radius:10px;background:#fafcfe}.guided-fix-action-card p{margin-top:0}
 @media(max-width:650px){.guided-fix-dialog{padding:18px}.guided-fix-actions .primary{margin-left:0;width:100%}}
+.guided-fix-summary{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:0 0 12px;padding:10px 12px;border:1px solid #e3b24e;border-radius:9px;background:#fff9e9;color:#704b00}.guided-fix-progress{font-weight:800;color:#07543d}.guided-fix-suggest{margin-top:10px}.guided-fix-ai-note{display:block;margin-top:6px;color:#617386}@media(max-width:650px){.guided-fix-summary{align-items:stretch;flex-direction:column}}
