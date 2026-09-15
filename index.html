@@ -20,6 +20,7 @@
   <link rel="stylesheet" href="math-audit.css?v=V27.5.1">
   <link rel="stylesheet" href="validation-ux.css?v=V27.5.2">
   <link rel="stylesheet" href="guided-fix.css?v=V27.5.4">
+  <link rel="stylesheet" href="v28.css?v=V28">
   <script>window.MathJax={tex:{inlineMath:[['$','$'],['\\(','\\)']],displayMath:[['$$','$$'],['\\[','\\]']],processEscapes:true},svg:{fontCache:'global'},options:{skipHtmlTags:['script','noscript','style','textarea','pre','code']}};</script>
   <script defer src="https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-svg.js" integrity="sha384-KKWa9jJ1MZvssLeOoXG6FiOAZfAgmzsIIfw8BXwI9+kYm0lPCbC6yTQPBC00F1/L" crossorigin="anonymous"></script>
 </head>
@@ -178,6 +179,18 @@
         <div class="spinner"></div><h3 id="progressTitle">Đang phân tích...</h3><p id="progressText">Kiểm tra thông tin đầu vào</p>
         <div class="progress-track"><span id="progressBar"></span></div>
       </div>
+      <div id="v28Tools" class="v28-tools">
+        <strong>Trợ lý giáo viên V28</strong>
+        <button id="v28EditBtn" type="button" class="secondary">Sửa toàn bộ bằng biểu mẫu</button>
+        <button id="v28AiFixBtn" type="button" class="secondary">AI sửa các cảnh báo</button>
+        <button id="v28UndoBtn" type="button" class="secondary" disabled>Hoàn tác</button>
+        <button id="v28PreflightBtn" type="button" class="secondary">Kiểm tra trước DOCX</button>
+        <button id="v28TestAiBtn" type="button" class="secondary">Kiểm tra kết nối AI</button>
+        <button id="v28RestoreDraftBtn" type="button" class="secondary">Khôi phục bản nháp</button>
+        <button id="v28LargeTextBtn" type="button" class="secondary">Chữ lớn</button>
+        <button id="v28HelpBtn" type="button" class="secondary">Hướng dẫn</button>
+        <span id="v28SaveState" class="v28-save-state">Tự lưu đang bật</span>
+      </div>
       <div id="validationReport" class="validation-report" hidden aria-live="polite"></div>
       <article id="result" class="document" hidden></article>
       <p id="draftNotice" class="draft-notice" hidden>Bản dự thảo do AI hỗ trợ. Giáo viên chịu trách nhiệm rà soát, chỉnh sửa và phê duyệt trước khi sử dụng.</p>
@@ -253,6 +266,31 @@
     <div class="guided-fix-actions"><button id="guidedFixCancel" type="button" class="secondary">Đóng</button><button id="guidedFixUndo" type="button" class="secondary" disabled>Hoàn tác lần sửa gần nhất</button><button id="guidedFixPreviewBtn" type="button" class="secondary">Xem trước</button><button id="guidedFixApply" type="button" class="primary">Áp dụng và kiểm định lại</button></div>
   </dialog>
 
+  <dialog id="v28EditorDialog" class="v28-dialog">
+    <form method="dialog"><button class="dialog-close" aria-label="Đóng">×</button></form>
+    <h2>Sửa toàn bộ KHBD bằng biểu mẫu</h2>
+    <p>Chọn từng mục và sửa bằng tiếng Việt. Cấu trúc kỹ thuật được phần mềm tự bảo toàn.</p>
+    <div id="v28EditorBody"></div>
+    <section id="v28Diff" class="v28-diff" hidden><h3>So sánh trước – sau</h3><p id="v28DiffSummary"></p><div class="v28-diff-grid"><section><b>Trước sửa</b><pre id="v28Before"></pre></section><section><b>Sau sửa</b><pre id="v28After"></pre></section></div></section>
+    <div class="v28-actions"><button id="v28EditorCancel" type="button" class="secondary">Đóng</button><button id="v28PreviewBtn" type="button" class="secondary">Xem trước thay đổi</button><button id="v28ApplyBtn" type="button" class="primary" disabled>Áp dụng và kiểm định lại</button></div>
+  </dialog>
+  <dialog id="v28AiDialog" class="v28-dialog">
+    <form method="dialog"><button class="dialog-close" aria-label="Đóng">×</button></form>
+    <h2>Duyệt đề xuất của AI</h2><p>AI không tự thay đổi KHBD. Bỏ chọn đề xuất không phù hợp trước khi áp dụng.</p>
+    <div id="v28AiReview" class="v28-ai-review"></div>
+    <div class="v28-actions"><button id="v28AiCancel" type="button" class="secondary">Hủy</button><button id="v28AiApplyBtn" type="button" class="primary" disabled>Áp dụng đề xuất đã chọn</button></div>
+  </dialog>
+  <dialog id="v28PreflightDialog" class="v28-dialog">
+    <form method="dialog"><button class="dialog-close" aria-label="Đóng">×</button></form>
+    <h2>Kiểm tra trước khi tải DOCX</h2><ul id="v28PreflightList" class="v28-preflight"></ul><strong id="v28PreflightResult"></strong>
+    <div class="v28-actions"><button id="v28PreflightClose" type="button" class="primary">Đã hiểu</button></div>
+  </dialog>
+  <dialog id="v28WelcomeDialog" class="v28-dialog">
+    <h2>Chào mừng đến Trợ lý giáo viên V28</h2><p>Không cần biết lập trình. Hãy làm theo ba bước:</p>
+    <div class="v28-welcome-steps"><article><b>1. Soạn bài</b>Điền thông tin và tạo KHBD như bình thường.</article><article><b>2. Rà soát</b>Dùng biểu mẫu hoặc AI đề xuất; luôn xem trước.</article><article><b>3. Xuất Word</b>Bấm Kiểm tra trước DOCX rồi mới tải.</article></div>
+    <div class="v28-actions"><button id="v28WelcomeClose" type="button" class="primary">Bắt đầu sử dụng</button></div>
+  </dialog>
+
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
   <script src="standards.js?v=b26"></script>
   <script src="app.js?v=V27.5.2"></script>
@@ -274,5 +312,6 @@
   </script>
   <script src="validation-ux.js?v=V27.5.2"></script>
   <script src="guided-fix.js?v=V27.5.4"></script>
+  <script src="v28.js?v=V28"></script>
 </body>
 </html>
