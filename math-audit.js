@@ -42,11 +42,12 @@ function render(r){
  const box=$('mathAuditSummary');if(!box)return;
  const cls=r.blockers.length?'block':r.warnings.length?'warn':'ok',title=r.blockers.length?'CHƯA ĐẠT — cần sửa lỗi Toán học':r.warnings.length?'ĐẠT CÓ CẢNH BÁO':'ĐẠT KIỂM ĐỊNH TOÁN HỌC';
  const group=(name,arr)=>arr.length?'<section><h3>'+name+'</h3><ul>'+arr.map(x=>'<li>'+(x.blockIndex!=null?'<button type="button" data-block="'+x.blockIndex+'" class="audit-jump">Xem hình '+(x.blockIndex+1)+'</button> ':'')+esc(x.message)+'</li>').join('')+'</ul></section>':'';
- box.className='math-audit-summary '+cls;box.innerHTML='<strong>'+title+'</strong><p>Đã kiểm tra '+r.blocks+' đối tượng Toán có cấu trúc.</p>'+group('Phải sửa',r.blockers)+group('Nên xem lại',r.warnings)+group('Đã đạt',r.passed.map(x=>item('ok',x)));
+ box.className='math-audit-summary '+cls;const btn=$('mathAuditBtn');if(btn){btn.classList?.remove('audit-blocked','audit-passed');btn.classList?.add(r.blockers.length?'audit-blocked':'audit-passed');btn.textContent=r.blockers.length?'Kiểm định Toán ('+r.blockers.length+' lỗi)':'Kiểm định Toán ✓'}box.innerHTML='<strong>'+title+'</strong><p>Đã kiểm tra '+r.blocks+' đối tượng Toán có cấu trúc.</p>'+group('Phải sửa',r.blockers)+group('Nên xem lại',r.warnings)+group('Đã đạt',r.passed.map(x=>item('ok',x)));
  box.querySelectorAll('[data-block]').forEach(b=>b.onclick=()=>{const els=[...document.querySelectorAll('#result .mathviz')],el=els[+b.dataset.block];$('mathAuditDialog').close();el?.scrollIntoView({behavior:'smooth',block:'center'});el?.classList.add('audit-focus');setTimeout(()=>el?.classList.remove('audit-focus'),2200)});
 }
 $('mathAuditBtn')?.addEventListener('click',()=>{audit(typeof rawMarkdown==='string'?rawMarkdown:'');$('mathAuditDialog').showModal()});
 $('rerunMathAudit')?.addEventListener('click',()=>audit(typeof rawMarkdown==='string'?rawMarkdown:''));
 $('closeMathAudit')?.addEventListener('click',()=>$('mathAuditDialog').close());
 window.khbdRunMathAudit=audit;
+if(typeof rawMarkdown==='string'&&rawMarkdown.trim()&&/toán/i.test($('subject')?.value||''))audit(rawMarkdown);
 })();
