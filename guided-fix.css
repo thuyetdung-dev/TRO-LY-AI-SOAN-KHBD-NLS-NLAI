@@ -1,0 +1,12 @@
+/* V27.5.3 — Trợ lý sửa lỗi không cần lập trình */
+.guided-fix-open{margin-left:8px;border:1px solid #0f6b4f;border-radius:7px;background:#effbf6;color:#07543d;font-weight:700;padding:4px 9px;cursor:pointer}
+.guided-fix-open:hover{background:#dcf6ea}
+.guided-fix-dialog{width:min(680px,calc(100vw - 28px));border:0;border-radius:16px;padding:24px;color:#123252;box-shadow:0 22px 70px #09233c55}
+.guided-fix-dialog::backdrop{background:#0b223d80}
+.guided-fix-dialog h2{margin:0 40px 8px 0}.guided-fix-lead{font-size:1.02rem;line-height:1.55;background:#edf7ff;border-left:4px solid #1688b5;padding:12px 14px;border-radius:8px}
+.guided-fix-location{display:block;margin:14px 0 6px;color:#0b5d46}.guided-fix-dialog textarea{width:100%;min-height:150px;box-sizing:border-box;border:1px solid #a9bfd2;border-radius:9px;padding:12px;font:inherit;line-height:1.5}
+.guided-fix-preview{margin-top:12px;padding:12px;border:1px solid #7ab99f;border-radius:9px;background:#f2fbf7}.guided-fix-preview h3{margin:0 0 7px}.guided-fix-preview p{white-space:pre-wrap;margin:0}
+.guided-fix-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:16px}.guided-fix-actions .primary{margin-left:auto}
+.guided-fix-dialog details{margin-top:14px;color:#617386}.guided-fix-dialog details p{word-break:break-word}
+.guided-fix-action-card{padding:14px;border:1px solid #d0dce6;border-radius:10px;background:#fafcfe}.guided-fix-action-card p{margin-top:0}
+@media(max-width:650px){.guided-fix-dialog{padding:18px}.guided-fix-actions .primary{margin-left:0;width:100%}}
