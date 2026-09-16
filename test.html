@@ -101,6 +101,52 @@ h2{font-size:.82rem;letter-spacing:.09em;text-transform:uppercase;color:var(--mu
   <dialog id="sourceEditorDialog"></dialog><textarea id="sourceEditor"></textarea><button id="applySourceEdit"></button><button id="cancelSourceEdit"></button>
   <dialog id="mathEditorDialog"></dialog><select id="mathBlockSelect"></select><select id="newMathType"><option value="graph">graph</option></select><div id="mathEditorFields"></div><textarea id="mathEditorJson"></textarea><div id="mathEditorPreview"></div><button id="addMathObject"></button><button id="duplicateMathObject"></button><button id="deleteMathObject"></button><button id="applyMathJson"></button><button id="previewMathEdit"></button><button id="applyMathEdit"></button><button id="cancelMathEdit"></button>
   <div id="toast"></div>
+
+  <!-- ===== Sân khấu bổ sung cho các tệp V27.5+/V28 =====
+       Trước đây test.html chỉ nạp 6 tệp JS, nên toàn bộ tính năng V28 (sửa bằng biểu mẫu,
+       AI sửa cảnh báo, hoàn tác, preflight DOCX, kiểm định Toán, kiểm định thời lượng)
+       chưa từng được một phép kiểm tra tự động nào chạm tới. Khối DOM dưới đây là mức tối
+       thiểu để các tệp đó nạp được mà không ném lỗi — nạp được rồi thì mới viết test cho
+       chúng được. Giữ đúng ID như index.html; không cần giữ đúng lớp CSS hay bố cục. -->
+  <select id="aiProvider"><option value="gemini" selected>gemini</option><option value="openai">openai</option></select>
+  <div id="geminiKeyFields"></div><div id="openaiServerStatus" hidden></div><p id="aiProviderNote"></p>
+  <b id="buildTag"></b><p id="exportStatus"></p>
+
+  <button id="imageEditBtn"></button><button id="mathAuditBtn"></button>
+  <dialog id="imageEditorDialog"></dialog>
+  <select id="imageTargetSelect"></select>
+  <div id="imageDropZone"><input id="imageFile" type="file" hidden><img id="imagePreview" alt="" hidden><div id="imageDropHint"></div><button id="imageChooseBtn"></button></div>
+  <textarea id="imageDescription"></textarea><textarea id="imageCaption"></textarea>
+  <input id="imageWidth" type="range" min="30" max="100" value="80"><output id="imageWidthValue"></output>
+  <button id="imageApplyBtn"></button><button id="imageRestoreBtn"></button><button id="cancelImageEdit"></button>
+
+  <dialog id="mathAuditDialog"></dialog><div id="mathAuditSummary"></div>
+  <button id="closeMathAudit"></button><button id="rerunMathAudit"></button>
+
+  <dialog id="guidedFixDialog"></dialog>
+  <h2 id="guidedFixTitle"></h2><p id="guidedFixExplanation"></p><p id="guidedFixProgress"></p>
+  <section id="guidedFixProductBox"><strong id="guidedFixLocation"></strong><textarea id="guidedFixProduct"></textarea>
+    <button id="guidedFixSuggest"></button><div id="guidedFixPreview"><p id="guidedFixPreviewText"></p></div></section>
+  <section id="guidedFixSourceActions"><button id="guidedFixAddSource"></button></section>
+  <section id="guidedFixMathActions"><button id="guidedFixOpenMath"></button></section>
+  <section id="guidedFixAdvancedActions"><button id="guidedFixOpenAdvanced"></button></section>
+  <p id="guidedFixTechnical"></p><button id="guidedFixOpenAdvanced2"></button>
+  <button id="guidedFixCancel"></button><button id="guidedFixUndo"></button>
+  <button id="guidedFixPreviewBtn"></button><button id="guidedFixApply"></button>
+
+  <div id="v28Tools">
+    <button id="v28EditBtn"></button><button id="v28AiFixBtn"></button><button id="v28UndoBtn"></button>
+    <button id="v28PreflightBtn"></button><button id="v28TestAiBtn"></button><button id="v28RestoreDraftBtn"></button>
+    <button id="v28LargeTextBtn"></button><button id="v28HelpBtn"></button><span id="v28SaveState"></span>
+  </div>
+  <dialog id="v28EditorDialog"><div id="v28EditorBody"></div>
+    <section id="v28Diff"><p id="v28DiffSummary"></p><pre id="v28Before"></pre><pre id="v28After"></pre></section>
+    <button id="v28EditorCancel"></button><button id="v28PreviewBtn"></button><button id="v28ApplyBtn" disabled></button></dialog>
+  <dialog id="v28AiDialog"><div id="v28AiReview"></div>
+    <button id="v28AiCancel"></button><button id="v28AiApplyBtn" disabled></button></dialog>
+  <dialog id="v28PreflightDialog"><ul id="v28PreflightList"></ul><strong id="v28PreflightResult"></strong>
+    <button id="v28PreflightClose"></button></dialog>
+  <dialog id="v28WelcomeDialog"><button id="v28WelcomeClose"></button></dialog>
 </div>
 
 <script>
@@ -118,13 +164,21 @@ h2{font-size:.82rem;letter-spacing:.09em;text-transform:uppercase;color:var(--mu
 })();
 </script>
 
-<script src="standards.js?v=b26"></script>
-<script src="app.js?v=b27.4"></script>
-<script src="flow.js?v=b26"></script>
-<script src="professional.js?v=b26"></script>
-<script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
-<script src="docx-export.js?v=b27.4"></script>
-<script src="math-editor.js?v=b27.2"></script>
+<!-- Thứ tự nạp phải giống hệt index.html: các tệp chia sẻ trạng thái qua biến toàn cục,
+     nên đổi thứ tự là đổi hành vi. Nếu index.html thêm tệp mới, thêm vào đây cùng lúc. -->
+<script src="standards.js?v=V28.0"></script>
+<script src="app.js?v=V28.0"></script>
+<script src="validation-duration-v28.js?v=V28.0"></script>
+<script src="math-audit.js?v=V28.0"></script>
+<script src="flow.js?v=V28.0"></script>
+<script src="professional.js?v=V28.0"></script>
+<script src="vendor/jszip.min.js?v=V28.0"></script>
+<script src="docx-export.js?v=V28.0"></script>
+<script src="image-editor.js?v=V28.0"></script>
+<script src="math-editor.js?v=V28.0"></script>
+<script src="validation-ux.js?v=V28.0"></script>
+<script src="guided-fix.js?v=V28.0"></script>
+<script src="v28.js?v=V28.0"></script>
 
 <script>
 (function(){
@@ -1103,8 +1157,12 @@ async function runAll(){
       var md=plan([4],11,'\n## NĂNG LỰC AI (NLAI)\n- Không tích hợp trong bài này.\n')
         +'\n## ĐIỀU CHỈNH SAU BÀI DẠY\n...\n';
       var r=validatePlan(md,V,true);
-      return r.blockers.join(' ').indexOf('không tích hợp trong bài này')>=0
-        ||'Không chặn. Các mục chặn: '+r.blockers.join(' | ');
+      /* Kiểm tra CÓ chặn vì lý do NLAI, không so khớp nguyên văn câu chữ.
+         Bản cũ đòi đúng chuỗi 'không tích hợp trong bài này'; khi lời cảnh báo được
+         viết lại cho giáo viên dễ hiểu thì phép kiểm tra hỏng dù phần mềm vẫn đúng.
+         Lời văn là thứ sẽ còn sửa nhiều; hành vi chặn mới là thứ cần khoá lại. */
+      var coChan=r.blockers.some(function(b){return /NLAI|năng lực AI/i.test(b)&&/không tích hợp|chưa tích hợp/i.test(b)});
+      return coChan||'Không chặn vì lý do NLAI. Các mục chặn: '+r.blockers.join(' | ');
     }finally{document.getElementById('aiIntegrationMode').value='auto';document.getElementById('includeAI').checked=true}
   });
 
@@ -1435,6 +1493,79 @@ async function runAll(){
 
   await T('Bộ tạo tệp nén JSZip đã sẵn sàng',function(){
     return typeof JSZip!=='undefined'||'Chưa tải được JSZip — cần Internet để xuất DOCX';
+  });
+
+  /* ---------- V28 — nguồn AI dùng chung ---------- */
+  /* Đây là những phép kiểm tra ĐẦU TIÊN chạm tới v28.js và guided-fix.js. Trước đây hai
+     tệp đó không hề được test.html nạp, nên lỗi "nút AI gọi cứng /api/openai" sống suốt
+     nhiều bản phát hành mà không bộ kiểm tra nào thấy. */
+  group('V28 — nguồn AI dùng chung');
+
+  await T('Có một cửa duy nhất để hỏi AI (askAI)',function(){
+    return typeof window.askAI==='function'||'Chưa có window.askAI — các nút AI lại gọi thẳng nhà cung cấp';
+  });
+
+  await T('Chọn Gemini mà chưa có khóa thì báo đúng việc cần làm, không gọi OpenAI',async function(){
+    var goi=[],fetchThat=window.fetch;
+    document.getElementById('aiProvider').value='gemini';
+    document.getElementById('apiKey').value='';
+    window.fetch=function(u){goi.push(String(u));return fetchThat.apply(this,arguments)};
+    try{
+      await window.askAI('xin chào');
+      return 'Không báo lỗi dù chưa có khóa Gemini';
+    }catch(e){
+      if(goi.some(function(u){return u.indexOf('/api/openai')>=0}))
+        return 'Vẫn gọi sang OpenAI dù giáo viên đang chọn Gemini';
+      return /khóa API Gemini/i.test(e.message)||'Thông báo không chỉ ra việc cần làm: '+e.message;
+    }finally{window.fetch=fetchThat}
+  });
+
+  await T('Chọn OpenAI thì gọi đúng máy chủ Vercel, không đụng tới khóa Gemini',async function(){
+    var goi=[],fetchThat=window.fetch;
+    document.getElementById('aiProvider').value='openai';
+    window.fetch=function(u){goi.push(String(u));
+      return Promise.resolve({ok:true,status:200,json:function(){return Promise.resolve({text:'OK'})}})};
+    try{
+      var out=await window.askAI('xin chào');
+      if(out!=='OK')return 'Không lấy được nội dung OpenAI trả về';
+      return goi.length===1&&goi[0].indexOf('/api/openai')>=0
+        ||'Gọi sai địa chỉ: '+goi.join(', ');
+    }finally{window.fetch=fetchThat;document.getElementById('aiProvider').value='gemini'}
+  });
+
+  await T('Nút AI của V28 và Trợ lý sửa lỗi không còn gọi cứng /api/openai',async function(){
+    var thieu=[];
+    for(var i=0;i<2;i++){
+      var ten=['v28.js','guided-fix.js'][i];
+      var src=await fetch(ten).then(function(r){return r.text()});
+      /* Bỏ qua phần bên trong askAI (nằm ở app.js) — ở hai tệp này thì mọi lời gọi AI
+         đều phải đi qua window.askAI, không được tự fetch thẳng tới nhà cung cấp. */
+      if(/fetch\(\s*['"]\/api\/openai/.test(src))thieu.push(ten);
+    }
+    return !thieu.length||'Còn gọi cứng /api/openai trong: '+thieu.join(', ');
+  });
+
+  /* ---------- Số hiệu phiên bản ---------- */
+  group('Số hiệu phiên bản');
+
+  await T('index.html và test.html cùng dùng một số hiệu, khớp APP_BUILD',async function(){
+    var moc=String(APP_BUILD).match(/V[\d.]+/);
+    if(!moc)return 'APP_BUILD không chứa số hiệu dạng V… : '+APP_BUILD;
+    var sai=[];
+    for(var i=0;i<2;i++){
+      var ten=['index.html','test.html'][i];
+      var src=await fetch(ten).then(function(r){return r.text()});
+      /* Chỉ soi thuộc tính src=/href= của thẻ, KHÔNG quét cả tệp: test.html có chứa chính
+         biểu thức chính quy này trong mã nguồn, quét cả tệp là nó tự bắt phải mình. */
+      var vs=[],re=/(?:src|href)="[^"]*\?v=([^"]+)"/g,m;
+      while((m=re.exec(src)))vs.push(m[1]);
+      if(!vs.length){sai.push(ten+': không có chuỗi ?v= nào');continue}
+      var khac=vs.filter(function(v){return v!==moc[0]});
+      if(khac.length)sai.push(ten+' dùng '+Array.from(new Set(khac)).join(', ')+' thay vì '+moc[0]);
+    }
+    /* Vì sao canh chuyện này: thanh tiêu đề hiện APP_BUILD để giáo viên biết đang chạy bản
+       nào. Nếu APP_BUILD và ?v= lệch nhau thì chính cái mốc dùng để gỡ lỗi lại nói dối. */
+    return !sai.length||sai.join(' · ');
   });
 
   /* ---------- Kết luận ---------- */

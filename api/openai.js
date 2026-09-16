@@ -1,5 +1,13 @@
 import {read,verify} from './_auth.js';
 /* Vercel Serverless Function — OpenAI key chỉ tồn tại ở máy chủ. */
+
+/* Ghim hạn chạy vào mã, không phó mặc cho mặc định của nền tảng.
+   Phía trình duyệt chờ 180 giây (app.js, callOpenAI). Vercel chỉ mặc định 300 giây KHI dự án
+   đã bật Fluid compute; dự án cũ chưa bật thì mặc định chỉ 10–15 giây — soạn một KHBD đầy đủ
+   luôn vượt quá, và giáo viên nhận lỗi 504 không nói lên điều gì. Ghim ở đây thì dù thiết lập
+   của dự án có thay đổi, hành vi vẫn giữ nguyên.
+   (Hobby tối đa 300s; Pro có thể nâng cao hơn.) */
+export const config={maxDuration:300};
 const WINDOW_MS=60_000, MAX_REQUESTS=6, buckets=new Map();
 function allow(ip){const now=Date.now(),b=buckets.get(ip)||{start:now,count:0};if(now-b.start>WINDOW_MS){b.start=now;b.count=0}b.count++;buckets.set(ip,b);return b.count<=MAX_REQUESTS}
 function textFrom(data){if(typeof data.output_text==='string')return data.output_text;return (data.output||[]).flatMap(x=>x.content||[]).filter(x=>x.type==='output_text').map(x=>x.text||'').join('\n')}

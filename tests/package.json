@@ -1,0 +1,12 @@
+{
+  "name": "khbd-tests",
+  "private": true,
+  "type": "module",
+  "description": "Bộ chạy tự động cho test.html. Đặt trong tests/ chứ KHÔNG ở gốc kho, để Vercel vẫn nhận dự án là trang tĩnh + serverless function, không tưởng đây là dự án Node cần build.",
+  "scripts": {
+    "test": "node run.mjs"
+  },
+  "devDependencies": {
+    "playwright": "^1.56.0"
+  }
+}
