@@ -1,0 +1,33 @@
+name: Tự kiểm tra
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    name: Chạy bộ kiểm tra trong test.html
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: tests
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      # npm ci: cài đúng phiên bản trong tests/package-lock.json, không tự nâng cấp.
+      # Playwright nâng bản là đổi cả bản Chromium — CI phải cố định để kết quả
+      # hôm nay và tháng sau còn so sánh được với nhau.
+      - name: Cài Playwright
+        run: npm ci
+
+      - name: Tải Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Chạy 130+ phép kiểm tra
+        run: node run.mjs
