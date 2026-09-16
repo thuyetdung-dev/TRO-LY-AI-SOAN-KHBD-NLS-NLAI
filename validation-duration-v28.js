@@ -3,6 +3,7 @@
    per-period duration auditor after app.js has loaded. */
 (function(){
   const durationRe=/\((?:\s*Thời lượng\s*:\s*)?(\d+)\s*phút(?:[^)]*)\)/i;
+  const durationReAll=/\((?:\s*Thời lượng\s*:\s*)?(\d+)\s*phút(?:[^)]*)\)/gi;
   const activityRe=/^\s{0,3}#{1,6}\s*(?:\d+\.\s*)?(HOẠT ĐỘNG KHỞI ĐỘNG(?:\s*\(MỞ ĐẦU\))?|HOẠT ĐỘNG HÌNH THÀNH KIẾN THỨC(?:\s*MỚI)?|HÌNH THÀNH KIẾN THỨC MỚI|HOẠT ĐỘNG LUYỆN TẬP|HOẠT ĐỘNG VẬN DỤNG|TỔNG KẾT VÀ KIỂM TRA ĐẦU GIỜ)[^\n]*$/gim;
 
   window.auditPeriodDurations=function(text,periods){
@@ -29,6 +30,18 @@
         if(duration)proseMinutes+=Number(duration[1]);
         else missing.push(name);
       });
+
+      /* Phần đầu tiết — từ dòng "## TIẾT n:" cho tới tiêu đề hoạt động ĐẦU TIÊN — trước đây
+         bị bỏ quên hoàn toàn. Khi giáo viên (hoặc AI) ghi "(Thời lượng: N phút)" ngay dưới
+         tên tiết, hoặc khi cả tiết không có tiêu đề hoạt động nào mà bản vá này nhận ra,
+         toàn bộ số phút đó biến mất khỏi phép cộng.
+         Hậu quả thật: một tiết đủ 45 phút (44 phút trong lessonflow + 1 phút ghi ngoài) bị
+         báo "mới phân bổ 44/45 phút" và CHẶN xuất Word — giáo viên không hiểu vì sao, vì
+         nhìn bằng mắt thì bài soạn không thiếu phút nào.
+         Chỉ cộng thêm phần đầu tiết, không đụng tới các khối hoạt động đã tính ở trên, nên
+         cơ chế chống cộng hai lần của Hình thành kiến thức giữ nguyên. */
+      const dauTiet=section.slice(0,activities.length?activities[0].index:section.length);
+      proseMinutes+=[...dauTiet.matchAll(durationReAll)].reduce((s,x)=>s+Number(x[1]),0);
 
       rows.push({
         period:Number(m[1]),

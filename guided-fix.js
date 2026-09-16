@@ -92,10 +92,9 @@ async function suggest(){
   button.disabled=true;button.textContent='AI đang đề xuất…';
   const prompt='Bạn là chuyên gia giáo dục Toán THPT. Viết lại mục Sản phẩm dự kiến cho '+$('guidedFixLocation').textContent+'. Tên bài: '+($('lesson')?.value||'')+'. Nội dung hiện tại: '+$('guidedFixProduct').value+'. Yêu cầu: 80–150 từ, nêu rõ kết quả học sinh tạo ra, lập luận hoặc cách kiểm tra; chỉ trả về nội dung tiếng Việt, không Markdown, không JSON.';
   try{
-    const response=await fetch('/api/openai',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({prompt,files:[]})});
-    const data=await response.json();
-    if(!response.ok)throw new Error(data.error||'AI chưa phản hồi');
-    $('guidedFixProduct').value=String(data.text||'').trim();
+    /* Đi qua askAI() để tôn trọng nguồn AI giáo viên đang chọn (Gemini hay OpenAI).
+       Trước đây gọi cứng /api/openai nên người dùng Gemini bấm nút này là gặp lỗi. */
+    $('guidedFixProduct').value=await window.askAI(prompt);
     $('guidedFixPreview').hidden=true;$('guidedFixApply').disabled=true;
     notify('AI đã tạo bản nháp. Giáo viên hãy đọc và bấm Xem trước.');
   }catch(error){notify(error.message||'Không tạo được gợi ý AI')}

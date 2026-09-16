@@ -1,7 +1,11 @@
 /* Mốc phiên bản — hiện ngay trên thanh tiêu đề. Sau nhiều vòng sửa, đã có lần trang web
    chạy bản cũ mà cả hai bên đều tưởng là bản mới, mất công đi tìm lỗi đã sửa xong rồi.
    Nhìn dòng chữ trên đầu trang là biết ngay đang chạy bản nào. */
-const APP_BUILD='2026-09-15 · V27.5.1';
+/* MỘT nguồn chân lý duy nhất cho số hiệu bản. Chuỗi "?v=" của mọi tệp trong index.html và
+   test.html phải trùng đúng phần V… này — có một phép kiểm tra tự động canh việc đó, vì
+   trước đây index.html nạp app.js?v=V27.5.2 còn test.html nạp app.js?v=b27.4: hai trang có
+   thể chạy hai bản khác nhau trong bộ nhớ đệm, test bản này mà giáo viên dùng bản kia. */
+const APP_BUILD='2026-09-16 · V28.0';
 const $=id=>document.getElementById(id);let selectedFiles=[],rawMarkdown='',availableModels=[],scanTimer,draftTimer,lastValidation=null;
 const fields=['subject','grade','lesson','book','periods','students','classSize','equipment','notes','tableLayout','assessmentMode','lessonTemplate','sourceMode'];
 const toast=m=>{const t=$('toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2600)};
@@ -455,11 +459,46 @@ async function callOpenAI(v){
     throw err;
   }finally{clearTimeout(timer)}
 }
+/* ===== Một cửa duy nhất để hỏi AI một câu ngắn =====
+   VÌ SAO CÓ HÀM NÀY: v28.js ("AI sửa các cảnh báo") và guided-fix.js ("AI đề xuất bản nháp")
+   trước đây gọi thẳng fetch('/api/openai'). Nhưng Gemini mới là nguồn AI mặc định, và là nguồn
+   miễn phí mà phần lớn giáo viên dùng. Ai chọn Gemini rồi bấm hai nút đó sẽ nhận lỗi 401/503
+   khó hiểu từ một máy chủ mà họ không hề định dùng.
+   Đáng chú ý: testAI() ngay cạnh đó ĐÃ đọc $('aiProvider') — nên đây là chỗ quên, không phải
+   chủ ý. Nay mọi lời gọi AI ngắn đều đi qua đây, thêm nguồn AI mới chỉ phải sửa một chỗ.
+   Lưu ý: hàm này dành cho câu hỏi NGẮN, một lượt. Việc soạn cả KHBD vẫn đi đường riêng
+   (callGemini/callOpenAI) vì cần streaming, xin viết tiếp khi bị cắt và đổi mô hình dự phòng. */
+async function askAI(prompt){
+  const provider=$('aiProvider')?.value||'gemini';
+  if(provider==='openai'){
+    const res=await fetch('/api/openai',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({prompt:String(prompt||''),files:[]})});
+    const data=await res.json().catch(()=>({}));
+    if(!res.ok)throw new Error(data.error||`OpenAI chưa phản hồi (HTTP ${res.status})`);
+    const text=String(data.text||'').trim();
+    if(!text)throw new Error('OpenAI không trả về nội dung');
+    return text;
+  }
+  const key=$('apiKey')?.value.trim();
+  if(!key)throw new Error('Chưa có khóa API Gemini. Hãy dán khóa ở mục “Nguồn AI”, hoặc chuyển sang OpenAI.');
+  if(!availableModels.length)await scanModels(false);
+  const selected=$('model')?.value;
+  const fullName=(selected&&selected!=='auto')?selected:availableModels[0]?.name;
+  if(!fullName)throw new Error('Chưa dò được mô hình Gemini nào dùng được với khóa này. Hãy bấm “Dò”.');
+  /* withThinking=false: câu hỏi ngắn không cần ngân sách suy nghĩ, bật lên chỉ chậm và tốn thêm. */
+  const {text}=await generateOnce(fullName,fullName.replace(/^models\//,''),[{text:String(prompt||'')}],key,false);
+  const out=String(text||'').trim();
+  if(!out)throw new Error('Gemini không trả về nội dung');
+  return out;
+}
+window.askAI=askAI;
+
 function syncProvider(){
   const openai=$('aiProvider')?.value==='openai';
-  $('geminiKeyFields').hidden=openai;$('openaiServerStatus').hidden=!openai;
-  $('aiProviderNote').textContent=openai?'OpenAI dùng khóa bí mật đã lưu trong Environment Variables của Vercel.':'Gemini có bậc miễn phí; khóa chỉ dùng trong phiên trình duyệt.';
-  $('scanModels').disabled=openai;
+  if($('geminiKeyFields'))$('geminiKeyFields').hidden=openai;
+  if($('openaiServerStatus'))$('openaiServerStatus').hidden=!openai;
+  if($('aiProviderNote'))$('aiProviderNote').textContent=openai?'OpenAI dùng khóa bí mật đã lưu trong Environment Variables của Vercel.':'Gemini có bậc miễn phí; khóa chỉ dùng trong phiên trình duyệt.';
+  if($('scanModels'))$('scanModels').disabled=openai;
 }
 $('aiProvider')?.addEventListener('change',syncProvider);syncProvider();
 
