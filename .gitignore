@@ -1,0 +1,28 @@
+# Phụ thuộc và sản phẩm dựng
+node_modules/
+dist/
+.vercel/
+
+# Biến môi trường — KHÔNG BAO GIỜ đưa lên kho
+.env
+.env.*
+!.env.example
+
+# Tệp tạm của hệ điều hành và trình soạn thảo
+.DS_Store
+Thumbs.db
+*.swp
+*~
+.idea/
+.vscode/
+
+# Nhật ký và tệp thử
+*.log
+npm-debug.log*
+KIEM_TRA_XUAT_WORD.docx
+
+# Bản vá đã áp dụng — git đã giữ lịch sử, không cần giữ thêm bản .diff
+*.diff
+*.patch
+*.orig
+*.rej
