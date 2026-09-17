@@ -362,8 +362,40 @@ async function runAll(){
       +'## TIẾT 2: B\n(Thời lượng: 1 phút)\n```lessonflow\n'+flowJson(4,11,10)+'\n```\n'
       +'## TIẾT 3: C\n(Thời lượng: 1 phút)\n```lessonflow\n'+flowJson(4,10,20)+'\n```\n';
     var a=auditPeriodDurations(md,3);
-    return a&&a.rows[0].missing.length&&a.rows[2].minutes===41
+    /* Tiết 3 có 4 bước × 10 phút = 40 phút, thiếu 5 phút so với 45 — đó là thứ phép kiểm
+       tra này canh. Dòng "(Thời lượng: 1 phút)" nằm ngay dưới tên tiết KHÔNG được cộng vào:
+       con số ở đầu tiết là tổng thời lượng khai báo của cả tiết, không phải một hoạt động
+       cộng thêm. Bản cũ của phép kiểm tra này đòi 41 phút (40+1) và chính nó đã khiến một
+       vòng sửa đi cộng nhầm, làm mọi tiết thành 90/45 và khoá xuất Word oan trên bản thật. */
+    return a&&a.rows[0].missing.length&&a.rows[2].minutes===40&&a.rows[2].minutes<45
       ||'Không phát hiện: '+JSON.stringify(a);
+  });
+
+  await T('Tiêu đề tiết ghi tổng thời lượng thì không bị cộng hai lần',function(){
+    /* Hình dạng thật của bản kế hoạch do AI sinh: tên tiết mang tổng thời lượng, lessonflow
+       bên dưới chia nhỏ đúng số phút đó. Cộng cả hai là ra 90/45 và khoá xuất Word. */
+    var md='## TIẾT 1: A (Thời lượng: 45 phút)\n```lessonflow\n'+flowJson(3,15,0)+'\n```\n'
+      +'## TIẾT 2: B (Thời lượng: 45 phút)\n```lessonflow\n'+flowJson(3,15,10)+'\n```\n';
+    var a=auditPeriodDurations(md,2);
+    if(!a)return 'Không kiểm được theo tiết';
+    var sai=a.rows.filter(function(r){return r.minutes!==45});
+    return !sai.length||'Đếm hai lần: '+sai.map(function(r){
+      return 'Tiết '+r.period+' ra '+r.minutes+'/45 (flow '+r.flowMinutes+', văn xuôi '+r.proseMinutes+')';
+    }).join(' · ');
+  });
+
+  await T('KIỂM NGƯỢC: thời lượng ghi trong khối hoạt động vẫn được cộng',function(){
+    /* Đừng vì tránh cộng hai lần mà bỏ sót luôn hoạt động văn xuôi có ghi thời lượng.
+       Ở đây Khởi động 5 phút và Luyện tập 10 phút nằm NGOÀI lessonflow nên phải cộng vào. */
+    var md='## TIẾT 1: A\n### HOẠT ĐỘNG KHỞI ĐỘNG (5 phút)\nNội dung...\n'
+      +'### HOẠT ĐỘNG HÌNH THÀNH KIẾN THỨC MỚI\n```lessonflow\n'+flowJson(2,15,0)+'\n```\n'
+      +'### HOẠT ĐỘNG LUYỆN TẬP (10 phút)\nNội dung...\n'
+      +'## TIẾT 2: B\n```lessonflow\n'+flowJson(3,15,10)+'\n```\n';
+    var a=auditPeriodDurations(md,2);
+    if(!a)return 'Không kiểm được theo tiết';
+    var r=a.rows[0];
+    return (r.flowMinutes===30&&r.proseMinutes===15&&r.minutes===45)
+      ||'Bỏ sót thời lượng hoạt động văn xuôi: '+JSON.stringify(r);
   });
 
   await T('Chặn khẳng định nguồn đã được đối chiếu tuyệt đối khi chưa có bằng chứng',function(){
