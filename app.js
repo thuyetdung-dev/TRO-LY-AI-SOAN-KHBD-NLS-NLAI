@@ -5,7 +5,7 @@
    test.html phải trùng đúng phần V… này — có một phép kiểm tra tự động canh việc đó, vì
    trước đây index.html nạp app.js?v=V27.5.2 còn test.html nạp app.js?v=b27.4: hai trang có
    thể chạy hai bản khác nhau trong bộ nhớ đệm, test bản này mà giáo viên dùng bản kia. */
-const APP_BUILD='2026-09-16 · V28.0';
+const APP_BUILD='2026-09-18 · V28.1';
 const $=id=>document.getElementById(id);let selectedFiles=[],rawMarkdown='',availableModels=[],scanTimer,draftTimer,lastValidation=null;
 const fields=['subject','grade','lesson','book','periods','students','classSize','equipment','notes','tableLayout','assessmentMode','lessonTemplate','sourceMode'];
 const toast=m=>{const t=$('toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2600)};
@@ -1484,7 +1484,14 @@ function buildGraphSVG(s,opt){
   if(!plotted)svg+=`<text x="${W/2}" y="${H/2}" text-anchor="middle" class="tick">Không dựng được đường cong — kiểm tra biểu thức</text>`;
   return svg+'</svg>';
 }
-function renderMathViz(){document.querySelectorAll('.mathviz').forEach(el=>{try{const s=JSON.parse(decodeURIComponent(el.dataset.spec));
+/* Đọc đặc tả kèm theo khối .mathviz. VÌ SAO KHÔNG GỌI THẲNG JSON.parse: đặc tả hình rất hay
+   chứa lệnh LaTeX — nhãn vectơ "\vec{a}", tiêu đề "$\Delta ABC$". Mô hình ngôn ngữ viết một
+   dấu gạch chéo, JSON.parse hoặc ném lỗi hoặc âm thầm nuốt mất lệnh, và cả khối hình rơi vào
+   nhánh báo lỗi — giáo viên mất hình mà không hiểu vì sao. repairJsonEscapes đã có sẵn để vá
+   đúng chuyện này, chỉ là chỗ này chưa dùng tới. */
+function docSpecHinh(raw){const s=decodeURIComponent(raw);
+  try{return JSON.parse(typeof repairJsonEscapes==='function'?repairJsonEscapes(s):s)}catch(_){return JSON.parse(s)}}
+function renderMathViz(){document.querySelectorAll('.mathviz').forEach(el=>{try{const s=docSpecHinh(el.dataset.spec);
   /* b21 — hình khối không gian. Dùng ĐÚNG hàm mà bộ xuất Word dùng, không dựng bản riêng:
      b20 đã cho thấy hai đường vẽ song song thì sớm muộn cũng lệch nhau. */
   if(s.type==='solid'||s.type==='hinhkhong gian'||s.type==='hinh-khong-gian'){

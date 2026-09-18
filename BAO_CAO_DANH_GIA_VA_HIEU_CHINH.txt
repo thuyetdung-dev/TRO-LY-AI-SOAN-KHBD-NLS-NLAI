@@ -607,3 +607,67 @@ phần mềm vẫn không đối chiếu chéo được nội dung do AI viết 
 đợt riêng, có kiểm thử riêng, chứ không nên ghép vào một vòng sửa gấp.
 
 Đánh giá sau hiệu chỉnh: ĐẠT ĐỂ CHẠY THỬ CÓ KIỂM SOÁT.
+
+================================================================================
+XXVII. V28.1 — HAI LỖI TRÊN ẢNH CHỤP BÀI 6 "VECTƠ TRONG KHÔNG GIAN"
+
+XXVII1. GIÁO VIÊN BÁO GÌ. Hai ảnh khoanh bút đỏ:
+ (a) Giữa phần "b) Nội dung" của bản in hiện nguyên một dòng mã
+     {"type":"solid","title":"Hình hộp ABCD.A'B'C'D'","shape":"hinh-hop","points":[],
+      "vectors":[...],"segments":[],"planes":[]}
+     kèm lời ghi: "Hiển thị ảnh của hình (không hiển thị các mã này)".
+ (b) Hộp thoại "Sửa hoặc thay hình minh họa": ô "Hình cần sửa" báo "Chưa có hình trong bản
+     kế hoạch", kèm lời ghi: "Chưa danh sách các hình trong kế hoạch bài dạy".
+
+XXVII2. HAI LỖI ẤY LÀ MỘT. Phần mềm chỉ nhận ra hình khi đặc tả JSON nằm trong khối mã mang
+ĐÚNG nhãn mathviz — app.js quét /```mathviz ... ```/, docx-export.js cũng chỉ quét khối có dấu
+```. Nhưng mô hình ngôn ngữ rất hay trả về JSON TRẦN, hoặc bọc trong khối mã nhãn khác
+(```json). Khi đó app.js xoá dấu ``` rồi đổ nguyên chuỗi JSON vào giữa giáo án, không phần tử
+.mathviz nào được dựng, nên:
+   - giáo viên thấy mã thô giữa bài                                    → lỗi (a);
+   - image-editor.js quét "#result .mathviz svg" nên đếm được 0 hình   → lỗi (b);
+   - tệp Word cũng không có hình;
+   - bộ kiểm định lại chặn "bài hình học không gian không có hình nào" — chặn oan chính bài
+     ĐANG có hình.
+Một nguyên nhân, bốn chỗ hỏng. Đây đúng lớp lỗi mà flow.js đã gặp và xử lý cho bảng "Tổ chức
+thực hiện" từ trước (findFlowBlocks đọc cả JSON trần); hình vẽ thì chưa ai làm nốt.
+
+XXVII3. CÁCH SỬA — MỘT CHỖ DUY NHẤT. Thêm figure-normalize.js: chuẩn hoá VĂN BẢN MARKDOWN
+trước khi mọi bộ phận khác đọc nó. Mọi đặc tả hình (solid, graph, variation, sign), dù trần dù
+mang nhãn khối mã khác, đều được bọc lại thành khối mathviz đúng chuẩn. Hàm gắn vào bốn cửa
+ngõ có sẵn bằng cách bọc hàm: mdToHtml (màn hình), showResult (nguồn của rawMarkdown, kéo theo
+bản nháp, lịch sử và Word), validatePlan (đếm hình) và buildDocxParts (xuất Word). Sửa ở một
+chỗ nên không lối nào lọt lưới, và gỡ tệp ra là phần mềm trở về hành vi cũ nguyên vẹn.
+
+XXVII4. BA CHỖ DỄ SAI, ĐÃ ĐO CHỨ KHÔNG ĐOÁN:
+ (a) Nhận nhầm hình LỒNG. Một đối tượng hình nằm bên trong hàng của lessonflow mà bị cắt ra
+     thì vỡ cả bảng. Bản đầu dò ngược tìm dấu "{" bao ngoài — sai ngay, vì giáo án Toán đầy
+     \frac{a}{b}, dò ngược là vớ phải dấu ngoặc của công thức ở đoạn trên. Nay chỉ xét ký tự
+     có nghĩa đứng trước TRÊN CÙNG MỘT DÒNG: đối tượng đứng đầu dòng thì không thể là giá trị
+     của một đối tượng khác.
+ (b) Câu dẫn kết thúc bằng DẤU HAI CHẤM. Bản thứ hai bỏ qua dấu xuống dòng khi tìm ký tự đứng
+     trước, nên "Quan sát hình sau:" + xuống dòng + JSON bị tưởng là hình lồng — tức là đúng
+     trường hợp phổ biến nhất lại không dựng được hình. Bắt được khi cho chạy trên đúng đoạn
+     văn trong ảnh chụp của giáo viên, không phải khi đọc mã.
+ (c) Khối mã sẵn có và bảng lessonflow trần phải được cất ra trước khi quét, nếu không vòng
+     quét sẽ ngó vào trong chúng.
+
+XXVII5. HAI VIỆC SỬA KÈM THEO:
+ (a) TÊN HÌNH TRONG DANH SÁCH. Từ b22, hình khối không gian CỐ Ý không in dòng tiêu đề ra
+     ngoài (tiêu đề đã vẽ sẵn trong ảnh, in thêm là hiện hai lần). Nhưng image-editor.js chỉ
+     đọc tên từ ô .mathviz-title, nên đúng loại hình giáo viên hay phải thay nhất lại hiện
+     thành "Hình minh họa 1". Nay đọc thẳng tiêu đề trong đặc tả đính kèm khối. Khi bản kế
+     hoạch thật sự chưa có hình nào thì báo rõ phải làm gì tiếp — sang nút "Chỉnh hình Toán"
+     để THÊM hình, vì hộp thoại này chỉ THAY hình sẵn có.
+ (b) renderMathViz đọc đặc tả bằng JSON.parse trần, trong khi đặc tả hình rất hay chứa lệnh
+     LaTeX ("\vec{a}", "$\Delta ABC$"). Mô hình viết một dấu gạch chéo là cả khối hình rơi vào
+     nhánh báo lỗi. Nay dùng repairJsonEscapes như mọi chỗ khác — hàm đã có sẵn từ b16, chỉ là
+     chỗ này chưa gọi tới.
+
+XXVII6. ĐO LẠI. Bộ kiểm tra: 141 phép đều đạt (134 cũ giữ nguyên, thêm 7 phép cho vòng này),
+trong đó có ĐÚNG dòng mã trong ảnh chụp của giáo viên, ca câu dẫn có dấu hai chấm, ca khối mã
+nhãn json, ca danh sách "Hình cần sửa" phải nêu tên hình, ca xuất Word phải ra ảnh chứ không
+ra chữ JSON, và một phép KIỂM NGƯỢC canh bốn chuyện không được xảy ra: cắt xén bảng lessonflow,
+sửa khối mathviz sẵn có, chạy hai lần ra hai kết quả, và đụng vào bài vốn không có hình nào.
+Kiểm chứng bằng mắt: dựng lại đúng đoạn "b) Nội dung" trong ảnh chụp, nay ra hình hộp
+ABCD.A'B'C'D' với ba vectơ, vectơ nằm trên cạnh khuất vẽ nét đứt đúng quy ước b22.

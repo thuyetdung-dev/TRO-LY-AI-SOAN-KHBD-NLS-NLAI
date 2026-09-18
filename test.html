@@ -166,19 +166,20 @@ h2{font-size:.82rem;letter-spacing:.09em;text-transform:uppercase;color:var(--mu
 
 <!-- Thứ tự nạp phải giống hệt index.html: các tệp chia sẻ trạng thái qua biến toàn cục,
      nên đổi thứ tự là đổi hành vi. Nếu index.html thêm tệp mới, thêm vào đây cùng lúc. -->
-<script src="standards.js?v=V28.0"></script>
-<script src="app.js?v=V28.0"></script>
-<script src="validation-duration-v28.js?v=V28.0"></script>
-<script src="math-audit.js?v=V28.0"></script>
-<script src="flow.js?v=V28.0"></script>
-<script src="professional.js?v=V28.0"></script>
-<script src="vendor/jszip.min.js?v=V28.0"></script>
-<script src="docx-export.js?v=V28.0"></script>
-<script src="image-editor.js?v=V28.0"></script>
-<script src="math-editor.js?v=V28.0"></script>
-<script src="validation-ux.js?v=V28.0"></script>
-<script src="guided-fix.js?v=V28.0"></script>
-<script src="v28.js?v=V28.0"></script>
+<script src="standards.js?v=V28.1"></script>
+<script src="app.js?v=V28.1"></script>
+<script src="validation-duration-v28.js?v=V28.1"></script>
+<script src="math-audit.js?v=V28.1"></script>
+<script src="flow.js?v=V28.1"></script>
+<script src="professional.js?v=V28.1"></script>
+<script src="vendor/jszip.min.js?v=V28.1"></script>
+<script src="docx-export.js?v=V28.1"></script>
+<script src="image-editor.js?v=V28.1"></script>
+<script src="math-editor.js?v=V28.1"></script>
+<script src="figure-normalize.js?v=V28.1"></script>
+<script src="validation-ux.js?v=V28.1"></script>
+<script src="guided-fix.js?v=V28.1"></script>
+<script src="v28.js?v=V28.1"></script>
 
 <script>
 (function(){
@@ -1578,6 +1579,99 @@ async function runAll(){
   });
 
   /* ---------- Số hiệu phiên bản ---------- */
+  /* ---------- V28.1 — JSON hình trần ---------- */
+  /* Bản in Bài 6 "Vectơ trong không gian" của giáo viên hiện nguyên dòng
+     {"type":"solid","title":"Hình hộp ABCD.A'B'C'D'",...} giữa phần "b) Nội dung", còn hộp
+     thoại Sửa hình thì báo "Chưa có hình trong bản kế hoạch". Hai chỗ hỏng, một nguyên nhân:
+     phần mềm chỉ nhận hình khi JSON nằm trong khối mã mang đúng nhãn mathviz, mà mô hình
+     ngôn ngữ rất hay trả JSON trần hoặc bọc nhãn khác. */
+  group('V28.1 — JSON hình trần vẫn phải ra hình');
+
+  var JSON_TRAN_THAT = '{"type":"solid","title":"Hình hộp ABCD.A\'B\'C\'D\'","shape":"hinh-hop",'
+    + '"points":[],"vectors":[{"from":"A","to":"B"},{"from":"D","to":"C"}],"segments":[],"planes":[]}';
+
+  await T('Đúng dòng mã trong ảnh chụp của giáo viên nay dựng thành hình',function(){
+    var md='b) Nội dung:\n\n- Quan sát hình vẽ tứ diện $ABCD$ và hình hộp.\n\n'
+      +JSON_TRAN_THAT+'\n\nc) Sản phẩm:\n';
+    var d=document.createElement('div');d.innerHTML=mdToHtml(md);document.body.appendChild(d);
+    try{
+      if(/"type"\s*:\s*"solid"/.test(d.textContent))return 'Mã JSON thô vẫn hiện giữa bản kế hoạch';
+      if(!d.querySelector('.mathviz'))return 'Không dựng được khối hình nào';
+      return d.querySelector('.mathviz').dataset.spec.indexOf('hinh-hop')>0
+        ||'Khối hình dựng ra không mang đúng đặc tả';
+    }finally{d.remove()}
+  });
+
+  await T('Câu dẫn kết thúc bằng dấu hai chấm không làm hỏng việc nhận hình',function(){
+    /* Chỗ này từng sai: phép kiểm "có phải hình lồng trong JSON khác không" xem ký tự đứng
+       trước, mà câu tiếng Việt dẫn vào hình gần như bao giờ cũng kết thúc bằng ":". */
+    var d=document.createElement('div');
+    d.innerHTML=mdToHtml('Quan sát hình sau:\n\n{"type":"solid","shape":"tu-dien","title":"Tứ diện ABCD"}\n');
+    document.body.appendChild(d);
+    try{return !!d.querySelector('.mathviz')||'Câu dẫn có dấu hai chấm làm mất hình'}finally{d.remove()}
+  });
+
+  await T('Khối mã mang nhãn json chứa đặc tả hình cũng ra hình',function(){
+    var d=document.createElement('div');
+    d.innerHTML=mdToHtml('```json\n{"type":"solid","shape":"hinh-chop-tu-giac","title":"Hình chóp S.ABCD"}\n```\n');
+    document.body.appendChild(d);
+    try{
+      if(/"shape"/.test(d.textContent))return 'Mã JSON thô lọt vào bản kế hoạch';
+      return !!d.querySelector('.mathviz')||'Không dựng được hình từ khối nhãn json';
+    }finally{d.remove()}
+  });
+
+  await T('Bộ kiểm định đếm được hình viết dạng JSON trần',function(){
+    var VK={subject:'Toán',periods:'1',assessmentMode:'khong',grade:'12',lesson:'Vectơ trong không gian'};
+    var md=plan([4],10,'Cho hình lập phương ABCD.A\'B\'C\'D\' và tứ diện ABCD.\n\n'+JSON_TRAN_THAT+'\n'+DIEUCHINH);
+    return validatePlan(md,VK,true).blockers.filter(function(b){return /không có một hình vẽ nào/.test(b)}).length===0
+      ||'Vẫn chặn oan: bài đã có hình nhưng viết dạng JSON trần';
+  });
+
+  await T('Hình viết dạng JSON trần cũng vào tệp Word dưới dạng ảnh',async function(){
+    var parts=await buildDocxParts('# Bài 6\n\n'+JSON_TRAN_THAT+'\n','t');
+    var x=parts['word/document.xml'];
+    if(/"shape"/.test(x))return 'Tệp Word vẫn in ra mã JSON';
+    if(!/<w:drawing>/.test(x))return 'Tệp Word không có ảnh nào';
+    return !!parts['word/media/image1.png']||'Thiếu tệp ảnh trong gói Word';
+  });
+
+  await T('Danh sách "Hình cần sửa" nêu đúng tên hình khối không gian',function(){
+    var kq=document.getElementById('result'), cu=kq.innerHTML;
+    try{
+      kq.innerHTML=mdToHtml('Quan sát hình:\n\n'+JSON_TRAN_THAT+'\n');
+      renderMathViz();
+      document.getElementById('imageEditBtn').click();
+      var ds=[].map.call(document.querySelectorAll('#imageTargetSelect option'),
+        function(o){return o.textContent});
+      document.getElementById('imageEditorDialog').close();
+      if(ds.length!==1)return 'Danh sách có '+ds.length+' mục, đáng lẽ đúng 1';
+      if(/Chưa có hình/.test(ds[0]))return 'Vẫn báo "Chưa có hình" dù bản kế hoạch đang có hình';
+      /* Hình khối cố ý không in dòng tiêu đề ra ngoài (tiêu đề đã vẽ trong ảnh), nên tên phải
+         lấy từ chính đặc tả — nếu không giáo viên chỉ thấy "Hình minh họa 1". */
+      return ds[0].indexOf('Hình hộp ABCD')>0||'Tên hình đọc ra là "'+ds[0]+'"';
+    }finally{kq.innerHTML=cu}
+  });
+
+  await T('KIỂM NGƯỢC: không đụng vào bảng lessonflow và khối mathviz sẵn có',function(){
+    if(typeof khbdChuanHoaHinh!=='function')return 'Thiếu khbdChuanHoaHinh';
+    var hong=[];
+    /* Hình lồng bên trong một hàng của lessonflow: cắt nó ra là vỡ cả bảng. */
+    var flow=JSON.stringify({type:'lessonflow',rows:[{step:'HĐ1',teacherActions:['Vẽ hình'],
+      product:[{type:'solid',shape:'tu-dien'}],competency:['x']}]});
+    if(khbdChuanHoaHinh(flow).trim()!==flow)hong.push('Bảng lessonflow bị cắt xén');
+    /* Khối đã đúng nhãn thì để nguyên, không bọc thêm lần nữa. */
+    var san='```mathviz\n{"type":"solid","shape":"tu-dien"}\n```';
+    if(khbdChuanHoaHinh(san)!==san)hong.push('Khối mathviz sẵn có bị sửa');
+    /* Chạy hai lần phải ra một kết quả, vì văn bản đi qua hàm này nhiều lượt. */
+    var mot=khbdChuanHoaHinh('A\n\n{"type":"graph","title":"Đồ thị","functions":[{"expr":"x^2"}]}\n\nB');
+    if(khbdChuanHoaHinh(mot)!==mot)hong.push('Chạy lần hai ra kết quả khác');
+    /* Bài không có hình nào thì trả lại đúng nguyên văn. */
+    var thuong='# Bài\n\nMột đoạn văn bình thường có công thức $\\frac{a}{b}$ và dấu ngoặc {}.';
+    if(khbdChuanHoaHinh(thuong)!==thuong)hong.push('Bài không có hình cũng bị sửa');
+    return hong.length===0||hong.join('; ');
+  });
+
   group('Số hiệu phiên bản');
 
   await T('index.html và test.html cùng dùng một số hiệu, khớp APP_BUILD',async function(){

@@ -11,11 +11,32 @@ function findTargets(){
   targets.forEach((el,i)=>{el.dataset.imageEditIndex=i;el.classList.add('editable-illustration')});
   return targets;
 }
-function titleOf(el,i){return el.closest('.mathviz')?.querySelector('.mathviz-title')?.textContent?.trim()||el.getAttribute('alt')||('Hình minh họa '+(i+1))}
+/* TÊN HÌNH TRONG DANH SÁCH.
+   Bản cũ chỉ đọc ô .mathviz-title. Nhưng từ b22, hình khối không gian CỐ Ý không in dòng tiêu
+   đề ra ngoài (tiêu đề đã vẽ sẵn bên trong ảnh, in thêm là hiện hai lần). Hệ quả: đúng loại
+   hình mà giáo viên hay phải thay nhất lại hiện ra thành "Hình minh họa 1", không biết là hình
+   nào. Nay đọc thẳng tiêu đề trong đặc tả JSON đính kèm khối .mathviz, thiếu nữa thì gọi theo
+   tên loại hình. */
+const TEN_LOAI={solid:'Hình khối không gian','hinh-khong-gian':'Hình khối không gian',
+  'hinhkhong gian':'Hình khối không gian',graph:'Đồ thị hàm số',variation:'Bảng biến thiên',sign:'Bảng xét dấu'};
+function specOf(el){try{const box=el.closest('.mathviz');return box?.dataset?.spec?JSON.parse(decodeURIComponent(box.dataset.spec)):null}catch(_){return null}}
+function titleOf(el,i){
+  const t=el.closest('.mathviz')?.querySelector('.mathviz-title')?.textContent?.trim();
+  if(t)return t;
+  const s=specOf(el),ten=s&&(s.title||TEN_LOAI[String(s.type||'').toLowerCase()]);
+  if(ten)return String(ten).trim();
+  return el.getAttribute('alt')||el.getAttribute('aria-label')||('Hình minh họa '+(i+1));
+}
 function list(){
   findTargets();const sel=$('imageTargetSelect');sel.innerHTML=targets.map((el,i)=>'<option value="'+i+'">'+(i+1)+'. '+titleOf(el,i).replace(/[<>&]/g,'')+'</option>').join('');
-  if(!targets.length){sel.innerHTML='<option>Chưa có hình trong bản kế hoạch</option>';$('imageApplyBtn').disabled=true;return}
-  $('imageApplyBtn').disabled=false;select(Math.min(Math.max(selected,0),targets.length-1));
+  if(!targets.length){
+    /* Nói rõ phải làm gì tiếp: hộp thoại này chỉ THAY hình sẵn có, muốn THÊM hình mới thì sang
+       "Chỉnh hình Toán". Bản cũ chỉ báo "Chưa có hình" rồi để giáo viên đứng đấy. */
+    sel.innerHTML='<option>Chưa có hình nào — dùng nút “Chỉnh hình Toán” để thêm hình</option>';
+    sel.disabled=true;$('imageApplyBtn').disabled=true;$('imageRestoreBtn').disabled=true;
+    preview('');$('imageDescription').value='';$('imageCaption').value='';return}
+  sel.disabled=false;$('imageApplyBtn').disabled=false;$('imageRestoreBtn').disabled=false;
+  select(Math.min(Math.max(selected,0),targets.length-1));
 }
 function select(i){selected=+i;const el=targets[selected];if(!el)return;[...targets].forEach(x=>x.classList.remove('selected-illustration'));el.classList.add('selected-illustration');el.scrollIntoView({behavior:'smooth',block:'center'});
  const saved=state.get(selected);$('imageDescription').value=saved?.description||el.getAttribute('aria-label')||titleOf(el,selected);$('imageCaption').value=saved?.caption||'';$('imageWidth').value=saved?.width||80;$('imageWidthValue').textContent=$('imageWidth').value+'%';pending=saved?.dataUrl||null;preview(pending||snapshot(el));}

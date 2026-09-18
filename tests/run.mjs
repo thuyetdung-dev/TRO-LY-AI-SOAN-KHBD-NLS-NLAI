@@ -39,7 +39,11 @@ const server = createServer(async (req, res) => {
 
 await new Promise((ok, loi) => server.listen(CONG, '127.0.0.1', ok).on('error', loi));
 
-const trinhDuyet = await chromium.launch();
+/* Cho phép chỉ định sẵn trình duyệt có trên máy (biến môi trường CHROMIUM_PATH). Trên máy đã
+   cài sẵn Chromium — máy ảo, vùng chứa, máy không nối mạng — thì khỏi phải tải lại bản của
+   Playwright. Không đặt biến này thì mọi thứ chạy y như cũ. */
+const trinhDuyet = await chromium.launch(
+  process.env.CHROMIUM_PATH ? {executablePath: process.env.CHROMIUM_PATH} : {});
 const trang = await trinhDuyet.newPage();
 
 /* Lỗi lúc nạp trang cũng phải tính là HỎNG.

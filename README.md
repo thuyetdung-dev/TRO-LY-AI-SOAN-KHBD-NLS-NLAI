@@ -3,7 +3,7 @@
 Phần mềm web hỗ trợ giáo viên soạn Kế hoạch bài dạy (KHBD) theo Chương trình GDPT 2018,
 tích hợp năng lực số (NLS) và năng lực AI (NLAI), xuất ra tệp Word.
 
-Phiên bản hiện tại: **V28.0** — số hiệu nằm ở `APP_BUILD` trong `app.js` và hiện trên thanh
+Phiên bản hiện tại: **V28.1** — số hiệu nằm ở `APP_BUILD` trong `app.js` và hiện trên thanh
 tiêu đề của trang. Nếu con số trên trang không khớp bản vừa tải lên, trình duyệt còn giữ bản cũ
 trong bộ nhớ đệm: bấm `Ctrl+Shift+R`.
 
@@ -21,7 +21,7 @@ python3 -m http.server 8000
 
 ## Chạy bộ tự kiểm tra
 
-Bộ kiểm tra hiện có hơn 130 phép thử về công thức Toán, đồ thị, bảng biến thiên, bảng xét dấu,
+Bộ kiểm tra hiện có hơn 140 phép thử về công thức Toán, đồ thị, bảng biến thiên, bảng xét dấu,
 hình khối không gian, xuất DOCX, kiểm định NLS/NLAI và định tuyến nguồn AI.
 
 **Bằng tay:** mở `http://127.0.0.1:8000/test.html` rồi bấm nút chạy.
@@ -33,6 +33,13 @@ cd tests
 npm ci
 npx playwright install --with-deps chromium   # chỉ cần một lần
 npm test
+```
+
+Máy đã có sẵn Chromium (máy ảo, vùng chứa, máy không nối mạng) thì khỏi tải lại bản của
+Playwright — chỉ cần chỉ đường:
+
+```bash
+CHROMIUM_PATH=/duong/dan/toi/chrome npm test
 ```
 
 Trả về mã thoát `0` khi đạt hết, `1` khi có ca hỏng **hoặc có lỗi nạp trang**. Bộ này cũng chạy
@@ -93,6 +100,7 @@ riêng từng người với mật khẩu băm (`scrypt`/`argon2`) lưu trong c�
 | `docx-export.js` | dựng tệp Word (OOXML) — cần JSZip |
 | `professional.js` | lịch sử phiên bản, bản nháp (lưu ở `localStorage`) |
 | `math-editor.js`, `image-editor.js` | chỉnh hình Toán và ảnh minh họa |
+| `figure-normalize.js` | bọc mọi đặc tả hình viết dạng JSON trần vào khối `mathviz` trước khi dựng hình và xuất Word |
 | `math-audit.js`, `validation-ux.js`, `guided-fix.js` | kiểm định và trợ lý sửa lỗi |
 | `validation-duration-v28.js` | thay hàm kiểm thời lượng theo tiết của `app.js` |
 | `v28.js` | thanh công cụ V28: sửa bằng biểu mẫu, AI đề xuất, hoàn tác, preflight DOCX |
