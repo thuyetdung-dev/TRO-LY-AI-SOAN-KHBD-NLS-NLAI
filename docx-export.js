@@ -863,7 +863,13 @@
         i += 2;
         while (i < lines.length && lines[i].trim().startsWith('|')) { rows.push(lines[i].trim()); i++; }
         i--;
-        const cells = rows.map(r => r.replace(/^\||\|$/g, '').split('|').map(c => c.trim()));
+        /* Dùng CHUNG bộ tách ô với màn hình (tachOBang trong app.js): dấu gạch đứng của
+           $|\vec{a}|$ không được tính là dấu ngăn cột. Tách hai đường thì bảng trên màn hình
+           và bảng trong Word sẽ có số cột khác nhau — kiểu lỗi của b20. */
+        const tach = typeof tachOBang === 'function'
+          ? tachOBang
+          : r => r.replace(/^\||\|$/g, '').split('|').map(c => c.trim());
+        const cells = rows.map(tach);
         const n = Math.max(...cells.map(c => c.length));
         blocks.push(tableXml(
           cells.map((row, ri) => Array.from({ length: n }, (_, ci) =>

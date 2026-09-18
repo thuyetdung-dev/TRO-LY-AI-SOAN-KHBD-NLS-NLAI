@@ -112,6 +112,10 @@ h2{font-size:.82rem;letter-spacing:.09em;text-transform:uppercase;color:var(--mu
   <div id="geminiKeyFields"></div><div id="openaiServerStatus" hidden></div><p id="aiProviderNote"></p>
   <b id="buildTag"></b><p id="exportStatus"></p>
 
+  <details id="noKeyBox"><summary></summary><button id="copyPromptBtn"></button><button id="downloadPromptBtn"></button>
+    <button id="openPlanBtn"></button><input id="planFile" type="file" multiple hidden>
+    <p id="vietTiepRow" hidden><button id="copyVietTiepBtn"></button></p></details>
+
   <button id="imageEditBtn"></button><button id="mathAuditBtn"></button>
   <dialog id="imageEditorDialog"></dialog>
   <select id="imageTargetSelect"></select>
@@ -166,20 +170,21 @@ h2{font-size:.82rem;letter-spacing:.09em;text-transform:uppercase;color:var(--mu
 
 <!-- Thứ tự nạp phải giống hệt index.html: các tệp chia sẻ trạng thái qua biến toàn cục,
      nên đổi thứ tự là đổi hành vi. Nếu index.html thêm tệp mới, thêm vào đây cùng lúc. -->
-<script src="standards.js?v=V28.1"></script>
-<script src="app.js?v=V28.1"></script>
-<script src="validation-duration-v28.js?v=V28.1"></script>
-<script src="math-audit.js?v=V28.1"></script>
-<script src="flow.js?v=V28.1"></script>
-<script src="professional.js?v=V28.1"></script>
-<script src="vendor/jszip.min.js?v=V28.1"></script>
-<script src="docx-export.js?v=V28.1"></script>
-<script src="image-editor.js?v=V28.1"></script>
-<script src="math-editor.js?v=V28.1"></script>
-<script src="figure-normalize.js?v=V28.1"></script>
-<script src="validation-ux.js?v=V28.1"></script>
-<script src="guided-fix.js?v=V28.1"></script>
-<script src="v28.js?v=V28.1"></script>
+<script src="standards.js?v=V28.3"></script>
+<script src="app.js?v=V28.3"></script>
+<script src="validation-duration-v28.js?v=V28.3"></script>
+<script src="math-audit.js?v=V28.3"></script>
+<script src="flow.js?v=V28.3"></script>
+<script src="professional.js?v=V28.3"></script>
+<script src="vendor/jszip.min.js?v=V28.3"></script>
+<script src="docx-export.js?v=V28.3"></script>
+<script src="image-editor.js?v=V28.3"></script>
+<script src="math-editor.js?v=V28.3"></script>
+<script src="figure-normalize.js?v=V28.3"></script>
+<script src="no-key-flow.js?v=V28.3"></script>
+<script src="validation-ux.js?v=V28.3"></script>
+<script src="guided-fix.js?v=V28.3"></script>
+<script src="v28.js?v=V28.3"></script>
 
 <script>
 (function(){
@@ -1670,6 +1675,150 @@ async function runAll(){
     var thuong='# Bài\n\nMột đoạn văn bình thường có công thức $\\frac{a}{b}$ và dấu ngoặc {}.';
     if(khbdChuanHoaHinh(thuong)!==thuong)hong.push('Bài không có hình cũng bị sửa');
     return hong.length===0||hong.join('; ');
+  });
+
+  /* ---------- V28.2 — lối đi cho giáo viên chưa có khoá AI ---------- */
+  group('V28.2 — chép prompt sang AI ngoài, mang kết quả về');
+
+  await T('Prompt chép ra là ĐÚNG prompt phần mềm vẫn gửi, có thêm dặn dò định dạng',function(){
+    if(typeof khbdPromptNgoai!=='function')return 'Thiếu khbdPromptNgoai';
+    var giu={subject:document.getElementById('subject').value,grade:document.getElementById('grade').value,
+      lesson:document.getElementById('lesson').value};
+    try{
+      document.getElementById('subject').value='Toán';
+      document.getElementById('grade').value='12';
+      document.getElementById('lesson').value='Vectơ trong không gian';
+      var p=khbdPromptNgoai(), goc=promptFor(values());
+      if(p.indexOf(goc)!==0)return 'Prompt chép ra không bắt đầu bằng đúng prompt gốc — hai đường sẽ lệch nhau';
+      if(p.indexOf('Vectơ trong không gian')<0)return 'Prompt không mang tên bài đang soạn';
+      return p.indexOf('# KẾ HOẠCH BÀI DẠY')>0||'Thiếu dặn dò định dạng trả lời';
+    }finally{
+      document.getElementById('subject').value=giu.subject;
+      document.getElementById('grade').value=giu.grade;
+      document.getElementById('lesson').value=giu.lesson;
+    }
+  });
+
+  await T('Gỡ được lớp bọc ```markdown mà AI ngoài hay thêm',function(){
+    if(typeof khbdBocKetQua!=='function')return 'Thiếu khbdBocKetQua';
+    var than='# KẾ HOẠCH BÀI DẠY\n\nNội dung.';
+    if(khbdBocKetQua('```markdown\n'+than+'\n```')!==than)return 'Không gỡ được lớp bọc ngoài';
+    /* KIỂM NGƯỢC: dấu ``` ở đầu tệp có khi là của chính khối lessonflow — gỡ là phá nát bài. */
+    var co='```lessonflow\n{"type":"lessonflow","rows":[]}\n```';
+    return khbdBocKetQua(co)===co||'Gỡ nhầm khối lessonflow của bài';
+  });
+
+  await T('Cắt lời chào của AI, giữ nguyên bài không có tiêu đề cấp một',function(){
+    var co=khbdBocKetQua('Chào thầy/cô! Đây là kế hoạch bài dạy:\n\n# KẾ HOẠCH BÀI DẠY\n\nA');
+    if(co.indexOf('Chào thầy')>=0)return 'Lời chào vẫn lọt vào bản kế hoạch';
+    if(co.indexOf('# KẾ HOẠCH BÀI DẠY')!==0)return 'Cắt hỏng phần đầu bài';
+    /* KIỂM NGƯỢC: bài mở đầu bằng "##" thì không được cắt gì hết. */
+    var hai='## MỤC TIÊU\n\nNội dung mở đầu của bài.';
+    return khbdBocKetQua(hai)===hai||'Cắt nhầm bài không có tiêu đề cấp một';
+  });
+
+  await T('Lấy được bản kế hoạch trong tệp .json do AI khác xuất ra',function(){
+    var j=JSON.stringify({type:'khbd',markdown:'# KẾ HOẠCH BÀI DẠY\n\nNội dung bài.'});
+    return khbdBocKetQua(j).indexOf('# KẾ HOẠCH BÀI DẠY')===0||'Không đọc được phần văn bản trong tệp JSON';
+  });
+
+  await T('Bài in làm hai lượt được ghép lại, không để lại đoạn lặp',function(){
+    if(typeof khbdGhepCacPhan!=='function')return 'Thiếu khbdGhepCacPhan';
+    var a='# KẾ HOẠCH BÀI DẠY\n\nPhần đầu của bài dạy về vectơ trong không gian.';
+    var b='vectơ trong không gian. Phần sau viết tiếp cho tới hết bài.';
+    var noi=khbdGhepCacPhan([a,b]);
+    if((noi.match(/vectơ trong không gian/g)||[]).length!==1)
+      return 'Đoạn chồng lấn ở chỗ nối bị lặp lại: '+noi;
+    return noi.indexOf('Phần sau viết tiếp')>0||'Mất phần viết tiếp';
+  });
+
+  await T('Kết quả nạp vào đi đúng đường kiểm định của phần mềm',function(){
+    if(typeof khbdNapKetQua!=='function')return 'Thiếu khbdNapKetQua';
+    var kq=document.getElementById('result'), cu=kq.innerHTML, giu=rawMarkdown;
+    try{
+      /* Hình viết dạng JSON trần: nạp từ ngoài vào vẫn phải ra hình, tức là đi qua bản
+         showResult ĐÃ ĐƯỢC figure-normalize.js bọc, không phải bản gốc. */
+      khbdNapKetQua('# KẾ HOẠCH BÀI DẠY\n\nQuan sát hình:\n\n{"type":"solid","shape":"tu-dien","title":"Tứ diện ABCD"}\n');
+      if(/"type"\s*:\s*"solid"/.test(kq.textContent))return 'Mã JSON thô hiện ra — chưa đi qua bộ chuẩn hoá hình';
+      return !!kq.querySelector('.mathviz')||'Không dựng được hình từ bản nạp vào';
+    }finally{kq.innerHTML=cu;rawMarkdown=giu}
+  });
+
+  await T('Thiếu tên bài thì không cho chép prompt đi',function(){
+    var o=document.getElementById('lesson'), giu=o.value;
+    try{
+      o.value='';
+      var p=khbdPromptNgoai();
+      /* Hàm dựng prompt vẫn chạy được, nhưng nút bấm phải chặn. Kiểm tra qua đúng nút. */
+      var truoc=document.getElementById('result').innerHTML;
+      document.getElementById('copyPromptBtn').click();
+      return document.activeElement===o||'Nút chép prompt không đưa con trỏ về ô tên bài còn trống';
+    }finally{o.value=giu}
+  });
+
+  /* ---------- V28.3 — dấu gạch đứng trong công thức ---------- */
+  /* Giáo viên hỏi "mã này sai chỗ nào" với công thức tích vô hướng. Bản thân mã LaTeX không sai;
+     sai là ở bộ đọc bảng của phần mềm: nó tách ô bằng split('|') trần, mà trong môn Toán dấu
+     gạch đứng chính là ký hiệu độ dài vectơ, giá trị tuyệt đối, môđun số phức. */
+  group('V28.3 — dấu | của công thức không còn cắt cột');
+
+  var CT_VECTO='$\\vec{a} \\cdot \\vec{b} = |\\vec{a}| |\\vec{b}| \\cos(\\vec{a}, \\vec{b})$';
+  var BANG_CT='| Nội dung | Ghi chú |\n|---|---|\n| '+CT_VECTO+' | tích vô hướng |';
+
+  await T('Công thức tích vô hướng trong ô bảng không làm vỡ bảng',function(){
+    var d=document.createElement('div');d.innerHTML=mdToHtml(BANG_CT);
+    var hang=[].map.call(d.querySelectorAll('tr'),function(tr){return tr.children.length});
+    if(hang.join(',')!=='2,2')return 'Số ô mỗi hàng là '+hang.join(',')+' — đáng lẽ 2,2';
+    return d.textContent.indexOf('tích vô hướng')>0||'Mất ô ghi chú';
+  });
+
+  await T('Công thức trong ô giữ nguyên, không bị xé làm nhiều mảnh',function(){
+    var d=document.createElement('div');d.innerHTML=mdToHtml(BANG_CT);
+    var o=d.querySelectorAll('tr')[1].children[0].textContent;
+    if(o.indexOf('\\cos')<0)return 'Mất phần cuối công thức: '+o;
+    /* Canh đúng thứ từng vỡ: hai cặp gạch đứng của ký hiệu độ dài phải còn nguyên trong CÙNG
+       một ô. Trước khi sửa, mỗi dấu gạch này là một chỗ cắt cột. */
+    if(o.indexOf('|\\vec{a}|')<0||o.indexOf('|\\vec{b}|')<0)
+      return 'Ký hiệu độ dài bị xé mất dấu gạch đứng: '+o;
+    return o.indexOf('\\cdot')>0||'Mất phần đầu công thức: '+o;
+  });
+
+  await T('Bảng trong tệp Word có đúng số cột như trên màn hình',async function(){
+    var parts=await buildDocxParts('# X\n\n'+BANG_CT+'\n','t');
+    var x=parts['word/document.xml'];
+    var tr=x.match(/<w:tr>[\s\S]*?<\/w:tr>/g)||[];
+    if(tr.length<2)return 'Không dựng được bảng trong Word';
+    var so=tr.map(function(h){return (h.match(/<w:tc>/g)||[]).length});
+    return so.join(',')==='2,2'||'Số ô mỗi hàng trong Word là '+so.join(',')+' — đáng lẽ 2,2';
+  });
+
+  await T('KIỂM NGƯỢC: bảng thường, dấu $ lẻ, \\| và $$…$$ đều tách đúng',function(){
+    if(typeof tachOBang!=='function')return 'Thiếu tachOBang';
+    var ca=[
+      ['| Mục tiêu | Hoạt động | Sản phẩm | Tiêu chí |',4,null],
+      /* Dấu $ lẻ (giá tiền) không được bật "chế độ công thức" rồi nuốt hết dấu ngăn cột phía sau. */
+      ['| Giá 5$ mỗi cái | ghi chú |',2,null],
+      /* \| là người soạn cố ý viết dấu gạch đứng, phải ra ĐÚNG MỘT ô mang ký tự | */
+      ['| a \\| b | c |',2,'a | b'],
+      ['| $$|x|+|y|$$ | hai |',2,null],
+      ['| không có gì đặc biệt |',1,null]
+    ];
+    var hong=[];
+    ca.forEach(function(c){
+      var o=tachOBang(c[0]);
+      if(o.length!==c[1])hong.push('"'+c[0]+'" ra '+o.length+' ô, đáng lẽ '+c[1]);
+      if(c[2]&&o[0]!==c[2])hong.push('"'+c[0]+'" ô đầu là "'+o[0]+'", đáng lẽ "'+c[2]+'"');
+      o.forEach(function(x){if(/|undefined/.test(x))hong.push('Còn sót dấu che trong ô: '+x)});
+    });
+    return hong.length===0||hong.join('; ');
+  });
+
+  await T('KIỂM NGƯỢC: ký hiệu chuẩn $\\|x\\|$ không bị hạ thành giá trị tuyệt đối',function(){
+    /* Thứ tự che công thức trước, xử lý \| sau. Làm ngược lại thì chuẩn của vectơ trong công
+       thức biến thành |x| — sai âm thầm, không một thông báo nào. */
+    var o=tachOBang('| $\\|x\\| \\le 1$ | ghi chú |');
+    if(o.length!==2)return 'Ra '+o.length+' ô, đáng lẽ 2';
+    return o[0].indexOf('\\|x\\|')>0||'Ký hiệu chuẩn bị đổi thành: '+o[0];
   });
 
   group('Số hiệu phiên bản');
