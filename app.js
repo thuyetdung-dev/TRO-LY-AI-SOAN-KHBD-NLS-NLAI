@@ -5,7 +5,7 @@
    test.html phải trùng đúng phần V… này — có một phép kiểm tra tự động canh việc đó, vì
    trước đây index.html nạp app.js?v=V27.5.2 còn test.html nạp app.js?v=b27.4: hai trang có
    thể chạy hai bản khác nhau trong bộ nhớ đệm, test bản này mà giáo viên dùng bản kia. */
-const APP_BUILD='2026-09-18 · V28.1';
+const APP_BUILD='2026-09-18 · V28.3';
 const $=id=>document.getElementById(id);let selectedFiles=[],rawMarkdown='',availableModels=[],scanTimer,draftTimer,lastValidation=null;
 const fields=['subject','grade','lesson','book','periods','students','classSize','equipment','notes','tableLayout','assessmentMode','lessonTemplate','sourceMode'];
 const toast=m=>{const t=$('toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2600)};
@@ -559,7 +559,35 @@ function repairLatex(s){
   return t.replace(/\u0000(\d+)\u0000/g,(m,i)=>kho[+i]);
 }
 function inline(s){return esc(s).replace(/&lt;br\s*\/?&gt;/gi,'<br>').replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>').replace(/\*(.+?)\*/g,'<em>$1</em>').replace(/`(.+?)`/g,'<code>$1</code>').replace(/\$\$([^$]+)\$\$/g,(m,g1)=>`<span class="math-display">\\[${repairLatex(g1)}\\]</span>`).replace(/\$([^$]+)\$/g,(m,g1)=>`<span class="math">\\(${repairLatex(g1)}\\)</span>`)}
-function mdToHtml(md){const specs=[];md=md.replace(/```mathviz\s*([\s\S]*?)```/gi,(_,json)=>{const id=specs.push(json.trim())-1;return `\n@@MATHVIZ_${id}@@\n`});const lines=md.replace(/```[a-z]*\n?/g,'').replace(/```/g,'').split('\n');let out='',list=false;for(let i=0;i<lines.length;i++){let l=lines[i].trimEnd(),mv=l.trim().match(/^@@MATHVIZ_(\d+)@@$/);if(mv){if(list){out+='</ul>';list=false}out+=`<div class="mathviz" data-spec="${encodeURIComponent(specs[+mv[1]])}"></div>`;continue}if(l.startsWith('|')&&i+1<lines.length&&/^\|?[\s:|-]+\|?$/.test(lines[i+1].trim())){if(list){out+='</ul>';list=false}const rows=[];rows.push(l);i+=2;while(i<lines.length&&lines[i].trim().startsWith('|')){rows.push(lines[i].trim());i++}i--;out+='<table>';rows.forEach((r,ri)=>{const cells=r.replace(/^\||\|$/g,'').split('|');out+=`<tr>${cells.map(c=>`<${ri?'td':'th'}>${inline(c.trim())}</${ri?'td':'th'}>`).join('')}</tr>`});out+='</table>';continue}if(/^#{1,3} /.test(l)){if(list){out+='</ul>';list=false}const n=l.match(/^#+/)[0].length;out+=`<h${n}>${inline(l.slice(n+1))}</h${n}>`}else if(/^[-*] /.test(l)){if(!list){out+='<ul>';list=true}out+=`<li>${inline(l.slice(2))}</li>`}else if(/^\d+\. /.test(l)){if(list){out+='</ul>';list=false}out+=`<p>${inline(l)}</p>`}else if(l.startsWith('> ')){if(list){out+='</ul>';list=false}out+=`<blockquote>${inline(l.slice(2))}</blockquote>`}else if(!l){if(list){out+='</ul>';list=false}}else{if(list){out+='</ul>';list=false}out+=`<p>${inline(l)}</p>`}}if(list)out+='</ul>';return out}
+/* ===== TÁCH Ô CỦA MỘT HÀNG BẢNG MARKDOWN =====
+   VÌ SAO PHẢI CÓ HÀM RIÊNG: bản cũ tách ô bằng split('|') trần. Nhưng trong môn Toán, dấu gạch
+   đứng CHÍNH LÀ một ký hiệu — độ dài vectơ $|\vec{a}|$, giá trị tuyệt đối $|x-1|$, số phức
+   $|z|$, lực lượng tập hợp. Một ô chứa
+       $\vec{a} \cdot \vec{b} = |\vec{a}| |\vec{b}| \cos(\vec{a}, \vec{b})$
+   bị xé thành NĂM ô, hàng dữ liệu phình từ 2 cột lên 6 cột và công thức mất sạch. Lỗi này ăn
+   vào đúng bảng "MA TRẬN LIÊN KẾT MỤC TIÊU – HOẠT ĐỘNG – SẢN PHẨM – ĐÁNH GIÁ" mà prompt luôn
+   yêu cầu, tức là bảng nào cũng có.
+   CÁCH LÀM: che các đoạn công thức lại TRƯỚC khi tách, rồi trả về chỗ cũ.
+   Vì sao che bằng regex có yêu cầu dấu $ đóng trên CÙNG MỘT HÀNG, chứ không bật/tắt cờ khi gặp
+   dấu $: một dấu $ lẻ trong ô (giá tiền "5$ mỗi cái", ký hiệu $&) sẽ bật cờ lên rồi không bao
+   giờ tắt, nuốt luôn mọi dấu ngăn cột phía sau — hỏng nặng hơn cả lỗi đang sửa.
+   Dùng CHUNG cho màn hình và cho tệp Word: b20 đã cho thấy hai đường vẽ song song thì sớm muộn
+   cũng lệch nhau. */
+function tachOBang(hang){
+  /* Dấu che lấy trong vùng ký tự dùng riêng (U+E000), KHÔNG dùng ký tự null: null hay bị các
+     lớp khác trên đường đi âm thầm lọc bỏ, mà lọc mất dấu che thì đoạn công thức không trả về
+     được chỗ cũ và ô bảng hiện ra chữ "undefined". */
+  const kho=[], CHE='', giu=t=>CHE+(kho.push(t)-1)+CHE;
+  /* THỨ TỰ HAI BƯỚC NÀY KHÔNG ĐƯỢC ĐỔI. Che công thức trước, rồi mới xử lý "\|" ở ngoài.
+     Làm ngược lại thì "\|" bên TRONG công thức — ký hiệu chuẩn tắc $\|x\|$ của LaTeX — bị đổi
+     thành "|x|", tức là chuẩn của vectơ biến thành giá trị tuyệt đối. Sai âm thầm, không báo. */
+  let s=String(hang??'')
+    .replace(/\$\$[^\n]*?\$\$|\$[^$\n]*\$/g,m=>giu(m))  /* $$...$$ và $...$ trên cùng một hàng */
+    .replace(/\\\|/g,()=>giu('|'));                      /* \| ngoài công thức: gạch đứng nghĩa đen */
+  s=s.replace(/^\|/,'').replace(/\|$/,'');
+  return s.split('|').map(o=>o.replace(new RegExp(CHE+'(\\d+)'+CHE,'g'),(_,i)=>kho[+i]).trim());
+}
+function mdToHtml(md){const specs=[];md=md.replace(/```mathviz\s*([\s\S]*?)```/gi,(_,json)=>{const id=specs.push(json.trim())-1;return `\n@@MATHVIZ_${id}@@\n`});const lines=md.replace(/```[a-z]*\n?/g,'').replace(/```/g,'').split('\n');let out='',list=false;for(let i=0;i<lines.length;i++){let l=lines[i].trimEnd(),mv=l.trim().match(/^@@MATHVIZ_(\d+)@@$/);if(mv){if(list){out+='</ul>';list=false}out+=`<div class="mathviz" data-spec="${encodeURIComponent(specs[+mv[1]])}"></div>`;continue}if(l.startsWith('|')&&i+1<lines.length&&/^\|?[\s:|-]+\|?$/.test(lines[i+1].trim())){if(list){out+='</ul>';list=false}const rows=[];rows.push(l);i+=2;while(i<lines.length&&lines[i].trim().startsWith('|')){rows.push(lines[i].trim());i++}i--;out+='<table>';rows.forEach((r,ri)=>{const cells=tachOBang(r);out+=`<tr>${cells.map(c=>`<${ri?'td':'th'}>${inline(c)}</${ri?'td':'th'}>`).join('')}</tr>`});out+='</table>';continue}if(/^#{1,3} /.test(l)){if(list){out+='</ul>';list=false}const n=l.match(/^#+/)[0].length;out+=`<h${n}>${inline(l.slice(n+1))}</h${n}>`}else if(/^[-*] /.test(l)){if(!list){out+='<ul>';list=true}out+=`<li>${inline(l.slice(2))}</li>`}else if(/^\d+\. /.test(l)){if(list){out+='</ul>';list=false}out+=`<p>${inline(l)}</p>`}else if(l.startsWith('> ')){if(list){out+='</ul>';list=false}out+=`<blockquote>${inline(l.slice(2))}</blockquote>`}else if(!l){if(list){out+='</ul>';list=false}}else{if(list){out+='</ul>';list=false}out+=`<p>${inline(l)}</p>`}}if(list)out+='</ul>';return out}
 /* ===== Bộ đọc biểu thức (viết lại ở b16) =====
    LỖI CỦA BẢN b15: hàm cũ thay "pi" thành "Math.PI" RỒI mới kiểm tra chuỗi bằng một biểu
    thức chính quy chỉ chấp nhận chữ thường, nên mọi hàm có số pi đều bị loại ngay tại cửa —

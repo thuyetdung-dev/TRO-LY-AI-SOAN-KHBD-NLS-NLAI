@@ -671,3 +671,85 @@ ra chữ JSON, và một phép KIỂM NGƯỢC canh bốn chuyện không đư�
 sửa khối mathviz sẵn có, chạy hai lần ra hai kết quả, và đụng vào bài vốn không có hình nào.
 Kiểm chứng bằng mắt: dựng lại đúng đoạn "b) Nội dung" trong ảnh chụp, nay ra hình hộp
 ABCD.A'B'C'D' với ba vectơ, vectơ nằm trên cạnh khuất vẽ nét đứt đúng quy ước b22.
+
+================================================================================
+XXVIII. V28.2 — LỐI SOẠN BÀI CHO GIÁO VIÊN CHƯA CÓ KHOÁ AI
+
+XXVIII1. VÌ SAO. Muốn dùng phần mềm ở mức đầy đủ thì phải có khoá API Gemini, hoặc nhà trường
+phải cấu hình khoá OpenAI trên máy chủ. Rất nhiều thầy cô không có cả hai — nhưng lại ĐANG
+DÙNG Claude, Gemini, ChatGPT hay NotebookLM hằng ngày qua trình duyệt, miễn phí. Chỗ thiếu
+không phải là AI, mà là một cây cầu hai chiều: mang prompt sang bên đó, rồi mang kết quả về
+đây để phần mềm kiểm định, dựng hình và xuất Word.
+
+XXVIII2. BA NÚT, ĐÚNG BA VIỆC, đặt trong thẻ "Nguồn AI":
+ - Chép prompt      → dựng ĐÚNG prompt mà phần mềm vẫn gửi cho AI, đưa vào bộ nhớ tạm.
+ - Tải về tệp .txt  → cho máy chặn bộ nhớ tạm, hoặc thầy cô muốn giữ lại dùng nhiều lần.
+ - Mở tệp kết quả   → nạp văn bản AI trả về, chọn được nhiều tệp một lần.
+
+XXVIII3. NGUYÊN TẮC CHỊU TRÁCH NHIỆM CHO CẢ MÔ-ĐUN: KHÔNG DỰNG ĐƯỜNG ĐI RIÊNG.
+Prompt lấy thẳng từ promptFor của app.js chứ không chép lại nội dung — prompt là thứ sửa liên
+tục qua từng bản, chép ra là chắc chắn có ngày hai bản lệch nhau mà không ai biết; một phép
+kiểm tra canh đúng việc này. Kết quả nạp vào đi qua CÙNG một cửa showResult/validatePlan với
+bản do AI trong phần mềm sinh ra, nên được kiểm định như nhau, dựng hình như nhau, xuất Word
+như nhau. Bài học của b20 và b21 là hai đường vẽ song song thì sớm muộn cũng lệch nhau.
+Ba hàm sẵn có được dùng lại nguyên vẹn: promptVietTiep (xin AI viết nốt bài bị cụt),
+noiTiepVanBan (ghép hai phần, tự cắt đoạn mô hình chép lại ở chỗ nối — b26), và
+planLooksComplete (biết bài đã đủ chưa để cảnh báo ngay lúc nạp, chứ không để thầy cô phát
+hiện lúc đã xuất Word hoặc tệ hơn là lúc đang đứng lớp).
+
+XXVIII4. AI NGOÀI KHÔNG BỊ RÀNG BUỘC GÌ NÊN HAY THÊM THẮT. Ba kiểu thường gặp, xử lý hết để
+thầy cô không phải sửa tay: bọc cả câu trả lời trong một khối mã ```markdown; trả về tệp .json
+kiểu phần mềm khác; thêm vài dòng chào hỏi trước tiêu đề bài.
+
+XXVIII5. MỘT LỖI THẬT BỊ PHÉP KIỂM NGƯỢC BẮT ĐƯỢC. Bản đầu gỡ lớp vỏ ```markdown chỉ dựa vào
+hai điều kiện: có dấu mở, có dấu đóng, và gỡ xong số dấu ``` còn lại vẫn chẵn. Phép kiểm ngược
+đưa vào một tệp mà TOÀN BỘ nội dung là một khối lessonflow — thoả cả hai điều kiện, và bị gỡ
+mất vỏ, tức là bảng tổ chức thực hiện biến thành JSON trần. Nay thêm điều kiện thứ ba: nhãn
+khối phải là nhãn của lớp vỏ (markdown, md, text, txt, hoặc không nhãn), và nếu không nhãn mà
+ruột là một đối tượng JSON trọn vẹn thì cũng không gỡ. Lỗi này chỉ lộ ra khi cho chạy trên
+trường hợp biên, không phải khi đọc mã.
+
+XXVIII6. ĐO LẠI. Bộ kiểm tra: 148 phép đều đạt (141 cũ giữ nguyên, thêm 7 phép cho vòng này),
+gồm ca canh prompt chép ra phải trùng prompt gốc, ca gỡ lớp vỏ ```markdown kèm phép kiểm ngược
+nói ở trên, ca cắt lời chào kèm kiểm ngược với bài không có tiêu đề cấp một, ca đọc tệp .json,
+ca ghép hai phần không để lại đoạn lặp, ca hình viết dạng JSON trần nạp từ ngoài vào vẫn ra
+hình (tức là đã đi qua bản showResult đã được figure-normalize.js bọc), và ca thiếu tên bài thì
+chặn không cho chép prompt đi. Kiểm chứng bằng mắt: dựng khối giao diện mới ở cả nền sáng và
+nền tối, ba nút nằm đúng một hàng.
+
+================================================================================
+XXIX. V28.3 — DẤU GẠCH ĐỨNG CỦA CÔNG THỨC KHÔNG CÒN CẮT CỘT BẢNG
+
+XXIX1. GIÁO VIÊN HỎI "mã này sai chỗ nào" với công thức tích vô hướng:
+    $\vec{a} \cdot \vec{b} = |\vec{a}| |\vec{b}| \cos(\vec{a}, \vec{b})$
+Bản thân mã LaTeX KHÔNG SAI. Sai là ở phần mềm. Cho chạy thử: đặt đúng công thức đó vào một ô
+bảng markdown hai cột thì hàng tiêu đề ra 2 ô, hàng dữ liệu ra SÁU ô — bốn dấu gạch đứng của ký
+hiệu độ dài bị đọc thành dấu ngăn cột, công thức bị xé thành năm mảnh.
+
+XXIX2. VÌ SAO ĐÁNG SỬA CHỨ KHÔNG PHẢI DẶN GIÁO VIÊN TRÁNH. Trong môn Toán, dấu gạch đứng CHÍNH
+LÀ một ký hiệu: độ dài vectơ, giá trị tuyệt đối, môđun số phức, lực lượng tập hợp. Mà prompt
+thì luôn yêu cầu tạo bảng "MA TRẬN LIÊN KẾT MỤC TIÊU – HOẠT ĐỘNG – SẢN PHẨM – ĐÁNH GIÁ", tức là
+bài nào cũng có bảng. Bắt thầy cô nhớ mẹo viết \lvert thay cho | là đẩy lỗi của phần mềm sang
+cho người dùng gánh.
+
+XXIX3. CÁCH SỬA: một hàm tachOBang duy nhất, che các đoạn công thức lại TRƯỚC khi tách ô rồi
+trả về chỗ cũ. Dùng CHUNG cho màn hình (app.js) và cho tệp Word (docx-export.js) — tách hai
+đường thì bảng trên màn hình và bảng trong Word sẽ có số cột khác nhau, đúng kiểu lỗi của b20.
+
+XXIX4. BA CHỖ DỄ SAI, ĐÃ ĐO:
+ (a) KHÔNG dùng cách bật/tắt cờ khi gặp dấu $. Một dấu $ lẻ trong ô — giá tiền "5$ mỗi cái",
+     chuỗi "$&" — sẽ bật cờ lên rồi không bao giờ tắt, nuốt luôn mọi dấu ngăn cột phía sau,
+     hỏng nặng hơn cả lỗi đang sửa. Dùng regex có yêu cầu dấu $ đóng trên CÙNG MỘT HÀNG.
+ (b) THỨ TỰ HAI BƯỚC KHÔNG ĐƯỢC ĐỔI: che công thức trước, xử lý "\|" ở ngoài sau. Làm ngược
+     lại thì ký hiệu chuẩn tắc $\|x\|$ của LaTeX bị hạ thành giá trị tuyệt đối |x| — sai âm
+     thầm, không một thông báo nào. Có một phép kiểm ngược canh riêng việc này.
+ (c) Dấu che lấy trong vùng ký tự dùng riêng U+E000, KHÔNG dùng ký tự null: null hay bị các lớp
+     khác trên đường đi âm thầm lọc bỏ, mất dấu che thì ô bảng hiện ra chữ "undefined". Đã thấy
+     đúng hiện tượng đó khi thử ngoài trình duyệt.
+
+XXIX5. ĐO LẠI. Bộ kiểm tra: 153 phép đều đạt (148 cũ giữ nguyên, thêm 5 phép cho vòng này), gồm
+ca đúng công thức giáo viên hỏi không làm vỡ bảng, ca công thức trong ô còn nguyên hai cặp gạch
+đứng, ca bảng trong tệp Word có đúng số cột như trên màn hình, và hai phép KIỂM NGƯỢC: bảng
+thường/dấu $ lẻ/\|/$$…$$ đều tách đúng và không sót dấu che, cùng ca ký hiệu chuẩn $\|x\|$
+không bị hạ cấp. Một ca đỏ trong lượt chạy đầu hoá ra là phép kiểm tra viết sai (đếm nhầm số
+lần xuất hiện của \vec{a}), không phải mã sai — đã sửa phép kiểm cho canh đúng thứ cần canh.

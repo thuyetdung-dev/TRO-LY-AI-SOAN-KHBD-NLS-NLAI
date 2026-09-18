@@ -1,0 +1,72 @@
+/* no-key-flow.css — khối "Chưa có khoá AI?" trong thẻ Nguồn AI.
+   Màu xanh lá để tách hẳn khỏi phần nhập khoá phía trên: đây là lối đi THAY THẾ, không phải
+   một ô nhập nữa. Dùng biến màu sẵn có của phần mềm nếu có, để giao diện tối vẫn đọc được. */
+
+.no-key-card {
+  margin-top: 14px;
+  border: 1px solid #b7dfc4;
+  border-left: 4px solid #1f8a4c;
+  border-radius: 10px;
+  background: #f2fbf5;
+  padding: 10px 14px;
+}
+
+.no-key-card > summary {
+  cursor: pointer;
+  font-weight: 700;
+  color: #14603a;
+  line-height: 1.5;
+  list-style: none;
+}
+.no-key-card > summary::-webkit-details-marker { display: none; }
+.no-key-card > summary::after {
+  content: '▾';
+  float: right;
+  transition: transform .15s ease;
+}
+.no-key-card[open] > summary::after { transform: rotate(180deg); }
+.no-key-card > summary:hover { text-decoration: underline; }
+
+.no-key-card p {
+  margin: 10px 0 0;
+  font-size: .92rem;
+  line-height: 1.6;
+  color: #234;
+}
+
+.no-key-card code {
+  background: #e3f3e9;
+  border-radius: 4px;
+  padding: 1px 5px;
+  font-size: .88em;
+}
+
+.no-key-note {
+  background: #e8f5ed;
+  border-radius: 8px;
+  padding: 8px 10px;
+}
+
+/* Xuống dòng được: ba nút tiếng Việt khá dài, màn hình hẹp mà ép một hàng là chữ bị cắt. */
+.no-key-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+/* width:auto phải ghi rõ: nút .primary của phần mềm đặt width:100% để trải hết cột biểu mẫu,
+   vào đây thì nó đẩy hai nút kia xuống hàng dưới, nhìn như ba việc rời rạc chứ không phải ba
+   bước nối nhau. */
+.no-key-actions button { flex: 0 1 auto; width: auto; }
+
+/* Giao diện tối. Phần mềm bật/tắt bằng class .dark trên thẻ body (app.js dòng 15), không phải
+   thuộc tính data-theme — dùng sai thì cả khối này trắng bệch trong nền tối. */
+body.dark .no-key-card {
+  background: #10261a;
+  border-color: #2c6b45;
+  border-left-color: #3fae74;
+}
+body.dark .no-key-card > summary { color: #7fd8a6; }
+body.dark .no-key-card p { color: #d6e6dc; }
+body.dark .no-key-card code { background: #1b3b28; color: #cfe9d9; }
+body.dark .no-key-note { background: #16301f; }

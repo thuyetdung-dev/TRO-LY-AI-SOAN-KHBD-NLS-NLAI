@@ -14,14 +14,15 @@
   <!-- Mở sẵn kết nối tới hai máy chủ ngoài để lần gọi đầu bớt chậm. -->
   <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
   <link rel="preconnect" href="https://generativelanguage.googleapis.com" crossorigin>
-  <link rel="stylesheet" href="styles.css?v=V28.1">
-  <link rel="stylesheet" href="styles-plus.css?v=V28.1">
-  <link rel="stylesheet" href="image-editor.css?v=V28.1">
-  <link rel="stylesheet" href="math-audit.css?v=V28.1">
-  <link rel="stylesheet" href="validation-ux.css?v=V28.1">
-  <link rel="stylesheet" href="guided-fix.css?v=V28.1">
-  <link rel="stylesheet" href="v28.css?v=V28.1">
-  <link rel="stylesheet" href="login.css?v=V28.1">
+  <link rel="stylesheet" href="styles.css?v=V28.3">
+  <link rel="stylesheet" href="styles-plus.css?v=V28.3">
+  <link rel="stylesheet" href="image-editor.css?v=V28.3">
+  <link rel="stylesheet" href="math-audit.css?v=V28.3">
+  <link rel="stylesheet" href="validation-ux.css?v=V28.3">
+  <link rel="stylesheet" href="guided-fix.css?v=V28.3">
+  <link rel="stylesheet" href="v28.css?v=V28.3">
+  <link rel="stylesheet" href="login.css?v=V28.3">
+  <link rel="stylesheet" href="no-key-flow.css?v=V28.3">
   <script>window.MathJax={tex:{inlineMath:[['$','$'],['\\(','\\)']],displayMath:[['$$','$$'],['\\[','\\]']],processEscapes:true},svg:{fontCache:'global'},options:{skipHtmlTags:['script','noscript','style','textarea','pre','code']}};</script>
   <script defer src="https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-svg.js" integrity="sha384-KKWa9jJ1MZvssLeOoXG6FiOAZfAgmzsIIfw8BXwI9+kYm0lPCbC6yTQPBC00F1/L" crossorigin="anonymous"></script>
 </head>
@@ -147,6 +148,23 @@
           <small id="modelStatus" class="model-status" aria-live="polite">Dán khóa API rồi bấm “Dò” để kiểm tra mô hình.</small>
           <p class="privacy">Khóa Gemini chỉ nằm trong trình duyệt, không được lưu vào bản nháp hoặc gửi về máy chủ phần mềm.</p></div><div id="openaiServerStatus" class="image-privacy" hidden>🔒 OpenAI dùng khóa bí mật trên máy chủ Vercel. Giáo viên không cần nhập khóa vào trang web.</div>
           <label>Phong cách bài soạn<select id="style"><option value="day-du">Đầy đủ, chi tiết</option><option value="gon">Gọn, dễ triển khai</option><option value="sang-tao">Tích cực, sáng tạo</option></select></label>
+
+          <!-- V28.2 — lối đi cho thầy cô chưa có khoá AI: mượn Claude/Gemini/ChatGPT/NotebookLM
+               đang dùng sẵn trên trình duyệt, rồi mang kết quả về đây kiểm định và xuất Word. -->
+          <details id="noKeyBox" class="no-key-card">
+            <summary>💡 Chưa có khoá AI? Nhờ Claude, Gemini, ChatGPT hay NotebookLM soạn hộ</summary>
+            <p>Điền xong thông tin bài dạy ở trên, bấm <strong>Chép prompt</strong>, dán vào AI đang dùng, <strong>đính kèm sách giáo khoa</strong> rồi gửi. AI trả về bản kế hoạch — lưu thành tệp <code>.txt</code> hoặc <code>.md</code> (Notepad chọn UTF-8) rồi mở bằng nút <strong>⇧ Mở tệp kết quả</strong>. Phần mềm sẽ tự kiểm định, dựng hình và cho xuất Word như thường.</p>
+            <p class="no-key-note">NotebookLM đọc được cả PDF ảnh quét nên khỏi cần chạy OCR. Bài dài, AI in chưa hết thì gõ <strong>tiếp</strong> để nó in phần còn lại, lưu thành tệp thứ hai — chọn cả hai tệp một lần, phần mềm tự ghép.</p>
+            <div class="no-key-actions">
+              <button id="copyPromptBtn" type="button" class="primary">📋 Chép prompt</button>
+              <button id="downloadPromptBtn" type="button" class="secondary">⇩ Tải về tệp .txt</button>
+              <button id="openPlanBtn" type="button" class="secondary">⇧ Mở tệp kết quả</button>
+              <input id="planFile" type="file" accept=".md,.txt,.json,text/plain,text/markdown,application/json" multiple hidden>
+            </div>
+            <p id="vietTiepRow" class="no-key-note" hidden>Bản vừa nạp có vẻ chưa hết bài.
+              <button id="copyVietTiepBtn" type="button" class="mini-btn">Chép lời nhắc “viết tiếp”</button>
+            </p>
+          </details>
         </section>
 
         <label class="check"><input id="includeDigital" type="checkbox" checked> Đề xuất NLS khi hoạt động thực sự phù hợp</label>
@@ -313,31 +331,34 @@
   </dialog>
 
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
-  <script src="standards.js?v=V28.1"></script>
-  <script src="app.js?v=V28.1"></script>
-  <script src="validation-duration-v28.js?v=V28.1"></script>
-  <script src="math-audit.js?v=V28.1"></script>
-  <script src="flow.js?v=V28.1"></script>
+  <script src="standards.js?v=V28.3"></script>
+  <script src="app.js?v=V28.3"></script>
+  <script src="validation-duration-v28.js?v=V28.3"></script>
+  <script src="math-audit.js?v=V28.3"></script>
+  <script src="flow.js?v=V28.3"></script>
   <!-- integrity: nếu tệp trên CDN bị đổi nội dung, trình duyệt sẽ từ chối nạp thay vì chạy mã lạ.
        MathJax đã có từ trước; JSZip trước đây thiếu, trong khi hướng dẫn lại khuyên đưa cả thư
        mục lên dịch vụ lưu trữ web để chia sẻ cho đồng nghiệp. -->
-  <script src="vendor/jszip.min.js?v=V28.1"></script>
-  <script src="professional.js?v=V28.1"></script>
-  <script src="docx-export.js?v=V28.1"></script>
-  <script src="image-editor.js?v=V28.1"></script>
-  <script src="math-editor.js?v=V28.1"></script>
+  <script src="vendor/jszip.min.js?v=V28.3"></script>
+  <script src="professional.js?v=V28.3"></script>
+  <script src="docx-export.js?v=V28.3"></script>
+  <script src="image-editor.js?v=V28.3"></script>
+  <script src="math-editor.js?v=V28.3"></script>
   <!-- Nạp sau cùng trong nhóm này: bọc mdToHtml, showResult, validatePlan và buildDocxParts
        nên phải thấy bản đã vá của flow.js, docx-export.js và image-editor.js. -->
-  <script src="figure-normalize.js?v=V28.1"></script>
+  <script src="figure-normalize.js?v=V28.3"></script>
+  <!-- Nạp sau figure-normalize.js: khi nạp kết quả từ AI ngoài, showResult phải là bản đã bọc
+       để hình viết dạng JSON trần vẫn dựng ra hình. -->
+  <script src="no-key-flow.js?v=V28.3"></script>
   <script>
   /* Hiện mốc phiên bản của app.js đang thực sự chạy. Nếu con số này không khớp với bản vừa
      tải lên thì trình duyệt còn giữ bản cũ trong bộ nhớ đệm — bấm Ctrl+Shift+R. */
   (function(){var el=document.getElementById('buildTag');
     if(el)el.textContent=(typeof APP_BUILD!=='undefined')?APP_BUILD:'không rõ';})();
   </script>
-  <script src="validation-ux.js?v=V28.1"></script>
-  <script src="guided-fix.js?v=V28.1"></script>
-  <script src="v28.js?v=V28.1"></script>
-  <script src="login.js?v=V28.1"></script>
+  <script src="validation-ux.js?v=V28.3"></script>
+  <script src="guided-fix.js?v=V28.3"></script>
+  <script src="v28.js?v=V28.3"></script>
+  <script src="login.js?v=V28.3"></script>
 </body>
 </html>
