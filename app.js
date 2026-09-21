@@ -5,10 +5,27 @@
    test.html phải trùng đúng phần V… này — có một phép kiểm tra tự động canh việc đó, vì
    trước đây index.html nạp app.js?v=V27.5.2 còn test.html nạp app.js?v=b27.4: hai trang có
    thể chạy hai bản khác nhau trong bộ nhớ đệm, test bản này mà giáo viên dùng bản kia. */
-const APP_BUILD='2026-09-18 · V28.3';
+const APP_BUILD='2026-09-21 · V28.4';
 const $=id=>document.getElementById(id);let selectedFiles=[],rawMarkdown='',availableModels=[],scanTimer,draftTimer,lastValidation=null;
 const fields=['subject','grade','lesson','book','periods','students','classSize','equipment','notes','tableLayout','assessmentMode','lessonTemplate','sourceMode'];
 const toast=m=>{const t=$('toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2600)};
+/* Bộ đọc văn bản dùng chung cho tài liệu nguồn và KHBD kết quả. */
+function readFileBytes(file){
+  if(file&&typeof file.arrayBuffer==='function')return file.arrayBuffer();
+  return new Promise((resolve,reject)=>{const r=new FileReader();r.onerror=()=>reject(new Error('Trình duyệt không đọc được tệp.'));r.onload=()=>resolve(r.result);r.readAsArrayBuffer(file)});
+}
+async function readTextFile(file){
+  if(!file)throw new Error('Chưa chọn tệp.');
+  const ext=(String(file.name||'').match(/\.([^.]+)$/)||[])[1]?.toLowerCase()||'';
+  if(!['txt','md','json'].includes(ext))throw new Error(`“${file.name||'Tệp'}” không phải TXT, MD hoặc JSON.`);
+  const bytes=new Uint8Array(await readFileBytes(file));let offset=0,encoding='UTF-8';
+  if(bytes[0]===0xEF&&bytes[1]===0xBB&&bytes[2]===0xBF){offset=3;encoding='UTF-8 BOM'}
+  else if((bytes[0]===0xFF&&bytes[1]===0xFE)||(bytes[0]===0xFE&&bytes[1]===0xFF))throw new Error(`“${file.name}” đang dùng UTF-16. Hãy lưu lại dưới dạng UTF-8.`);
+  let text;try{text=new TextDecoder('utf-8',{fatal:true}).decode(bytes.subarray(offset))}catch(_){throw new Error(`“${file.name}” không phải UTF-8 hợp lệ. Hãy mở bằng Notepad và chọn Save As → UTF-8.`)}
+  text=text.replace(/^\uFEFF/,'').replace(/\r\n?/g,'\n');
+  return {file,name:file.name||'không tên',extension:ext,encoding,text,characters:text.length,preview:text.slice(0,1200),empty:!text.trim()};
+}
+window.khbdReadTextFile=readTextFile;
 // Escape đủ 5 ký tự đặc biệt (bao gồm dấu nháy) để dùng an toàn cả trong nội dung text lẫn trong thuộc tính HTML (title, style, stroke...).
 // Trước đây hàm này chỉ escape &,<,> nên các chỗ dùng esc() để build thuộc tính (vd aria-label, style="--c:...") có thể bị phá vỡ nếu dữ liệu AI trả về chứa dấu ".
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -45,7 +62,16 @@ const dz=$('dropZone');['dragenter','dragover'].forEach(e=>dz.addEventListener(e
    (đỡ một vòng gọi mạng); tệp lớn tự chuyển sang Files API. */
 const MAX_FILE_MB=30,MAX_TOTAL_MB=60,INLINE_LIMIT_MB=8;
 function addFiles(list){for(const f of list){if(f.size>MAX_FILE_MB*1024*1024){toast(`${f.name}: vượt ${MAX_FILE_MB} MB`);continue}const total=selectedFiles.reduce((s,x)=>s+x.size,0);if(total+f.size>MAX_TOTAL_MB*1024*1024){toast(`Tổng dung lượng tài liệu không được vượt ${MAX_TOTAL_MB} MB`);break}if(!selectedFiles.some(x=>x.name===f.name&&x.size===f.size))selectedFiles.push(f)}renderFiles()}
-function renderFiles(){$('fileList').innerHTML=selectedFiles.map((f,i)=>`<div class="file-chip"><b>${esc(f.name)}</b><span>${(f.size/1048576).toFixed(1)} MB</span><button type="button" data-i="${i}" aria-label="Bỏ tệp">×</button></div>`).join('');$('fileList').querySelectorAll('button').forEach(b=>b.onclick=()=>{selectedFiles.splice(+b.dataset.i,1);renderFiles()})}
+async function renderSourceTextInfo(){
+  const box=$('sourceTextInfo');if(!box)return;
+  const texts=selectedFiles.filter(f=>/\.(txt|md|json)$/i.test(f.name||''));
+  if(!texts.length){box.hidden=true;box.innerHTML='';return}
+  box.hidden=false;box.innerHTML='<strong>Đang kiểm tra tài liệu văn bản…</strong>';
+  const cards=[];
+  for(const f of texts){try{const x=await readTextFile(f);cards.push(`<article class="file-inspect ${x.empty?'file-error':''}"><b>${esc(x.name)}</b><span>${esc(x.encoding)} · ${x.characters.toLocaleString('vi-VN')} ký tự</span>${x.empty?'<em>Tệp rỗng</em>':`<details><summary>Xem trước nội dung</summary><pre>${esc(x.preview)}</pre></details>`}</article>`)}catch(e){cards.push(`<article class="file-inspect file-error"><b>${esc(f.name)}</b><em>${esc(e.message||e)}</em></article>`)}}
+  box.innerHTML='<strong>Tài liệu nguồn để AI đọc</strong>'+cards.join('');
+}
+function renderFiles(){$('fileList').innerHTML=selectedFiles.map((f,i)=>`<div class="file-chip"><b>${esc(f.name)}</b><span>${(f.size/1048576).toFixed(1)} MB</span><button type="button" data-i="${i}" aria-label="Bỏ tệp">×</button></div>`).join('');$('fileList').querySelectorAll('button').forEach(b=>b.onclick=()=>{selectedFiles.splice(+b.dataset.i,1);renderFiles()});renderSourceTextInfo()}
 function values(){return Object.fromEntries(fields.map(k=>[k,$(k).value.trim()]))}
 function setProgress(p,title,text){$('emptyState').hidden=true;$('result').hidden=true;$('progress').hidden=false;$('resultActions').hidden=true;$('progressBar').style.width=p+'%';$('progressTitle').textContent=title;$('progressText').textContent=text}
 function bytesToBase64(buf){let bin='',arr=new Uint8Array(buf),step=0x8000;for(let i=0;i<arr.length;i+=step)bin+=String.fromCharCode(...arr.subarray(i,i+step));return btoa(bin)}
@@ -1896,7 +1922,7 @@ function renderValidation(report){lastValidation=report;const el=$('validationRe
     : '<span>Đủ cấu trúc, liên kết mục tiêu, thời lượng, đánh giá và mã tham chiếu.</span>';
   const approval=report.codes.length?`<label class="check competency-approval"><input id="approveCompetencies" type="checkbox"> Tôi đã đọc, đối chiếu và duyệt các mã NLS/NLAI: ${report.codes.map(esc).join(', ')}</label>`:'';el.innerHTML=`<strong>${esc(title)}</strong>${time}${than}${approval}`;$('approveCompetencies')?.addEventListener('change',syncExportLock);syncExportLock()}
 function showResult(md,report){rawMarkdown=md;$('progress').hidden=true;$('emptyState').hidden=true;$('result').innerHTML=mdToHtml(md);renderMathViz();$('result').hidden=false;$('resultActions').hidden=false;$('draftNotice').hidden=false;renderValidation(report||validatePlan(md,values(),false));if(typeof window.khbdRunMathAudit==='function'&&/toán/i.test($('subject').value))window.khbdRunMathAudit(md);else window.khbdMathAudit={blockers:[],warnings:[],passed:[],blocks:0};const typeset=()=>window.MathJax?.typesetPromise?window.MathJax.typesetPromise([$('result')]).catch(()=>{}):null;typeset()||setTimeout(typeset,800);$('validationReport').scrollIntoView({behavior:'smooth',block:'start'});saveDraft()}
-$('lessonForm').onsubmit=async e=>{e.preventDefault();const v=values(),key=$('apiKey').value.trim(),provider=$('aiProvider')?.value||'gemini';if(selectedFiles.length&&!$('privacyConfirm').checked){toast('Vui lòng xác nhận tài liệu đã được ẩn danh và có quyền sử dụng');$('privacyConfirm').focus();return}$('generateBtn').disabled=true;try{setProgress(10,'Đang kiểm tra nguồn...','Chuẩn bị dữ liệu bài dạy');let md,usedAI=false;if(provider==='openai'){md=await callOpenAI(v);usedAI=true}else if(key){md=await callGemini(v,key);usedAI=true}else{await new Promise(r=>setTimeout(r,350));setProgress(70,'Đang tạo khung dự thảo...','Dùng chế độ cơ bản không cần API key');md=fallback(v)}if(!md)throw new Error('AI chưa trả về nội dung');setProgress(94,'Đang kiểm định đầu ra...','Đối chiếu cấu trúc, lessonflow và mã NLS/NLAI');const report=validatePlan(md,v,usedAI);showResult(md,report);toast(report.blockers.length?'Bản dự thảo chưa đạt kiểm định':report.warnings.length?'Đã tạo – cần rà soát cảnh báo':'Đã tạo và đạt kiểm định tự động')}catch(err){$('progress').hidden=true;$('emptyState').hidden=false;toast(err.message||'Có lỗi xảy ra')}finally{$('generateBtn').disabled=false}}
+$('lessonForm').onsubmit=async e=>{e.preventDefault();const v=values(),key=$('apiKey').value.trim(),provider=$('aiProvider')?.value||'gemini';if(selectedFiles.length&&!$('privacyConfirm').checked){toast('Vui lòng xác nhận tài liệu đã được ẩn danh và có quyền sử dụng');$('privacyConfirm').focus();return}if(provider==='gemini'&&!key&&selectedFiles.length){toast('Chưa thể đọc tài liệu nguồn khi không có AI. Hãy nhập khóa Gemini, chọn OpenAI, hoặc dùng “Mở KHBD kết quả”.');$('sourceModeNotice')?.removeAttribute('hidden');$('dropZone').focus();return}$('sourceModeNotice')?.setAttribute('hidden','');$('generateBtn').disabled=true;try{setProgress(10,'Đang kiểm tra nguồn...','Chuẩn bị dữ liệu bài dạy');let md,usedAI=false;if(provider==='openai'){md=await callOpenAI(v);usedAI=true}else if(key){md=await callGemini(v,key);usedAI=true}else{await new Promise(r=>setTimeout(r,350));setProgress(70,'Đang tạo khung dự thảo...','Dùng chế độ cơ bản không cần API key');md=fallback(v)}if(!md)throw new Error('AI chưa trả về nội dung');setProgress(94,'Đang kiểm định đầu ra...','Đối chiếu cấu trúc, lessonflow và mã NLS/NLAI');const report=validatePlan(md,v,usedAI);showResult(md,report);toast(report.blockers.length?'Bản dự thảo chưa đạt kiểm định':report.warnings.length?'Đã tạo – cần rà soát cảnh báo':'Đã tạo và đạt kiểm định tự động')}catch(err){$('progress').hidden=true;$('emptyState').hidden=false;toast(err.message||'Có lỗi xảy ra')}finally{$('generateBtn').disabled=false}}
 $('lessonForm').addEventListener('submit',e=>{if($('sourceMode').value==='strict'&&!selectedFiles.length&&!$('notes').value.trim()){e.preventDefault();e.stopImmediatePropagation();toast('Chế độ khóa nguồn tuyệt đối yêu cầu ít nhất một tài liệu hoặc nội dung nguồn');$('dropZone').focus()}},true);
 $('copyBtn').onclick=async()=>{await navigator.clipboard.writeText(rawMarkdown);toast('Đã sao chép nội dung')};
 $('printBtn').onclick=()=>window.print();

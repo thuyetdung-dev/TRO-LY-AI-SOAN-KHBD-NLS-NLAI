@@ -197,8 +197,17 @@
     if (ds.some(f => f.size > 5 * 1024 * 1024)) return baoTin('Tệp quá lớn — bản kế hoạch chỉ là văn bản, không quá 5 MB.');
     try {
       /* Sắp theo tên để "phan1.txt, phan2.txt" ghép đúng thứ tự dù trình duyệt trả về lộn xộn. */
-      ds.sort((a, b) => String(a.name).localeCompare(String(b.name), 'vi'));
-      const noi = await Promise.all(ds.map(f => f.text()));
+      ds.sort((a, b) => String(a.name).localeCompare(String(b.name), 'vi', { numeric: true, sensitivity: 'base' }));
+      const reader = window.khbdReadTextFile;
+      if (typeof reader !== 'function') throw new Error('Thiếu bộ đọc văn bản thống nhất. Hãy tải lại trang.');
+      const thongTin = await Promise.all(ds.map(reader));
+      const box = $('planFileInfo');
+      if (box) {
+        box.hidden = false;
+        box.innerHTML = '<strong>KHBD kết quả để mở và kiểm định</strong>' + thongTin.map(x =>
+          `<article class="file-inspect ${x.empty ? 'file-error' : ''}"><b>${esc(x.name)}</b><span>${esc(x.encoding)} · ${x.characters.toLocaleString('vi-VN')} ký tự</span>${x.empty ? '<em>Tệp rỗng</em>' : `<details><summary>Xem trước nội dung</summary><pre>${esc(x.preview)}</pre></details>`}</article>`).join('');
+      }
+      const noi = thongTin.map(x => x.text);
       const md = ghepCacPhan(noi);
       if (!md) return baoTin('Tệp rỗng hoặc không đọc được nội dung.');
       if (md.length < 400) return baoTin('Nội dung quá ngắn, chưa giống một bản kế hoạch bài dạy.');
