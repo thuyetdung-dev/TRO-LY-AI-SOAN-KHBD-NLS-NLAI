@@ -3,9 +3,14 @@
 Phần mềm web hỗ trợ giáo viên soạn Kế hoạch bài dạy (KHBD) theo Chương trình GDPT 2018,
 tích hợp năng lực số (NLS) và năng lực AI (NLAI), xuất ra tệp Word.
 
-Phiên bản hiện tại: **V28.3** — số hiệu nằm ở `APP_BUILD` trong `app.js` và hiện trên thanh
+Phiên bản hiện tại: **V28.4** — số hiệu nằm ở `APP_BUILD` trong `app.js` và hiện trên thanh
 tiêu đề của trang. Nếu con số trên trang không khớp bản vừa tải lên, trình duyệt còn giữ bản cũ
 trong bộ nhớ đệm: bấm `Ctrl+Shift+R`.
+
+V28.4 tách rõ hai luồng nhập tệp: **tài liệu nguồn để AI đọc** và **KHBD kết quả để mở,
+kiểm định**. Bộ đọc văn bản chung hỗ trợ TXT/MD/JSON UTF-8, nhận diện UTF-8 BOM, có đường lui
+FileReader, hiển thị số ký tự/bảng mã/bản xem trước và không còn âm thầm bỏ qua tài liệu nguồn
+khi đang dùng chế độ cơ bản không có AI.
 
 ## Chạy thử tại máy
 

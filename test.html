@@ -114,7 +114,8 @@ h2{font-size:.82rem;letter-spacing:.09em;text-transform:uppercase;color:var(--mu
 
   <details id="noKeyBox"><summary></summary><button id="copyPromptBtn"></button><button id="downloadPromptBtn"></button>
     <button id="openPlanBtn"></button><input id="planFile" type="file" multiple hidden>
-    <p id="vietTiepRow" hidden><button id="copyVietTiepBtn"></button></p></details>
+    <div id="planFileInfo" hidden></div><p id="vietTiepRow" hidden><button id="copyVietTiepBtn"></button></p></details>
+  <div id="sourceTextInfo" hidden></div><p id="sourceModeNotice" hidden></p>
 
   <button id="imageEditBtn"></button><button id="mathAuditBtn"></button>
   <dialog id="imageEditorDialog"></dialog>
@@ -170,21 +171,21 @@ h2{font-size:.82rem;letter-spacing:.09em;text-transform:uppercase;color:var(--mu
 
 <!-- Thứ tự nạp phải giống hệt index.html: các tệp chia sẻ trạng thái qua biến toàn cục,
      nên đổi thứ tự là đổi hành vi. Nếu index.html thêm tệp mới, thêm vào đây cùng lúc. -->
-<script src="standards.js?v=V28.3"></script>
-<script src="app.js?v=V28.3"></script>
-<script src="validation-duration-v28.js?v=V28.3"></script>
-<script src="math-audit.js?v=V28.3"></script>
-<script src="flow.js?v=V28.3"></script>
-<script src="professional.js?v=V28.3"></script>
-<script src="vendor/jszip.min.js?v=V28.3"></script>
-<script src="docx-export.js?v=V28.3"></script>
-<script src="image-editor.js?v=V28.3"></script>
-<script src="math-editor.js?v=V28.3"></script>
-<script src="figure-normalize.js?v=V28.3"></script>
-<script src="no-key-flow.js?v=V28.3"></script>
-<script src="validation-ux.js?v=V28.3"></script>
-<script src="guided-fix.js?v=V28.3"></script>
-<script src="v28.js?v=V28.3"></script>
+<script src="standards.js?v=V28.4"></script>
+<script src="app.js?v=V28.4"></script>
+<script src="validation-duration-v28.js?v=V28.4"></script>
+<script src="math-audit.js?v=V28.4"></script>
+<script src="flow.js?v=V28.4"></script>
+<script src="professional.js?v=V28.4"></script>
+<script src="vendor/jszip.min.js?v=V28.4"></script>
+<script src="docx-export.js?v=V28.4"></script>
+<script src="image-editor.js?v=V28.4"></script>
+<script src="math-editor.js?v=V28.4"></script>
+<script src="figure-normalize.js?v=V28.4"></script>
+<script src="no-key-flow.js?v=V28.4"></script>
+<script src="validation-ux.js?v=V28.4"></script>
+<script src="guided-fix.js?v=V28.4"></script>
+<script src="v28.js?v=V28.4"></script>
 
 <script>
 (function(){
@@ -1722,6 +1723,39 @@ async function runAll(){
     return khbdBocKetQua(j).indexOf('# KẾ HOẠCH BÀI DẠY')===0||'Không đọc được phần văn bản trong tệp JSON';
   });
 
+  await T('Bộ đọc chung nhận TXT UTF-8 BOM và chuẩn hóa xuống dòng',async function(){
+    if(typeof khbdReadTextFile!=='function')return 'Thiếu khbdReadTextFile';
+    var f=new File([new Uint8Array([0xEF,0xBB,0xBF]),'# KẾ HOẠCH BÀI DẠY\r\nNội dung tiếng Việt'], 'bai-day.txt', {type:'text/plain'});
+    var x=await khbdReadTextFile(f);
+    if(x.encoding!=='UTF-8 BOM')return 'Không nhận diện BOM';
+    if(/^\uFEFF/.test(x.text))return 'Chưa loại BOM khỏi nội dung';
+    return x.text.indexOf('\r')<0||'Chưa chuẩn hóa xuống dòng';
+  });
+
+  await T('Bộ đọc chung nhận MD và JSON, từ chối định dạng khác',async function(){
+    for(const ten of ['bai.md','bai.json']){var x=await khbdReadTextFile(new File(['Nội dung'],ten));if(x.characters!==8)return ten+' sai số ký tự'}
+    try{await khbdReadTextFile(new File(['x'],'bai.pdf'));return 'PDF không bị từ chối'}catch(_){return true}
+  });
+
+  await T('Sắp nhiều phần theo số tự nhiên: phần 2 đứng trước phần 10',function(){
+    var ds=['phan10.txt','phan2.txt','phan1.txt'];
+    ds.sort((a,b)=>a.localeCompare(b,'vi',{numeric:true,sensitivity:'base'}));
+    return ds.join(',')==='phan1.txt,phan2.txt,phan10.txt'||'Sai thứ tự: '+ds.join(',');
+  });
+
+  await T('Thao tác chọn thật nhiều tệp TXT, MD, JSON cập nhật bảng thông tin',async function(){
+    var input=document.getElementById('planFile'),box=document.getElementById('planFileInfo');
+    var dt=new DataTransfer(),noi='# KẾ HOẠCH BÀI DẠY\n\n'+('Nội dung kiểm thử. '.repeat(30));
+    dt.items.add(new File([noi],'phan1.txt',{type:'text/plain'}));
+    dt.items.add(new File([noi],'phan2.md',{type:'text/markdown'}));
+    dt.items.add(new File([JSON.stringify({markdown:noi})],'phan10.json',{type:'application/json'}));
+    Object.defineProperty(input,'files',{configurable:true,value:dt.files});
+    input.dispatchEvent(new Event('change',{bubbles:true}));
+    await new Promise(r=>setTimeout(r,80));
+    var t=box.textContent||'';
+    return !box.hidden&&/phan1\.txt/.test(t)&&/phan2\.md/.test(t)&&/phan10\.json/.test(t)||'Bảng thông tin chưa hiện đủ ba tệp: '+t;
+  });
+
   await T('Bài in làm hai lượt được ghép lại, không để lại đoạn lặp',function(){
     if(typeof khbdGhepCacPhan!=='function')return 'Thiếu khbdGhepCacPhan';
     var a='# KẾ HOẠCH BÀI DẠY\n\nPhần đầu của bài dạy về vectơ trong không gian.';
@@ -1756,11 +1790,11 @@ async function runAll(){
     }finally{o.value=giu}
   });
 
-  /* ---------- V28.3 — dấu gạch đứng trong công thức ---------- */
+  /* ---------- V28.4 — dấu gạch đứng trong công thức ---------- */
   /* Giáo viên hỏi "mã này sai chỗ nào" với công thức tích vô hướng. Bản thân mã LaTeX không sai;
      sai là ở bộ đọc bảng của phần mềm: nó tách ô bằng split('|') trần, mà trong môn Toán dấu
      gạch đứng chính là ký hiệu độ dài vectơ, giá trị tuyệt đối, môđun số phức. */
-  group('V28.3 — dấu | của công thức không còn cắt cột');
+  group('V28.4 — dấu | của công thức không còn cắt cột');
 
   var CT_VECTO='$\\vec{a} \\cdot \\vec{b} = |\\vec{a}| |\\vec{b}| \\cos(\\vec{a}, \\vec{b})$';
   var BANG_CT='| Nội dung | Ghi chú |\n|---|---|\n| '+CT_VECTO+' | tích vô hướng |';

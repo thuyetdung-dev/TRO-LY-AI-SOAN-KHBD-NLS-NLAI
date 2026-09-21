@@ -70,3 +70,16 @@ body.dark .no-key-card > summary { color: #7fd8a6; }
 body.dark .no-key-card p { color: #d6e6dc; }
 body.dark .no-key-card code { background: #1b3b28; color: #cfe9d9; }
 body.dark .no-key-note { background: #16301f; }
+
+.file-inspection { margin-top: .75rem; padding: .75rem; border: 1px solid #bfdbfe; border-radius: 10px; background: #eff6ff; }
+.file-inspection > strong { display: block; margin-bottom: .45rem; color: #1e3a8a; }
+.file-inspect { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: .3rem .8rem; padding: .5rem 0; border-top: 1px solid #dbeafe; }
+.file-inspect:first-of-type { border-top: 0; }
+.file-inspect span { color: #64748b; font-size: .85rem; }
+.file-inspect details { grid-column: 1/-1; }
+.file-inspect pre { max-height: 12rem; overflow: auto; white-space: pre-wrap; background: #fff; color: #172033; padding: .6rem; border-radius: 8px; font-size: .8rem; }
+.file-inspect.file-error em { grid-column: 1/-1; color: #b91c1c; }
+.source-mode-notice { padding: .7rem; border-left: 4px solid #dc2626; background: #fef2f2; color: #7f1d1d; }
+body.dark .file-inspection { background: #14233a; border-color: #315780; }
+body.dark .file-inspection > strong { color: #bfdbfe; }
+body.dark .source-mode-notice { background: #3b1717; color: #fecaca; }
