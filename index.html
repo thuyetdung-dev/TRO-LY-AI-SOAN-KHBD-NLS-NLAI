@@ -14,15 +14,15 @@
   <!-- Mở sẵn kết nối tới hai máy chủ ngoài để lần gọi đầu bớt chậm. -->
   <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
   <link rel="preconnect" href="https://generativelanguage.googleapis.com" crossorigin>
-  <link rel="stylesheet" href="styles.css?v=V28.3">
-  <link rel="stylesheet" href="styles-plus.css?v=V28.3">
-  <link rel="stylesheet" href="image-editor.css?v=V28.3">
-  <link rel="stylesheet" href="math-audit.css?v=V28.3">
-  <link rel="stylesheet" href="validation-ux.css?v=V28.3">
-  <link rel="stylesheet" href="guided-fix.css?v=V28.3">
-  <link rel="stylesheet" href="v28.css?v=V28.3">
-  <link rel="stylesheet" href="login.css?v=V28.3">
-  <link rel="stylesheet" href="no-key-flow.css?v=V28.3">
+  <link rel="stylesheet" href="styles.css?v=V28.4">
+  <link rel="stylesheet" href="styles-plus.css?v=V28.4">
+  <link rel="stylesheet" href="image-editor.css?v=V28.4">
+  <link rel="stylesheet" href="math-audit.css?v=V28.4">
+  <link rel="stylesheet" href="validation-ux.css?v=V28.4">
+  <link rel="stylesheet" href="guided-fix.css?v=V28.4">
+  <link rel="stylesheet" href="v28.css?v=V28.4">
+  <link rel="stylesheet" href="login.css?v=V28.4">
+  <link rel="stylesheet" href="no-key-flow.css?v=V28.4">
   <script>window.MathJax={tex:{inlineMath:[['$','$'],['\\(','\\)']],displayMath:[['$$','$$'],['\\[','\\]']],processEscapes:true},svg:{fontCache:'global'},options:{skipHtmlTags:['script','noscript','style','textarea','pre','code']}};</script>
   <script defer src="https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-svg.js" integrity="sha384-KKWa9jJ1MZvssLeOoXG6FiOAZfAgmzsIIfw8BXwI9+kYm0lPCbC6yTQPBC00F1/L" crossorigin="anonymous"></script>
 </head>
@@ -128,6 +128,8 @@
             <small>SGK, SGV, yêu cầu cần đạt, giáo án tham khảo · PDF, Word, ảnh, TXT</small>
           </label>
           <div id="fileList" class="file-list" aria-live="polite"></div>
+          <div id="sourceTextInfo" class="file-inspection" aria-live="polite" hidden></div>
+          <p id="sourceModeNotice" class="source-mode-notice" role="alert" hidden>Đây là <strong>tài liệu nguồn để AI đọc</strong>. Chế độ cơ bản không thể đọc nội dung tệp. Hãy nhập khóa Gemini, chọn OpenAI, hoặc dùng mục “Mở KHBD kết quả” bên dưới.</p>
           <label class="check privacy-confirm"><input id="privacyConfirm" type="checkbox"> Tôi xác nhận tài liệu không chứa dữ liệu cá nhân/nhạy cảm của học sinh, hoặc đã được ẩn danh và có quyền sử dụng.</label>
           <p class="privacy privacy-warning">Tài liệu được chọn sẽ gửi trực tiếp đến Google Gemini để xử lý. Không tải lên họ tên, số điện thoại, kết quả cá nhân, hồ sơ sức khỏe hoặc hoàn cảnh gia đình học sinh khi chưa được phép.</p>
           <label>Nội dung bổ sung hoặc trích đoạn nguồn
@@ -153,14 +155,15 @@
                đang dùng sẵn trên trình duyệt, rồi mang kết quả về đây kiểm định và xuất Word. -->
           <details id="noKeyBox" class="no-key-card">
             <summary>💡 Chưa có khoá AI? Nhờ Claude, Gemini, ChatGPT hay NotebookLM soạn hộ</summary>
-            <p>Điền xong thông tin bài dạy ở trên, bấm <strong>Chép prompt</strong>, dán vào AI đang dùng, <strong>đính kèm sách giáo khoa</strong> rồi gửi. AI trả về bản kế hoạch — lưu thành tệp <code>.txt</code> hoặc <code>.md</code> (Notepad chọn UTF-8) rồi mở bằng nút <strong>⇧ Mở tệp kết quả</strong>. Phần mềm sẽ tự kiểm định, dựng hình và cho xuất Word như thường.</p>
+            <p><strong>KHBD kết quả để mở và kiểm định:</strong> Điền thông tin bài dạy, bấm <strong>Chép prompt</strong>, dán vào AI đang dùng và đính kèm sách giáo khoa. Lưu câu trả lời thành <code>.txt</code>, <code>.md</code> hoặc <code>.json</code> UTF-8 rồi mở tại đây. Đây không phải vùng tải tài liệu nguồn.</p>
             <p class="no-key-note">NotebookLM đọc được cả PDF ảnh quét nên khỏi cần chạy OCR. Bài dài, AI in chưa hết thì gõ <strong>tiếp</strong> để nó in phần còn lại, lưu thành tệp thứ hai — chọn cả hai tệp một lần, phần mềm tự ghép.</p>
             <div class="no-key-actions">
               <button id="copyPromptBtn" type="button" class="primary">📋 Chép prompt</button>
               <button id="downloadPromptBtn" type="button" class="secondary">⇩ Tải về tệp .txt</button>
-              <button id="openPlanBtn" type="button" class="secondary">⇧ Mở tệp kết quả</button>
+              <button id="openPlanBtn" type="button" class="secondary">⇧ Mở KHBD kết quả</button>
               <input id="planFile" type="file" accept=".md,.txt,.json,text/plain,text/markdown,application/json" multiple hidden>
             </div>
+            <div id="planFileInfo" class="file-inspection" aria-live="polite" hidden></div>
             <p id="vietTiepRow" class="no-key-note" hidden>Bản vừa nạp có vẻ chưa hết bài.
               <button id="copyVietTiepBtn" type="button" class="mini-btn">Chép lời nhắc “viết tiếp”</button>
             </p>
@@ -331,34 +334,34 @@
   </dialog>
 
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
-  <script src="standards.js?v=V28.3"></script>
-  <script src="app.js?v=V28.3"></script>
-  <script src="validation-duration-v28.js?v=V28.3"></script>
-  <script src="math-audit.js?v=V28.3"></script>
-  <script src="flow.js?v=V28.3"></script>
+  <script src="standards.js?v=V28.4"></script>
+  <script src="app.js?v=V28.4"></script>
+  <script src="validation-duration-v28.js?v=V28.4"></script>
+  <script src="math-audit.js?v=V28.4"></script>
+  <script src="flow.js?v=V28.4"></script>
   <!-- integrity: nếu tệp trên CDN bị đổi nội dung, trình duyệt sẽ từ chối nạp thay vì chạy mã lạ.
        MathJax đã có từ trước; JSZip trước đây thiếu, trong khi hướng dẫn lại khuyên đưa cả thư
        mục lên dịch vụ lưu trữ web để chia sẻ cho đồng nghiệp. -->
-  <script src="vendor/jszip.min.js?v=V28.3"></script>
-  <script src="professional.js?v=V28.3"></script>
-  <script src="docx-export.js?v=V28.3"></script>
-  <script src="image-editor.js?v=V28.3"></script>
-  <script src="math-editor.js?v=V28.3"></script>
+  <script src="vendor/jszip.min.js?v=V28.4"></script>
+  <script src="professional.js?v=V28.4"></script>
+  <script src="docx-export.js?v=V28.4"></script>
+  <script src="image-editor.js?v=V28.4"></script>
+  <script src="math-editor.js?v=V28.4"></script>
   <!-- Nạp sau cùng trong nhóm này: bọc mdToHtml, showResult, validatePlan và buildDocxParts
        nên phải thấy bản đã vá của flow.js, docx-export.js và image-editor.js. -->
-  <script src="figure-normalize.js?v=V28.3"></script>
+  <script src="figure-normalize.js?v=V28.4"></script>
   <!-- Nạp sau figure-normalize.js: khi nạp kết quả từ AI ngoài, showResult phải là bản đã bọc
        để hình viết dạng JSON trần vẫn dựng ra hình. -->
-  <script src="no-key-flow.js?v=V28.3"></script>
+  <script src="no-key-flow.js?v=V28.4"></script>
   <script>
   /* Hiện mốc phiên bản của app.js đang thực sự chạy. Nếu con số này không khớp với bản vừa
      tải lên thì trình duyệt còn giữ bản cũ trong bộ nhớ đệm — bấm Ctrl+Shift+R. */
   (function(){var el=document.getElementById('buildTag');
     if(el)el.textContent=(typeof APP_BUILD!=='undefined')?APP_BUILD:'không rõ';})();
   </script>
-  <script src="validation-ux.js?v=V28.3"></script>
-  <script src="guided-fix.js?v=V28.3"></script>
-  <script src="v28.js?v=V28.3"></script>
-  <script src="login.js?v=V28.3"></script>
+  <script src="validation-ux.js?v=V28.4"></script>
+  <script src="guided-fix.js?v=V28.4"></script>
+  <script src="v28.js?v=V28.4"></script>
+  <script src="login.js?v=V28.4"></script>
 </body>
 </html>
