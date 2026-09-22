@@ -5,7 +5,7 @@
    test.html phải trùng đúng phần V… này — có một phép kiểm tra tự động canh việc đó, vì
    trước đây index.html nạp app.js?v=V27.5.2 còn test.html nạp app.js?v=b27.4: hai trang có
    thể chạy hai bản khác nhau trong bộ nhớ đệm, test bản này mà giáo viên dùng bản kia. */
-const APP_BUILD='2026-09-22 · V28.6';
+const APP_BUILD='2026-09-22 · V28.6.1';
 const $=id=>document.getElementById(id);let selectedFiles=[],rawMarkdown='',availableModels=[],scanTimer,draftTimer,lastValidation=null;
 const fields=['subject','grade','lesson','book','periods','students','classSize','equipment','notes','tableLayout','assessmentMode','lessonTemplate','sourceMode'];
 const toast=m=>{const t=$('toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2600)};

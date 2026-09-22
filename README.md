@@ -3,7 +3,7 @@
 Phần mềm web hỗ trợ giáo viên soạn Kế hoạch bài dạy (KHBD) theo Chương trình GDPT 2018,
 tích hợp năng lực số (NLS) và năng lực AI (NLAI), xuất ra tệp Word.
 
-Phiên bản hiện tại: **V28.6** — số hiệu nằm ở `APP_BUILD` trong `app.js` và hiện trên thanh
+Phiên bản hiện tại: **V28.6.1** — số hiệu nằm ở `APP_BUILD` trong `app.js` và hiện trên thanh
 tiêu đề của trang. Nếu con số trên trang không khớp bản vừa tải lên, trình duyệt còn giữ bản cũ
 trong bộ nhớ đệm: bấm `Ctrl+Shift+R`.
 
@@ -21,6 +21,11 @@ một đồ thị đúng nội dung cho mỗi tiết (tối đa ba đồ thị b
 tuyệt đối phải có bảng xét dấu hoặc bảng biến thiên phù hợp; bài đơn điệu/cực trị/khảo sát
 phải có cả bảng biến thiên và đồ thị. Bộ kiểm định khóa xuất Word khi chỉ mô tả “chiếu hình”
 nhưng bản kế hoạch không nhúng đủ hình Toán.
+
+V28.6.1 sửa hồi quy của bộ cứu LaTeX: chỉ tự nhận diện lệnh LaTeX trong văn bản thường và
+tuyệt đối không quét lại nội dung đã nằm trong `$...$`/`$$...$$`. Nhờ đó tập xác định, hệ
+phương trình và ma trận tiếp tục xuất đúng dạng công thức Word, đồng thời LaTeX trần vẫn
+được tự cứu như V28.5.
 
 ## Chạy thử tại máy
 

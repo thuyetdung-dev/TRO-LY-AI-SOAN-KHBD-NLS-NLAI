@@ -548,9 +548,21 @@
     return out + s.slice(plain);
   }
 
+  /* Chỉ cứu LaTeX ở phần VĂN BẢN THƯỜNG. Công thức đã có $...$ hoặc $$...$$ phải đi
+     nguyên vẹn tới latexToOmml. Nếu quét lại bên trong, chuỗi
+       $D=\mathbb{R}\setminus\{-1\}$
+     sẽ bị chèn thêm dấu $ quanh từng lệnh và bị bẻ thành nhiều mảnh — đúng lỗi làm hỏng
+     tập xác định và ma trận trong kiểm thử V28.6 đầu tiên. */
+  function recoverOutsideDelimitedMath(text) {
+    return String(text ?? '').split(/(\$\$[^$]+\$\$|\$[^$]+\$)/g).map(part => {
+      if (/^\$\$[\s\S]+\$\$$/.test(part) || /^\$[\s\S]+\$$/.test(part)) return part;
+      return recoverUndelimitedLatex(part);
+    }).join('');
+  }
+
   /* Chuyển một dòng markdown thành các <w:r>/<m:oMath>, giữ **đậm**, *nghiêng*, $toán$. */
   function runsFrom(text, base = {}) {
-    const s = recoverUndelimitedLatex(String(text ?? ''));
+    const s = recoverOutsideDelimitedMath(String(text ?? ''));
     const out = [];
     // Tách công thức trước để dấu * bên trong LaTeX không bị hiểu là in nghiêng.
     const parts = s.split(/(\$\$[^$]+\$\$|\$[^$]+\$)/g);
