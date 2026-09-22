@@ -469,9 +469,100 @@
   const mathFallback = tex =>
     `<w:r><w:rPr><w:rFonts w:ascii="Cambria Math" w:hAnsi="Cambria Math"/><w:color w:val="B00020"/></w:rPr><w:t xml:space="preserve">${xml(tex)}</w:t></w:r>`;
 
+  /* Một số mô hình vẫn thỉnh thoảng trả LaTeX trần, dù prompt đã yêu cầu đặt công thức
+     giữa $...$. Bản cũ chỉ dịch phần có dấu $, vì vậy những chuỗi như
+       S = \int_a^b |f(x)| dx,  \dfrac{1}{3}Bh,  [0; \pi]
+     bị chép nguyên xi vào Word. Đây là lỗi dữ liệu đầu vào có thể cứu an toàn ở lớp xuất:
+     nhận diện từng "đảo toán học" có lệnh LaTeX, tự bổ sung dấu phân cách nội bộ rồi mới
+     đưa qua bộ LaTeX -> OMML. Không sửa rawMarkdown, nên người dùng vẫn có thể đối chiếu
+     đúng nội dung AI đã trả về.
+
+     Bộ quét cố ý bảo thủ: chỉ bắt đầu tại dấu gạch chéo + lệnh đã biết; dừng trước từ văn
+     xuôi dài. Nhờ vậy "hệ số \pi phía trước" đổi đúng riêng \pi, không nuốt cả câu vào
+     công thức. Với tích phân/tổng/phân số, bộ quét giữ tiếp các biến ngắn, toán tử và lệnh
+     kế tiếp để công thức Word không bị bẻ thành nhiều mảnh. */
+  const RAW_MATH_COMMANDS = new Set([
+    ...Object.keys(SYM), ...FUNCS, ...Object.keys(NARY), ...Object.keys(ACCENT),
+    'frac','dfrac','tfrac','cfrac','binom','sqrt','overline','bar','underline',
+    'text','textrm','textbf','mbox','operatorname','begin','end'
+  ]);
+  const RAW_MATH_WORDS = new Set([
+    'x','y','z','t','u','v','r','a','b','c','d','h','k','m','n','p','q',
+    'dx','dy','dz','dt','du','dv','dr','sin','cos','tan','cot','ln','log','lim','mod'
+  ]);
+
+  function rawCommandAt(s, i) {
+    if (s[i] !== '\\') return null;
+    const m = /^\\([a-zA-Z]+|.)/.exec(s.slice(i));
+    return m && RAW_MATH_COMMANDS.has(m[1]) ? { name: m[1], end: i + m[0].length } : null;
+  }
+
+  function rawMathEnd(s, start) {
+    const first = rawCommandAt(s, start);
+    if (!first) return start;
+    let i = first.end, depth = 0, last = i;
+    const structural = first.name in NARY || /^(?:frac|dfrac|tfrac|cfrac|sqrt|binom)$/.test(first.name);
+    while (i < s.length) {
+      const c = s[i];
+      if (c === '\\') {
+        const cmd = rawCommandAt(s, i);
+        if (!cmd) break;
+        i = cmd.end; last = i; continue;
+      }
+      if (c === '{' || c === '[' || c === '(') { depth++; i++; last = i; continue; }
+      if (c === '}' || c === ']' || c === ')') {
+        if (depth > 0) { depth--; i++; last = i; continue; }
+        break;
+      }
+      if (/[_^=+\-*/<>|0-9.,]/.test(c)) { i++; last = i; continue; }
+      if (/\s/.test(c)) { i++; continue; }
+      if (/[A-Za-z]/.test(c)) {
+        const m = /^[A-Za-z]+/.exec(s.slice(i));
+        const word = m[0];
+        if (depth > 0 || RAW_MATH_WORDS.has(word) || (structural && word.length <= 2)) {
+          i += word.length; last = i; continue;
+        }
+        break;
+      }
+      break;
+    }
+    return last;
+  }
+
+  function recoverUndelimitedLatex(text) {
+    const s = String(text ?? '');
+    let out = '', plain = 0, i = 0;
+    while (i < s.length) {
+      const cmd = rawCommandAt(s, i);
+      if (!cmd) { i++; continue; }
+      const end = rawMathEnd(s, i);
+      if (end <= i) { i++; continue; }
+      const raw = s.slice(i, end);
+      /* Dấu kết câu không thuộc công thức; giữ nó ở run văn bản để Word đặt đúng kiểu chữ. */
+      const tail = /([.,;:]?\s*)$/.exec(raw)?.[1] || '';
+      const formula = raw.slice(0, raw.length - tail.length);
+      out += s.slice(plain, i) + '$' + formula + '$' + tail;
+      plain = end;
+      i = end;
+    }
+    return out + s.slice(plain);
+  }
+
+  /* Chỉ cứu LaTeX ở phần VĂN BẢN THƯỜNG. Công thức đã có $...$ hoặc $$...$$ phải đi
+     nguyên vẹn tới latexToOmml. Nếu quét lại bên trong, chuỗi
+       $D=\mathbb{R}\setminus\{-1\}$
+     sẽ bị chèn thêm dấu $ quanh từng lệnh và bị bẻ thành nhiều mảnh — đúng lỗi làm hỏng
+     tập xác định và ma trận trong kiểm thử V28.6 đầu tiên. */
+  function recoverOutsideDelimitedMath(text) {
+    return String(text ?? '').split(/(\$\$[^$]+\$\$|\$[^$]+\$)/g).map(part => {
+      if (/^\$\$[\s\S]+\$\$$/.test(part) || /^\$[\s\S]+\$$/.test(part)) return part;
+      return recoverUndelimitedLatex(part);
+    }).join('');
+  }
+
   /* Chuyển một dòng markdown thành các <w:r>/<m:oMath>, giữ **đậm**, *nghiêng*, $toán$. */
   function runsFrom(text, base = {}) {
-    const s = String(text ?? '');
+    const s = recoverOutsideDelimitedMath(String(text ?? ''));
     const out = [];
     // Tách công thức trước để dấu * bên trong LaTeX không bị hiểu là in nghiêng.
     const parts = s.split(/(\$\$[^$]+\$\$|\$[^$]+\$)/g);

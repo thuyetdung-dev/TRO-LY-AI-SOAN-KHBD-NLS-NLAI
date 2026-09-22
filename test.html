@@ -171,21 +171,21 @@ h2{font-size:.82rem;letter-spacing:.09em;text-transform:uppercase;color:var(--mu
 
 <!-- Thứ tự nạp phải giống hệt index.html: các tệp chia sẻ trạng thái qua biến toàn cục,
      nên đổi thứ tự là đổi hành vi. Nếu index.html thêm tệp mới, thêm vào đây cùng lúc. -->
-<script src="standards.js?v=V28.4"></script>
-<script src="app.js?v=V28.4"></script>
-<script src="validation-duration-v28.js?v=V28.4"></script>
-<script src="math-audit.js?v=V28.4"></script>
-<script src="flow.js?v=V28.4"></script>
-<script src="professional.js?v=V28.4"></script>
-<script src="vendor/jszip.min.js?v=V28.4"></script>
-<script src="docx-export.js?v=V28.4"></script>
-<script src="image-editor.js?v=V28.4"></script>
-<script src="math-editor.js?v=V28.4"></script>
-<script src="figure-normalize.js?v=V28.4"></script>
-<script src="no-key-flow.js?v=V28.4"></script>
-<script src="validation-ux.js?v=V28.4"></script>
-<script src="guided-fix.js?v=V28.4"></script>
-<script src="v28.js?v=V28.4"></script>
+<script src="standards.js?v=V28.6.1"></script>
+<script src="app.js?v=V28.6.1"></script>
+<script src="validation-duration-v28.js?v=V28.6.1"></script>
+<script src="math-audit.js?v=V28.6.1"></script>
+<script src="flow.js?v=V28.6.1"></script>
+<script src="professional.js?v=V28.6.1"></script>
+<script src="vendor/jszip.min.js?v=V28.6.1"></script>
+<script src="docx-export.js?v=V28.6.1"></script>
+<script src="image-editor.js?v=V28.6.1"></script>
+<script src="math-editor.js?v=V28.6.1"></script>
+<script src="figure-normalize.js?v=V28.6.1"></script>
+<script src="no-key-flow.js?v=V28.6.1"></script>
+<script src="validation-ux.js?v=V28.6.1"></script>
+<script src="guided-fix.js?v=V28.6.1"></script>
+<script src="v28.js?v=V28.6.1"></script>
 
 <script>
 (function(){
@@ -561,6 +561,33 @@ async function runAll(){
       ||'Không chặn — bản soạn không có hình trực quan vẫn xuất được Word';
   });
 
+  await T('Bài tích phân nhiều tiết nhưng quá ít đồ thị thì bị chặn',function(){
+    var motHinh='\n```mathviz\n'+JSON.stringify({type:'graph',title:'Đồ thị y=x^2',
+      functions:[{expr:'x^2',label:'y=x^2'}]})+'\n```\n';
+    var r=validatePlan(plan([4,4],5,motHinh)+DIEUCHINH,
+      {subject:'Toán',lesson:'Ứng dụng hình học của tích phân',periods:'2',assessmentMode:'khong'},true);
+    return r.blockers.some(function(x){return /mới có 1\/2 đồ thị/.test(x)})
+      ||'Không chặn giáo án 2 tiết chỉ có một đồ thị';
+  });
+
+  await T('Bài tích phân có phá dấu giá trị tuyệt đối phải kèm bảng xét dấu',function(){
+    var haiHinh=[1,2].map(function(i){return '\n```mathviz\n'+JSON.stringify({type:'graph',
+      title:'Đồ thị '+i,functions:[{expr:i===1?'x^2-1':'x^2',label:'f'+i}]})+'\n```\n'}).join('');
+    var r=validatePlan(plan([4,4],5,haiHinh+'\nPhá dấu giá trị tuyệt đối bằng cách xét dấu hàm số.')+DIEUCHINH,
+      {subject:'Toán',lesson:'Ứng dụng hình học của tích phân',periods:'2',assessmentMode:'khong'},true);
+    return r.blockers.some(function(x){return /chưa có bảng xét dấu/.test(x)})
+      ||'Không chặn bài phá dấu giá trị tuyệt đối nhưng thiếu bảng xét dấu';
+  });
+
+  await T('Bài biến thiên phải có cả bảng biến thiên và đồ thị',function(){
+    var chiGraph='\n```mathviz\n'+JSON.stringify({type:'graph',title:'Đồ thị',
+      functions:[{expr:'x^3-3*x',label:'y=x^3-3x'}]})+'\n```\n';
+    var r=validatePlan(plan([4],11,chiGraph)+DIEUCHINH,
+      {subject:'Toán',lesson:'Tính đơn điệu và cực trị của hàm số',periods:'1',assessmentMode:'khong'},true);
+    return r.blockers.some(function(x){return /chưa có bảng biến thiên/.test(x)})
+      ||'Có đồ thị nhưng vẫn thiếu bảng biến thiên mà không bị chặn';
+  });
+
   await T('Bảng xét dấu vẽ xen kẽ đúng chuẩn (N mốc ↔ 2N-3 dấu)',function(){
     var svg=buildSignSVG({title:"Bảng xét dấu f'(x)",
       columns:['-\\infty','\\frac{3-\\sqrt3}{3}','\\frac{3+\\sqrt3}{3}','+\\infty'],
@@ -751,6 +778,18 @@ async function runAll(){
       if(x.indexOf('<m:oMath>')<0||x.indexOf('B00020')>=0)hong.push(FORMULAS[i][1]);
     }
     return hong.length===0||'Chưa dịch được: '+hong.join(', ');
+  });
+
+  await T('LaTeX trần do AI bỏ quên dấu $ vẫn được cứu thành công thức Word',async function(){
+    var md='SP1: Công thức S = \\int_a^b |f(x)| dx. '
+      +'Khoảng [0; \\pi] và V = \\dfrac{1}{3}Bh. '
+      +'Không được nuốt phần văn xuôi phía sau công thức.';
+    var x=(await buildDocxParts(md,'kiểm tra LaTeX trần'))['word/document.xml'];
+    var omml=(x.match(/<m:oMath>/g)||[]).length;
+    var chu=(x.match(/<w:t[^>]*>[^<]*<\/w:t>/g)||[]).join('').replace(/<[^>]+>/g,'');
+    if(omml<3)return 'Chỉ dựng được '+omml+' công thức OMML';
+    if(/\\(?:int|pi|dfrac)/.test(chu))return 'Vẫn còn lệnh LaTeX thô trong Word: '+chu;
+    return chu.indexOf('phía sau công thức')>=0||'Bộ cứu lỗi đã nuốt nhầm văn xuôi';
   });
 
   var docMd=plan([4,4,4,4],11)+DIEUCHINH
