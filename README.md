@@ -3,7 +3,7 @@
 Phần mềm web hỗ trợ giáo viên soạn Kế hoạch bài dạy (KHBD) theo Chương trình GDPT 2018,
 tích hợp năng lực số (NLS) và năng lực AI (NLAI), xuất ra tệp Word.
 
-Phiên bản hiện tại: **V28.4** — số hiệu nằm ở `APP_BUILD` trong `app.js` và hiện trên thanh
+Phiên bản hiện tại: **V28.6** — số hiệu nằm ở `APP_BUILD` trong `app.js` và hiện trên thanh
 tiêu đề của trang. Nếu con số trên trang không khớp bản vừa tải lên, trình duyệt còn giữ bản cũ
 trong bộ nhớ đệm: bấm `Ctrl+Shift+R`.
 
@@ -11,6 +11,16 @@ V28.4 tách rõ hai luồng nhập tệp: **tài liệu nguồn để AI đọc*
 kiểm định**. Bộ đọc văn bản chung hỗ trợ TXT/MD/JSON UTF-8, nhận diện UTF-8 BOM, có đường lui
 FileReader, hiển thị số ký tự/bảng mã/bản xem trước và không còn âm thầm bỏ qua tài liệu nguồn
 khi đang dùng chế độ cơ bản không có AI.
+
+V28.5 bổ sung lưới an toàn khi xuất Word: nếu AI bỏ quên dấu `$...$`, các lệnh LaTeX trần
+như `\int`, `\pi`, `\dfrac`, `\sqrt` vẫn được nhận diện và chuyển thành công thức Word
+OMML; văn xuôi xung quanh được giữ nguyên. Bộ kiểm thử có ca hồi quy riêng cho lỗi này.
+
+V28.6 siết yêu cầu trực quan cho môn Toán: bài tích phân/diện tích/thể tích phải có ít nhất
+một đồ thị đúng nội dung cho mỗi tiết (tối đa ba đồ thị bắt buộc); hoạt động phá dấu giá trị
+tuyệt đối phải có bảng xét dấu hoặc bảng biến thiên phù hợp; bài đơn điệu/cực trị/khảo sát
+phải có cả bảng biến thiên và đồ thị. Bộ kiểm định khóa xuất Word khi chỉ mô tả “chiếu hình”
+nhưng bản kế hoạch không nhúng đủ hình Toán.
 
 ## Chạy thử tại máy
 

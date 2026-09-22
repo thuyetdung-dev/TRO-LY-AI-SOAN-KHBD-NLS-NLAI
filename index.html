@@ -14,15 +14,15 @@
   <!-- Mở sẵn kết nối tới hai máy chủ ngoài để lần gọi đầu bớt chậm. -->
   <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
   <link rel="preconnect" href="https://generativelanguage.googleapis.com" crossorigin>
-  <link rel="stylesheet" href="styles.css?v=V28.4">
-  <link rel="stylesheet" href="styles-plus.css?v=V28.4">
-  <link rel="stylesheet" href="image-editor.css?v=V28.4">
-  <link rel="stylesheet" href="math-audit.css?v=V28.4">
-  <link rel="stylesheet" href="validation-ux.css?v=V28.4">
-  <link rel="stylesheet" href="guided-fix.css?v=V28.4">
-  <link rel="stylesheet" href="v28.css?v=V28.4">
-  <link rel="stylesheet" href="login.css?v=V28.4">
-  <link rel="stylesheet" href="no-key-flow.css?v=V28.4">
+  <link rel="stylesheet" href="styles.css?v=V28.6">
+  <link rel="stylesheet" href="styles-plus.css?v=V28.6">
+  <link rel="stylesheet" href="image-editor.css?v=V28.6">
+  <link rel="stylesheet" href="math-audit.css?v=V28.6">
+  <link rel="stylesheet" href="validation-ux.css?v=V28.6">
+  <link rel="stylesheet" href="guided-fix.css?v=V28.6">
+  <link rel="stylesheet" href="v28.css?v=V28.6">
+  <link rel="stylesheet" href="login.css?v=V28.6">
+  <link rel="stylesheet" href="no-key-flow.css?v=V28.6">
   <script>window.MathJax={tex:{inlineMath:[['$','$'],['\\(','\\)']],displayMath:[['$$','$$'],['\\[','\\]']],processEscapes:true},svg:{fontCache:'global'},options:{skipHtmlTags:['script','noscript','style','textarea','pre','code']}};</script>
   <script defer src="https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-svg.js" integrity="sha384-KKWa9jJ1MZvssLeOoXG6FiOAZfAgmzsIIfw8BXwI9+kYm0lPCbC6yTQPBC00F1/L" crossorigin="anonymous"></script>
 </head>
@@ -334,34 +334,34 @@
   </dialog>
 
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
-  <script src="standards.js?v=V28.4"></script>
-  <script src="app.js?v=V28.4"></script>
-  <script src="validation-duration-v28.js?v=V28.4"></script>
-  <script src="math-audit.js?v=V28.4"></script>
-  <script src="flow.js?v=V28.4"></script>
+  <script src="standards.js?v=V28.6"></script>
+  <script src="app.js?v=V28.6"></script>
+  <script src="validation-duration-v28.js?v=V28.6"></script>
+  <script src="math-audit.js?v=V28.6"></script>
+  <script src="flow.js?v=V28.6"></script>
   <!-- integrity: nếu tệp trên CDN bị đổi nội dung, trình duyệt sẽ từ chối nạp thay vì chạy mã lạ.
        MathJax đã có từ trước; JSZip trước đây thiếu, trong khi hướng dẫn lại khuyên đưa cả thư
        mục lên dịch vụ lưu trữ web để chia sẻ cho đồng nghiệp. -->
-  <script src="vendor/jszip.min.js?v=V28.4"></script>
-  <script src="professional.js?v=V28.4"></script>
-  <script src="docx-export.js?v=V28.4"></script>
-  <script src="image-editor.js?v=V28.4"></script>
-  <script src="math-editor.js?v=V28.4"></script>
+  <script src="vendor/jszip.min.js?v=V28.6"></script>
+  <script src="professional.js?v=V28.6"></script>
+  <script src="docx-export.js?v=V28.6"></script>
+  <script src="image-editor.js?v=V28.6"></script>
+  <script src="math-editor.js?v=V28.6"></script>
   <!-- Nạp sau cùng trong nhóm này: bọc mdToHtml, showResult, validatePlan và buildDocxParts
        nên phải thấy bản đã vá của flow.js, docx-export.js và image-editor.js. -->
-  <script src="figure-normalize.js?v=V28.4"></script>
+  <script src="figure-normalize.js?v=V28.6"></script>
   <!-- Nạp sau figure-normalize.js: khi nạp kết quả từ AI ngoài, showResult phải là bản đã bọc
        để hình viết dạng JSON trần vẫn dựng ra hình. -->
-  <script src="no-key-flow.js?v=V28.4"></script>
+  <script src="no-key-flow.js?v=V28.6"></script>
   <script>
   /* Hiện mốc phiên bản của app.js đang thực sự chạy. Nếu con số này không khớp với bản vừa
      tải lên thì trình duyệt còn giữ bản cũ trong bộ nhớ đệm — bấm Ctrl+Shift+R. */
   (function(){var el=document.getElementById('buildTag');
     if(el)el.textContent=(typeof APP_BUILD!=='undefined')?APP_BUILD:'không rõ';})();
   </script>
-  <script src="validation-ux.js?v=V28.4"></script>
-  <script src="guided-fix.js?v=V28.4"></script>
-  <script src="v28.js?v=V28.4"></script>
-  <script src="login.js?v=V28.4"></script>
+  <script src="validation-ux.js?v=V28.6"></script>
+  <script src="guided-fix.js?v=V28.6"></script>
+  <script src="v28.js?v=V28.6"></script>
+  <script src="login.js?v=V28.6"></script>
 </body>
 </html>

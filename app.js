@@ -5,7 +5,7 @@
    test.html phải trùng đúng phần V… này — có một phép kiểm tra tự động canh việc đó, vì
    trước đây index.html nạp app.js?v=V27.5.2 còn test.html nạp app.js?v=b27.4: hai trang có
    thể chạy hai bản khác nhau trong bộ nhớ đệm, test bản này mà giáo viên dùng bản kia. */
-const APP_BUILD='2026-09-21 · V28.4';
+const APP_BUILD='2026-09-22 · V28.6';
 const $=id=>document.getElementById(id);let selectedFiles=[],rawMarkdown='',availableModels=[],scanTimer,draftTimer,lastValidation=null;
 const fields=['subject','grade','lesson','book','periods','students','classSize','equipment','notes','tableLayout','assessmentMode','lessonTemplate','sourceMode'];
 const toast=m=>{const t=$('toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2600)};
@@ -180,12 +180,15 @@ function mathRulesFor(v){if(!isMathSubject(v))return '6) Không áp dụng mô-�
  - "columns" là các mốc x, N mốc. "cells" của mỗi hàng có ĐÚNG 2N-3 phần tử, xen kẽ y hệt quy tắc 6a: dấu khoảng 1, giá trị tại mốc 2, dấu khoảng 2, ...
  - Ví dụ đúng: columns ["-\\\\infty","1","3","+\\\\infty"], cells ["+","0","-","0","+"].
  - Đếm sai số phần tử là bảng vẽ ra lệch cột, không dùng được.
+ - BẮT BUỘC có bảng xét dấu khi bài tích phân/diện tích phải phá dấu giá trị tuyệt đối hoặc xác định khoảng đồ thị nằm trên/dưới trục hoành. Bảng biến thiên chỉ dùng khi thật sự cần xét sự biến thiên, cực trị hoặc chọn miền giá trị; không chèn bảng sai mục đích chỉ để tăng số hình.
 
 6c) ĐỒ THỊ HÀM SỐ: {"type":"graph","title":"...","xMin":-5,"xMax":5,"yMin":-5,"yMax":5,"asymptotes":[{"type":"vertical","value":3},{"type":"horizontal","value":1},{"type":"oblique","slope":1,"intercept":4}],"functions":[{"expr":"x^3-3*x","label":"y=x^3-3x","color":"#176fa8"}]}
  - "expr" viết theo cú pháp máy tính: dùng dấu * cho phép nhân (viết "3*x" chứ không phải "3x"), dùng ^ cho luỹ thừa. Dùng được sin, cos, tan, sqrt, abs, exp, log, ln, pi.
  - Chọn xMin/xMax/yMin/yMax bao trọn các điểm cực trị và giao điểm cần quan sát.
  - "asymptotes": bắt buộc với hàm phân thức hoặc hàm có tiệm cận. Tính chính xác trước khi ghi: tiệm cận đứng dùng {"type":"vertical","value":a} cho $x=a$; tiệm cận ngang dùng {"type":"horizontal","value":b} cho $y=b$; tiệm cận xiên dùng {"type":"oblique","slope":m,"intercept":n} cho $y=mx+n$. Chỉ ghi các tiệm cận thực sự tồn tại, không đưa đồng thời ngang và xiên nếu không đúng.
  - BẮT BUỘC có ít nhất một đồ thị khi bài học có bất kỳ nội dung nào sau đây: nhận biết tính đơn điệu hoặc cực trị QUA HÌNH ẢNH ĐỒ THỊ, khảo sát và vẽ đồ thị hàm số, tương giao đồ thị, hoặc khi sách giáo khoa có hình vẽ đồ thị ở phần tương ứng. Yêu cầu cần đạt "nhận biết qua hình ảnh đồ thị" mà bản soạn không có đồ thị nào thì chưa dạy được mục tiêu đó.
+ - Với bài TÍCH PHÂN, DIỆN TÍCH HÌNH PHẲNG hoặc THỂ TÍCH KHỐI TRÒN XOAY: phải có ít nhất một đồ thị cho mỗi tiết, tối đa yêu cầu ba đồ thị cho cả bài. Đồ thị phải bám đúng ví dụ đang dạy: miền trên/dưới trục hoành, miền giữa hai đường hoặc đường sinh của khối tròn xoay. Không được dùng một đồ thị chung chung lặp lại để đủ số lượng.
+ - Nếu hoạt động yêu cầu "quan sát hình", "chiếu hình", "dựa vào đồ thị" hoặc nêu số hiệu Hình trong SGK, phải đặt khối mathviz phù hợp NGAY SAU câu dẫn ấy. Không được chỉ ghi giáo viên sẽ chiếu hình rồi để bản Word không có hình.
 
 6d) HÌNH KHỐI KHÔNG GIAN: {"type":"solid","title":"Hình lập phương ABCD.A'B'C'D'","shape":"hinh-lap-phuong","points":[{"name":"M","between":["B","C"],"ratio":0.5}],"vectors":[{"from":"A","to":"B"}],"segments":[{"from":"A","to":"C'"}],"planes":[["A","B","C","D"]]}
  - "shape" chọn một trong: "hinh-hop" (dùng luôn cho hình lập phương, hình hộp chữ nhật, lăng trụ tứ giác — đỉnh A, B, C, D, A', B', C', D'), "tu-dien" (đỉnh A, B, C, D), "hinh-chop-tu-giac" (S.ABCD), "hinh-chop-tam-giac" (S.ABC), "lang-tru-tam-giac" (ABC.A'B'C').
@@ -193,7 +196,7 @@ function mathRulesFor(v){if(!isMathSubject(v))return '6) Không áp dụng mô-�
  - Phần mềm TỰ TÍNH nét khuất cho cả cạnh, vectơ lẫn đoạn phụ, tự đặt tên đỉnh và tự chọn góc nhìn — chỉ cần khai đúng tên đỉnh có sẵn của khối, không cần mô tả gì thêm.
  - BẮT BUỘC: hoạt động nào dựa trên một hình vẽ của sách giáo khoa (câu chữ kiểu "quan sát Hình 2.2", "cho hình lập phương ABCD.A'B'C'D'", "cho tứ diện ABCD", "cho hình chóp S.ABCD") thì PHẢI kèm một khối mathviz "solid" đặt ngay dưới đoạn dẫn. Học sinh và giáo viên không thể làm việc với một hình chỉ được tả bằng lời.
 
-QUY TẮC CHUNG: mỗi khối mathviz đặt ngay dưới dòng văn bản dẫn vào nó. Chỉ dùng khi đúng nội dung bài, không ép dùng cho mọi bài Toán. Nhưng với bài về tính đơn điệu, cực trị hay khảo sát hàm số thì bảng biến thiên và đồ thị là bắt buộc; với bài hình học không gian thì mỗi hoạt động dựa trên hình của sách phải có hình khối kèm theo. Không được thay hình bằng lời mô tả suông.`}
+QUY TẮC CHUNG: mỗi khối mathviz đặt ngay dưới dòng văn bản dẫn vào nó. Mỗi tiết Toán có nội dung trực quan phải có ít nhất một đối tượng mathviz đúng mục đích; một bài nhiều tiết không được dùng duy nhất một hình cho toàn bài. Với bài về tính đơn điệu, cực trị hay khảo sát hàm số thì bảng biến thiên và đồ thị là bắt buộc; với bài tích phân/diện tích/thể tích thì đồ thị và bảng xét dấu phù hợp là bắt buộc; với bài hình học không gian thì mỗi hoạt động dựa trên hình của sách phải có hình khối kèm theo. Không được thay hình bằng lời mô tả suông và không được lặp lại cùng một hình để đối phó số lượng.`}
 function promptFor(v){const grade=clampGrade(v.grade);return `Bạn là chuyên gia hàng đầu về xây dựng Kế hoạch bài dạy tại Việt Nam. Hãy soạn KHBD năm học 2026–2027, tuyệt đối dựa trên tài liệu nguồn nếu có.
 THÔNG TIN: Môn ${v.subject}; lớp ${grade}; bài ${v.lesson}; bộ sách ${v.book}; số tiết ${v.periods||'hãy xác định từ SGV/tài liệu'}; học sinh ${v.students}; sĩ số ${v.classSize}; thiết bị ${v.equipment}. Ghi chú: ${v.notes||'không'}.
 YÊU CẦU BẮT BUỘC:
@@ -1797,10 +1800,27 @@ if(aiGenerated&&isMathSubject(v)&&!/\$[^$]+\$/.test(text))blockers.push('Môn To
 /* Giáo viên phản ánh: bản soạn "chỉ có công thức và lời nói, không có hình ảnh trực quan".
    Yêu cầu cần đạt của các bài này ghi rõ "nhận biết qua hình ảnh đồ thị", nên thiếu đồ thị là
    thiếu phương tiện dạy học chứ không phải thiếu trang trí. Chặn để buộc soạn lại. */
-if(aiGenerated&&isMathSubject(v)&&/don dieu|cuc tri|khao sat|do thi|bien thien/.test(deaccent(v.lesson||''))){
-  const coGraph=/["']type["']\s*:\s*["']graph["']/i.test(text),
-        coExpr=/["']expr["']\s*:/i.test(text);
-  if(!coGraph&&!coExpr)blockers.push('Bài về đồ thị/tính đơn điệu/cực trị nhưng không có đồ thị hàm số nào. Mỗi khối bảng biến thiên phải khai báo thêm "expr" để phần mềm vẽ đồ thị, hoặc thêm khối mathviz type "graph".');
+if(aiGenerated&&isMathSubject(v)){
+  const chuDe=deaccent((v.lesson||'')+' '+text),
+        demLoai=loai=>(text.match(new RegExp('["\\\']type["\\\']\\s*:\\s*["\\\']'+loai+'["\\\']','gi'))||[]).length,
+        soGraph=demLoai('graph'), soVariation=demLoai('variation'), soSign=demLoai('sign'),
+        soTiet=Math.max(1,Number(v.periods)||1),
+        laBienThien=/don dieu|cuc tri|khao sat|bang bien thien/.test(chuDe),
+        laTichPhan=/tich phan|dien tich hinh phang|the tich khoi tron xoay|the tich vat the/.test(chuDe),
+        canXetDau=/gia tri tuyet doi|pha dau|xet dau|tren.*truc hoanh|duoi.*truc hoanh/.test(chuDe);
+  if(laBienThien){
+    if(!soVariation)blockers.push('Bài có nội dung biến thiên/cực trị/khảo sát nhưng chưa có bảng biến thiên mathviz type "variation".');
+    if(!soGraph&&!/["']expr["']\s*:/i.test(text))blockers.push('Bài về đồ thị/tính đơn điệu/cực trị nhưng không có đồ thị hàm số nào. Bảng biến thiên phải có "expr" để phần mềm vẽ kèm đồ thị, hoặc cần thêm mathviz type "graph".');
+  }
+  if(laTichPhan){
+    const toiThieu=Math.min(3,soTiet);
+    if(soGraph<toiThieu)blockers.push(`Bài tích phân/diện tích/thể tích có ${soTiet} tiết nhưng mới có ${soGraph}/${toiThieu} đồ thị. Cần ít nhất một đồ thị đúng nội dung cho mỗi tiết (tối đa ba đồ thị bắt buộc).`);
+    if(canXetDau&&!soSign&&!soVariation)blockers.push('Bài dùng giá trị tuyệt đối hoặc phải xác định miền trên/dưới trục hoành nhưng chưa có bảng xét dấu (hoặc bảng biến thiên phù hợp).');
+  }
+  const soDanHinh=(text.match(/\b(?:quan sát|chiếu|dựa vào)\s+(?:hình|đồ thị)|\bHình\s+\d+\.\d+/gi)||[]).length,
+        tongHinh=soGraph+soVariation+soSign+demLoai('(?:solid|hinh-khong-gian)');
+  if(soDanHinh>=3&&tongHinh<Math.min(3,soTiet))
+    blockers.push(`Bản kế hoạch có ${soDanHinh} câu yêu cầu quan sát/chiếu hình nhưng chỉ có ${tongHinh} hình Toán được nhúng. Phải đặt mathviz ngay sau hoạt động sử dụng hình, không chỉ mô tả sẽ chiếu trên lớp.`);
 }
 /* b21 — HÌNH HỌC KHÔNG GIAN PHẢI CÓ HÌNH.
    VÌ SAO: bản in Bài 6 "Vectơ trong không gian" mà giáo viên gửi không có LẤY MỘT HÌNH NÀO —
